@@ -43,6 +43,9 @@ artifacts-monorepo/
 - `users` — Replit Auth user accounts
 - `sessions` — Auth sessions (required by Replit Auth)
 - `characters` — Character sheet data (JSON columns for complex fields)
+- `rulebook_classes` — GeneFunk 2090 class reference data (8 classes with per-level features, subclasses, proficiencies)
+- `rulebook_backgrounds` — Background reference data (11 backgrounds with skill proficiencies, features)
+- `rulebook_genomes` — Genome reference data (18 genomes with ability bonuses, senses, traits)
 
 ## Key Features
 
@@ -56,6 +59,8 @@ artifacts-monorepo/
 - **Weapon Picker** — searchable modal with all 68 GeneFunk 2090 weapons pre-loaded (melee, firearms, premium, explosives) from the official rulebook; selecting a weapon auto-fills damage, type, range, and properties
 - **Debounced auto-save** to backend
 - **Animated dice roller** with toast notifications
+- **Rulebook reference dropdowns** — Class, Genome, and Background fields use dropdowns populated from the database, with a "Custom" option for homebrew entries
+- **Rulebook API** — public GET endpoints at `/api/rulebook/classes`, `/api/rulebook/backgrounds`, `/api/rulebook/genomes`
 
 ## Development
 

@@ -13,6 +13,8 @@ tags:
     description: Authentication operations
   - name: characters
     description: Character sheet operations
+  - name: rulebook
+    description: Rulebook reference data (read-only)
 paths:
   /healthz:
     get:
@@ -179,6 +181,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /rulebook/classes:
+    get:
+      operationId: getRulebookClasses
+      tags: [rulebook]
+      summary: Get all rulebook classes
+      description: Returns all GeneFunk 2090 classes with features by level, proficiencies, and subclasses
+      responses:
+        "200":
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RulebookClass"
+
+  /rulebook/backgrounds:
+    get:
+      operationId: getRulebookBackgrounds
+      tags: [rulebook]
+      summary: Get all rulebook backgrounds
+      description: Returns all GeneFunk 2090 backgrounds with skill proficiencies and features
+      responses:
+        "200":
+          description: List of backgrounds
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RulebookBackground"
+
+  /rulebook/genomes:
+    get:
+      operationId: getRulebookGenomes
+      tags: [rulebook]
+      summary: Get all rulebook genomes
+      description: Returns all GeneFunk 2090 genomes with ability bonuses, senses, and traits
+      responses:
+        "200":
+          description: List of genomes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RulebookGenome"
 
 components:
   schemas:
@@ -802,3 +852,157 @@ components:
           type: integer
         passivePerception:
           type: ["integer", "null"]
+
+    RulebookClassFeature:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+        - description
+
+    RulebookSubclass:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+        - description
+
+    RulebookClass:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        hitDie:
+          type: integer
+        primaryAbility:
+          type: string
+        savingThrows:
+          type: array
+          items:
+            type: string
+        armorProficiencies:
+          type: array
+          items:
+            type: string
+        weaponProficiencies:
+          type: array
+          items:
+            type: string
+        skillChoices:
+          type: array
+          items:
+            type: string
+        numSkillChoices:
+          type: integer
+        featuresByLevel:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/RulebookClassFeature"
+        subclasses:
+          type: array
+          items:
+            $ref: "#/components/schemas/RulebookSubclass"
+      required:
+        - id
+        - name
+        - description
+        - hitDie
+        - primaryAbility
+        - savingThrows
+        - armorProficiencies
+        - weaponProficiencies
+        - skillChoices
+        - numSkillChoices
+        - featuresByLevel
+        - subclasses
+
+    RulebookBackground:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        skillProficiencies:
+          type: array
+          items:
+            type: string
+        vocationalProficiency:
+          type: ["string", "null"]
+        featureName:
+          type: string
+        featureDescription:
+          type: string
+        equipment:
+          type: ["string", "null"]
+        languages:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+        - description
+        - skillProficiencies
+        - featureName
+        - featureDescription
+
+    RulebookGenomeTrait:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+        - description
+
+    RulebookGenome:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        abilityBonuses:
+          type: object
+          additionalProperties:
+            type: integer
+        senses:
+          type: array
+          items:
+            type: string
+        traits:
+          type: array
+          items:
+            $ref: "#/components/schemas/RulebookGenomeTrait"
+        speed:
+          type: integer
+      required:
+        - id
+        - name
+        - category
+        - description
+        - abilityBonuses
+        - senses
+        - traits
+        - speed

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useRoute } from 'wouter';
-import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter } from '@/hooks/use-api';
+import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookClasses, useAppRulebookBackgrounds, useAppRulebookGenomes } from '@/hooks/use-api';
 import { useDice } from '@/hooks/use-dice';
-import { CyberCard, EditableField, CyberButton, CyberBadge } from '@/components/CyberUI';
+import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } from '@/components/CyberUI';
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
@@ -35,7 +35,14 @@ export default function CharacterSheet() {
   const updateMutation = useAppUpdateCharacter();
   const deleteMutation = useAppDeleteCharacter();
   const { rollDice } = useDice();
+  const { data: rulebookClasses } = useAppRulebookClasses();
+  const { data: rulebookBackgrounds } = useAppRulebookBackgrounds();
+  const { data: rulebookGenomes } = useAppRulebookGenomes();
   
+  const classOptions = (rulebookClasses || []).map(c => ({ value: c.name, label: c.name }));
+  const backgroundOptions = (rulebookBackgrounds || []).map(b => ({ value: b.name, label: b.name }));
+  const genomeOptions = (rulebookGenomes || []).map(g => ({ value: g.name, label: `${g.name} (${g.category})` }));
+
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
 
   const handleUpdate = (field: string, value: unknown) => {
@@ -79,10 +86,10 @@ export default function CharacterSheet() {
               />
               <div className="flex items-center gap-1.5 text-xs text-primary font-mono">
                 Lvl <EditableField value={character.level} type="number" onSave={(v) => handleUpdate('level', v)} className="w-6 inline-block" /> 
-                <EditableField value={character.class || ''} onSave={(v) => handleUpdate('class', v)} className="inline-block min-w-[60px]" />
+                <EditableSelect value={character.class || ''} onSave={(v) => handleUpdate('class', v)} options={classOptions} className="inline-block min-w-[60px]" placeholder="Class" />
                 <span className="text-muted-foreground">|</span>
                 <span className="text-xs text-muted-foreground uppercase">Genome:</span>
-                <EditableField value={character.genome || ''} onSave={(v) => handleUpdate('genome', v)} className="inline-block text-muted-foreground min-w-[60px]" />
+                <EditableSelect value={character.genome || ''} onSave={(v) => handleUpdate('genome', v)} options={genomeOptions} className="inline-block text-muted-foreground min-w-[60px]" placeholder="Genome" />
                 <span className="text-muted-foreground">|</span>
                 <span className="text-xs text-muted-foreground uppercase">Cadre:</span>
                 <EditableField value={character.cadre || ''} onSave={(v) => handleUpdate('cadre', v)} className="inline-block text-muted-foreground min-w-[60px]" />
@@ -384,7 +391,7 @@ export default function CharacterSheet() {
                 {miniTab === 'genemods' && <GeneModsPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'cybernetics' && <CyberneticsPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'features' && <FeaturesPanel character={character} onUpdate={handleUpdate} />}
-                {miniTab === 'bio' && <BioPanel character={character} onUpdate={handleUpdate} />}
+                {miniTab === 'bio' && <BioPanel character={character} onUpdate={handleUpdate} backgroundOptions={backgroundOptions} />}
               </div>
             </CyberCard>
           </div>
@@ -746,12 +753,28 @@ function FeaturesPanel({ character, onUpdate }: PanelProps) {
   );
 }
 
-function BioPanel({ character, onUpdate }: PanelProps) {
+function BioPanel({ character, onUpdate, backgroundOptions }: PanelProps & { backgroundOptions: { value: string; label: string }[] }) {
   return (
     <div className="space-y-3">
+      <div>
+        <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-1">Alignment</div>
+        <EditableField
+          value={character.alignment || ''}
+          onSave={v => onUpdate('alignment', v)}
+          className="text-sm font-mono text-foreground/90 border-b border-border/30 w-full block py-1"
+        />
+      </div>
+      <div>
+        <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-1">Background</div>
+        <EditableSelect
+          value={character.background || ''}
+          onSave={v => onUpdate('background', v)}
+          options={backgroundOptions}
+          className="text-sm font-mono text-foreground/90 border-b border-border/30 w-full block py-1"
+          placeholder="Background"
+        />
+      </div>
       {([
-        { label: 'Alignment', field: 'alignment' as const },
-        { label: 'Background', field: 'background' as const },
         { label: 'Backstory', field: 'backstory' as const },
         { label: 'Contract Notes', field: 'notes' as const },
       ]).map(item => (

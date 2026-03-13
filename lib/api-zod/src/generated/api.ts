@@ -504,3 +504,80 @@ export const DeleteCharacterParams = zod.object({
 export const DeleteCharacterResponse = zod.object({
   success: zod.boolean(),
 });
+
+/**
+ * Returns all GeneFunk 2090 classes with features by level, proficiencies, and subclasses
+ * @summary Get all rulebook classes
+ */
+export const GetRulebookClassesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  hitDie: zod.number(),
+  primaryAbility: zod.string(),
+  savingThrows: zod.array(zod.string()),
+  armorProficiencies: zod.array(zod.string()),
+  weaponProficiencies: zod.array(zod.string()),
+  skillChoices: zod.array(zod.string()),
+  numSkillChoices: zod.number(),
+  featuresByLevel: zod.record(
+    zod.string(),
+    zod.array(
+      zod.object({
+        name: zod.string(),
+        description: zod.string(),
+      }),
+    ),
+  ),
+  subclasses: zod.array(
+    zod.object({
+      name: zod.string(),
+      description: zod.string(),
+    }),
+  ),
+});
+export const GetRulebookClassesResponse = zod.array(
+  GetRulebookClassesResponseItem,
+);
+
+/**
+ * Returns all GeneFunk 2090 backgrounds with skill proficiencies and features
+ * @summary Get all rulebook backgrounds
+ */
+export const GetRulebookBackgroundsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  skillProficiencies: zod.array(zod.string()),
+  vocationalProficiency: zod.string().nullish(),
+  featureName: zod.string(),
+  featureDescription: zod.string(),
+  equipment: zod.string().nullish(),
+  languages: zod.string().nullish(),
+});
+export const GetRulebookBackgroundsResponse = zod.array(
+  GetRulebookBackgroundsResponseItem,
+);
+
+/**
+ * Returns all GeneFunk 2090 genomes with ability bonuses, senses, and traits
+ * @summary Get all rulebook genomes
+ */
+export const GetRulebookGenomesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string(),
+  description: zod.string(),
+  abilityBonuses: zod.record(zod.string(), zod.number()),
+  senses: zod.array(zod.string()),
+  traits: zod.array(
+    zod.object({
+      name: zod.string(),
+      description: zod.string(),
+    }),
+  ),
+  speed: zod.number(),
+});
+export const GetRulebookGenomesResponse = zod.array(
+  GetRulebookGenomesResponseItem,
+);

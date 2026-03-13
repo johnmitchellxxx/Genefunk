@@ -23,6 +23,9 @@ import type {
   ErrorResponse,
   GetCurrentAuthUserResponse,
   HealthStatus,
+  RulebookBackground,
+  RulebookClass,
+  RulebookGenome,
   SuccessResponse,
   UpdateCharacterBody,
 } from "./api.schemas";
@@ -605,3 +608,232 @@ export const useDeleteCharacter = <
 > => {
   return useMutation(getDeleteCharacterMutationOptions(options));
 };
+
+/**
+ * Returns all GeneFunk 2090 classes with features by level, proficiencies, and subclasses
+ * @summary Get all rulebook classes
+ */
+export const getGetRulebookClassesUrl = () => {
+  return `/api/rulebook/classes`;
+};
+
+export const getRulebookClasses = async (
+  options?: RequestInit,
+): Promise<RulebookClass[]> => {
+  return customFetch<RulebookClass[]>(getGetRulebookClassesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetRulebookClassesQueryKey = () => {
+  return [`/api/rulebook/classes`] as const;
+};
+
+export const getGetRulebookClassesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRulebookClasses>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookClasses>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetRulebookClassesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRulebookClasses>>
+  > = ({ signal }) => getRulebookClasses({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookClasses>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRulebookClassesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRulebookClasses>>
+>;
+export type GetRulebookClassesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all rulebook classes
+ */
+
+export function useGetRulebookClasses<
+  TData = Awaited<ReturnType<typeof getRulebookClasses>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookClasses>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRulebookClassesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns all GeneFunk 2090 backgrounds with skill proficiencies and features
+ * @summary Get all rulebook backgrounds
+ */
+export const getGetRulebookBackgroundsUrl = () => {
+  return `/api/rulebook/backgrounds`;
+};
+
+export const getRulebookBackgrounds = async (
+  options?: RequestInit,
+): Promise<RulebookBackground[]> => {
+  return customFetch<RulebookBackground[]>(getGetRulebookBackgroundsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetRulebookBackgroundsQueryKey = () => {
+  return [`/api/rulebook/backgrounds`] as const;
+};
+
+export const getGetRulebookBackgroundsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRulebookBackgrounds>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookBackgrounds>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetRulebookBackgroundsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRulebookBackgrounds>>
+  > = ({ signal }) => getRulebookBackgrounds({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookBackgrounds>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRulebookBackgroundsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRulebookBackgrounds>>
+>;
+export type GetRulebookBackgroundsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all rulebook backgrounds
+ */
+
+export function useGetRulebookBackgrounds<
+  TData = Awaited<ReturnType<typeof getRulebookBackgrounds>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookBackgrounds>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRulebookBackgroundsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns all GeneFunk 2090 genomes with ability bonuses, senses, and traits
+ * @summary Get all rulebook genomes
+ */
+export const getGetRulebookGenomesUrl = () => {
+  return `/api/rulebook/genomes`;
+};
+
+export const getRulebookGenomes = async (
+  options?: RequestInit,
+): Promise<RulebookGenome[]> => {
+  return customFetch<RulebookGenome[]>(getGetRulebookGenomesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetRulebookGenomesQueryKey = () => {
+  return [`/api/rulebook/genomes`] as const;
+};
+
+export const getGetRulebookGenomesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRulebookGenomes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookGenomes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetRulebookGenomesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRulebookGenomes>>
+  > = ({ signal }) => getRulebookGenomes({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookGenomes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRulebookGenomesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRulebookGenomes>>
+>;
+export type GetRulebookGenomesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all rulebook genomes
+ */
+
+export function useGetRulebookGenomes<
+  TData = Awaited<ReturnType<typeof getRulebookGenomes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookGenomes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRulebookGenomesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

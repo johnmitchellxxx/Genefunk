@@ -6,7 +6,10 @@ import {
   useDeleteCharacter,
   getGetCharactersQueryKey,
   getGetCharacterQueryKey,
-  useGetCurrentAuthUser
+  useGetCurrentAuthUser,
+  useGetRulebookClasses,
+  useGetRulebookBackgrounds,
+  useGetRulebookGenomes,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -75,6 +78,22 @@ export function useAppUpdateCharacter() {
       });
     }
   };
+}
+
+const rulebookQueryOptions = {
+  query: { staleTime: Infinity, refetchOnWindowFocus: false },
+};
+
+export function useAppRulebookClasses() {
+  return useGetRulebookClasses(rulebookQueryOptions);
+}
+
+export function useAppRulebookBackgrounds() {
+  return useGetRulebookBackgrounds(rulebookQueryOptions);
+}
+
+export function useAppRulebookGenomes() {
+  return useGetRulebookGenomes(rulebookQueryOptions);
 }
 
 export function useAppDeleteCharacter() {

@@ -1,4 +1,4 @@
-import React, { InputHTMLAttributes, useState, useEffect } from 'react';
+import React, { InputHTMLAttributes, SelectHTMLAttributes, useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -104,6 +104,125 @@ export function EditableField({
       {label && <span className="text-sm text-muted-foreground block mb-1 uppercase tracking-widest">{label}</span>}
       <span className={cn("block truncate", !localValue && "text-muted-foreground italic")}>
         {localValue || "Empty..."}
+      </span>
+      <div className="absolute inset-0 border border-primary opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity clip-edges" />
+    </div>
+  );
+}
+
+export function CyberSelect({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={cn(
+        "w-full bg-background/50 border-b-2 border-border focus:border-primary px-3 py-2 text-foreground font-mono outline-none transition-colors appearance-none cursor-pointer",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </select>
+  );
+}
+
+const CUSTOM_VALUE = "__CUSTOM__";
+
+export function EditableSelect({
+  value,
+  onSave,
+  options,
+  className,
+  label,
+  placeholder,
+}: {
+  value: string;
+  onSave: (val: string) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+  label?: string;
+  placeholder?: string;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isCustom, setIsCustom] = useState(false);
+  const [customValue, setCustomValue] = useState('');
+  const switchingToCustomRef = useRef(false);
+
+  const isKnownOption = options.some(o => o.value === value);
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = e.target.value;
+    if (selected === CUSTOM_VALUE) {
+      switchingToCustomRef.current = true;
+      setIsCustom(true);
+      setCustomValue(value || '');
+      return;
+    }
+    setIsEditing(false);
+    setIsCustom(false);
+    if (selected !== value) {
+      onSave(selected);
+    }
+  };
+
+  const handleSelectBlur = () => {
+    if (switchingToCustomRef.current) {
+      switchingToCustomRef.current = false;
+      return;
+    }
+    setIsEditing(false);
+    setIsCustom(false);
+  };
+
+  const handleCustomBlur = () => {
+    setIsEditing(false);
+    setIsCustom(false);
+    if (customValue !== value) {
+      onSave(customValue);
+    }
+  };
+
+  if (isEditing && isCustom) {
+    return (
+      <CyberInput
+        autoFocus
+        value={customValue}
+        onChange={e => setCustomValue(e.target.value)}
+        onBlur={handleCustomBlur}
+        onKeyDown={e => e.key === 'Enter' && handleCustomBlur()}
+        placeholder={placeholder || 'Enter custom value...'}
+        className={className}
+      />
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <CyberSelect
+        autoFocus
+        value={isKnownOption ? value : CUSTOM_VALUE}
+        onChange={handleSelectChange}
+        onBlur={handleSelectBlur}
+        className={className}
+      >
+        <option value="">— Select —</option>
+        {options.map(o => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+        <option value={CUSTOM_VALUE}>✎ Custom...</option>
+      </CyberSelect>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => { setIsEditing(true); setIsCustom(false); }}
+      className={cn(
+        "cursor-pointer group relative px-2 py-1 -mx-2 -my-1 rounded hover:bg-primary/10 transition-colors",
+        className
+      )}
+    >
+      {label && <span className="text-sm text-muted-foreground block mb-1 uppercase tracking-widest">{label}</span>}
+      <span className={cn("block truncate", !value && "text-muted-foreground italic")}>
+        {value || placeholder || "Empty..."}
       </span>
       <div className="absolute inset-0 border border-primary opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity clip-edges" />
     </div>

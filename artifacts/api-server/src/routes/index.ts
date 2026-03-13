@@ -2,11 +2,13 @@ import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import charactersRouter from "./characters";
+import rulebookRouter from "./rulebook";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
 router.use(charactersRouter);
+router.use(rulebookRouter);
 
 export default router;

@@ -357,3 +357,65 @@ export interface UpdateCharacterBody {
   /** @nullable */
   passivePerception?: number | null;
 }
+
+export interface RulebookClassFeature {
+  name: string;
+  description: string;
+}
+
+export interface RulebookSubclass {
+  name: string;
+  description: string;
+}
+
+export type RulebookClassFeaturesByLevel = {
+  [key: string]: RulebookClassFeature[];
+};
+
+export interface RulebookClass {
+  id: number;
+  name: string;
+  description: string;
+  hitDie: number;
+  primaryAbility: string;
+  savingThrows: string[];
+  armorProficiencies: string[];
+  weaponProficiencies: string[];
+  skillChoices: string[];
+  numSkillChoices: number;
+  featuresByLevel: RulebookClassFeaturesByLevel;
+  subclasses: RulebookSubclass[];
+}
+
+export interface RulebookBackground {
+  id: number;
+  name: string;
+  description: string;
+  skillProficiencies: string[];
+  /** @nullable */
+  vocationalProficiency?: string | null;
+  featureName: string;
+  featureDescription: string;
+  /** @nullable */
+  equipment?: string | null;
+  /** @nullable */
+  languages?: string | null;
+}
+
+export interface RulebookGenomeTrait {
+  name: string;
+  description: string;
+}
+
+export type RulebookGenomeAbilityBonuses = { [key: string]: number };
+
+export interface RulebookGenome {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  abilityBonuses: RulebookGenomeAbilityBonuses;
+  senses: string[];
+  traits: RulebookGenomeTrait[];
+  speed: number;
+}
