@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
+import { db, createEstebanSeedData } from "@workspace/db";
 import { charactersTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import {
@@ -12,6 +12,38 @@ import {
 
 const router: IRouter = Router();
 
+const seededUsers = new Set<string>();
+
+async function ensureSeedCharacter(userId: string) {
+  if (seededUsers.has(userId)) return;
+
+  const estebanExists = await db
+    .select({ id: charactersTable.id })
+    .from(charactersTable)
+    .where(
+      and(
+        eq(charactersTable.userId, userId),
+        eq(charactersTable.name, "Esteban")
+      )
+    )
+    .limit(1);
+
+  if (estebanExists.length === 0) {
+    try {
+      const seedData = createEstebanSeedData(userId);
+      await db.insert(charactersTable).values(seedData);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes("duplicate")) {
+        // concurrent request already inserted Esteban
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  seededUsers.add(userId);
+}
+
 router.get("/characters", async (req, res) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -19,6 +51,8 @@ router.get("/characters", async (req, res) => {
   }
 
   try {
+    await ensureSeedCharacter(req.user.id);
+
     const characters = await db
       .select({
         id: charactersTable.id,
