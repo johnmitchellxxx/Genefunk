@@ -6,10 +6,11 @@ import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } fro
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
-import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye } from 'lucide-react';
+import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
+import { LevelUpPanel } from '@/components/LevelUpPanel';
 import type { WeaponRef } from '@/lib/weaponData';
 import type {
   Character,
@@ -32,7 +33,7 @@ export default function CharacterSheet() {
   const id = parseInt(params?.id || "0");
   const [, setLocation] = useLocation();
   
-  const { data: character, isLoading } = useAppCharacter(id);
+  const { data: rawCharacter, isLoading } = useAppCharacter(id);
   const updateMutation = useAppUpdateCharacter();
   const deleteMutation = useAppDeleteCharacter();
   const { rollDice } = useDice();
@@ -45,9 +46,10 @@ export default function CharacterSheet() {
   const genomeOptions = (rulebookGenomes || []).map(g => ({ value: g.name, label: `${g.name} (${g.category})` }));
 
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
+  const [levelUpOpen, setLevelUpOpen] = useState(false);
 
   const handleUpdate = (field: string, value: unknown) => {
-    if (!character) return;
+    if (!rawCharacter) return;
     updateMutation.mutate({ id, data: { [field]: value } });
   };
 
@@ -63,9 +65,26 @@ export default function CharacterSheet() {
     return <div className="min-h-screen flex items-center justify-center scanlines"><Activity className="w-12 h-12 text-primary animate-spin" /></div>;
   }
 
-  if (!character) {
+  if (!rawCharacter) {
     return <div className="p-8 text-center text-destructive">Operative not found.</div>;
   }
+
+  const character = {
+    ...rawCharacter,
+    savingThrowProficiencies: rawCharacter.savingThrowProficiencies ?? [],
+    skillProficiencies: rawCharacter.skillProficiencies ?? [],
+    skillExpertise: rawCharacter.skillExpertise ?? [],
+    conditions: rawCharacter.conditions ?? [],
+    attacks: rawCharacter.attacks ?? [],
+    hacks: rawCharacter.hacks ?? [],
+    equipment: rawCharacter.equipment ?? [],
+    features: rawCharacter.features ?? [],
+    geneMods: rawCharacter.geneMods ?? [],
+    cybernetics: rawCharacter.cybernetics ?? [],
+    senses: rawCharacter.senses ?? { acuteOlfaction: false, darkvision: false, macrovision: false, microvision: false, penetration: false, spectrum: false },
+    hackSlots: rawCharacter.hackSlots ?? {},
+    currency: rawCharacter.currency ?? { satoshi: 0 },
+  };
 
   const profBonus = getProficiencyBonus(character.level);
 
@@ -99,6 +118,9 @@ export default function CharacterSheet() {
           </div>
           <div className="flex items-center gap-2">
             {updateMutation.isPending && <Activity className="w-4 h-4 text-accent animate-spin" />}
+            <CyberButton variant="secondary" className="px-3 py-1 text-xs" onClick={() => setLevelUpOpen(true)}>
+              <ArrowUp className="w-3 h-3 inline mr-1" /> Level Up
+            </CyberButton>
             <CyberButton variant="destructive" className="px-2 py-1 text-xs" onClick={handleDelete}><Trash2 className="w-3 h-3"/></CyberButton>
           </div>
         </div>
@@ -400,6 +422,20 @@ export default function CharacterSheet() {
           </div>
         </div>
       </div>
+
+      {levelUpOpen && (
+        <LevelUpPanel
+          character={character}
+          onConfirm={(data) => {
+            updateMutation.mutate(
+              { id, data },
+              { onSuccess: () => setLevelUpOpen(false) }
+            );
+          }}
+          onClose={() => setLevelUpOpen(false)}
+          isPending={updateMutation.isPending}
+        />
+      )}
     </div>
   );
 }

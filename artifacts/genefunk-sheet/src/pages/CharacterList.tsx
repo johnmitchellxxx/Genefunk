@@ -1,19 +1,47 @@
-import React from 'react';
-import { useAppCharacters, useAppCreateCharacter } from '@/hooks/use-api';
-import { Link } from 'wouter';
+import React, { useState } from 'react';
+import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter } from '@/hooks/use-api';
+import { Link, useLocation } from 'wouter';
 import { CyberCard, CyberButton } from '@/components/CyberUI';
 import { Plus, User, Activity, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { CharacterWizard } from '@/components/CharacterWizard';
 
 export default function CharacterList() {
   const { data: characters, isLoading } = useAppCharacters();
   const createMutation = useAppCreateCharacter();
+  const updateMutation = useAppUpdateCharacter();
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
-  const handleCreate = () => {
-    const name = prompt("Enter operative designation (Name):");
-    if (name) {
-      createMutation.mutate({ data: { name } });
-    }
+  const [wizardError, setWizardError] = useState<string | null>(null);
+
+  const handleWizardComplete = (data: Record<string, unknown>) => {
+    const { name, ...rest } = data;
+    setWizardError(null);
+    createMutation.mutate(
+      { data: { name: name as string } },
+      {
+        onSuccess: (created: { id: number }) => {
+          updateMutation.mutate(
+            { id: created.id, data: rest },
+            {
+              onSuccess: () => {
+                setWizardOpen(false);
+                setLocation(`/characters/${created.id}`);
+              },
+              onError: () => {
+                setWizardError('Failed to apply character data. The character was created but may need manual editing.');
+                setWizardOpen(false);
+                setLocation(`/characters/${created.id}`);
+              },
+            }
+          );
+        },
+        onError: () => {
+          setWizardError('Failed to create character. Please try again.');
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -29,10 +57,17 @@ export default function CharacterList() {
             <h1 className="text-4xl font-bold text-foreground tracking-widest uppercase">Operative Roster</h1>
             <p className="text-primary font-mono mt-2">Active database connection established.</p>
           </div>
-          <CyberButton onClick={handleCreate} disabled={createMutation.isPending}>
+          <CyberButton onClick={() => setWizardOpen(true)} disabled={createMutation.isPending}>
             {createMutation.isPending ? "Constructing..." : <><Plus className="inline mr-2 w-4 h-4"/> New Operative</>}
           </CyberButton>
         </div>
+
+        {wizardError && (
+          <div className="mb-6 p-4 border border-destructive bg-destructive/10 text-destructive text-sm font-mono clip-edges">
+            {wizardError}
+            <button onClick={() => setWizardError(null)} className="ml-4 underline hover:text-destructive/80">Dismiss</button>
+          </div>
+        )}
 
         {(!characters || characters.length === 0) ? (
           <div className="text-center py-24 text-muted-foreground border border-dashed border-border clip-edges bg-background/50">
@@ -64,6 +99,14 @@ export default function CharacterList() {
           </div>
         )}
       </div>
+
+      {wizardOpen && (
+        <CharacterWizard
+          onClose={() => setWizardOpen(false)}
+          onComplete={handleWizardComplete}
+          isPending={createMutation.isPending || updateMutation.isPending}
+        />
+      )}
     </div>
   );
 }

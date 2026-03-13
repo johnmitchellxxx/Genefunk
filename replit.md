@@ -57,6 +57,8 @@ artifacts-monorepo/
 - **Mini tab panel** (bottom-right) — Actions, Spells, Inventory, Gene Mods, Cybernetics, Features, Bio
 - **Death saves & conditions** — interactive tracker with clickable circles and condition badges
 - **Weapon Picker** — searchable modal with all 68 GeneFunk 2090 weapons pre-loaded (melee, firearms, premium, explosives) from the official rulebook; selecting a weapon auto-fills damage, type, range, and properties
+- **Character Creation Wizard** — multi-step full-screen wizard (Genome → Class → Background → Ability Scores → Skill Picks → Review) replacing the old text prompt; auto-applies all proficiencies, features, senses, and ability bonuses from static GeneFunk 2090 rulebook data
+- **Level Up Flow** — slide-out panel on the character sheet showing features gained at the next level; supports ASI (+2 or +1/+1) at appropriate class levels; enforces level cap of 20
 - **Debounced auto-save** to backend
 - **Animated dice roller** with toast notifications
 - **Rulebook reference dropdowns** — Class, Genome, and Background fields use dropdowns populated from the database, with a "Custom" option for homebrew entries
