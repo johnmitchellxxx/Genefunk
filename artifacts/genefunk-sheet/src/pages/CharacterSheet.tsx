@@ -383,11 +383,11 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
     } else {
       const entry: AttackEntry = {
         id: Math.random().toString(),
-        name: 'Custom Weapon',
-        attackBonus: '+0',
-        damage: '1d6',
-        damageType: 'Piercing',
-        range: 'Melee',
+        name: '',
+        attackBonus: '',
+        damage: '',
+        damageType: '',
+        range: '',
         notes: '',
       };
       onUpdate('attacks', [...character.attacks, entry]);

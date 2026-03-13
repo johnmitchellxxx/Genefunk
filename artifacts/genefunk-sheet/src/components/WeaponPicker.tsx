@@ -35,7 +35,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
   const [search, setSearch] = useState('');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [hoveredWeapon, setHoveredWeapon] = useState<WeaponRef | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -144,8 +143,6 @@ export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
                       <button
                         key={w.name}
                         onClick={() => onSelect(w)}
-                        onMouseEnter={() => setHoveredWeapon(w)}
-                        onMouseLeave={() => setHoveredWeapon(null)}
                         className="w-full text-left px-4 py-1.5 border-b border-border/10 hover:bg-primary/10 transition-colors group flex items-start gap-3"
                       >
                         <div className="flex-1 min-w-0">
@@ -157,8 +154,8 @@ export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
                               <span className="text-[9px] px-1 py-0 bg-accent/20 text-accent font-mono uppercase shrink-0">★</span>
                             )}
                           </div>
-                          {hoveredWeapon === w && w.properties && (
-                            <div className="text-[10px] text-muted-foreground font-mono mt-0.5 leading-tight">
+                          {w.properties && (
+                            <div className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 leading-tight truncate">
                               {w.properties}
                             </div>
                           )}
