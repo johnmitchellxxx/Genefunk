@@ -6,7 +6,7 @@ import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } fro
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
-import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp } from 'lucide-react';
+import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Dices } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
@@ -24,7 +24,7 @@ import type {
   CharacterSenses,
 } from '@workspace/api-client-react';
 
-type MiniTab = 'actions' | 'hacks' | 'inventory' | 'genemods' | 'cybernetics' | 'features' | 'bio' | 'dice';
+type MiniTab = 'actions' | 'hacks' | 'inventory' | 'genemods' | 'cybernetics' | 'features' | 'bio';
 
 type UpdateFn = <K extends keyof Character>(field: K, value: Character[K]) => void;
 
@@ -47,6 +47,7 @@ export default function CharacterSheet() {
 
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
   const [levelUpOpen, setLevelUpOpen] = useState(false);
+  const [diceOpen, setDiceOpen] = useState(false);
 
   const handleUpdate = (field: string, value: unknown) => {
     if (!rawCharacter) return;
@@ -89,7 +90,7 @@ export default function CharacterSheet() {
   const profBonus = getProficiencyBonus(character.level);
 
   return (
-    <div className="min-h-screen bg-background scanlines pb-4">
+    <div className="min-h-screen bg-background scanlines pb-4 pr-10">
       {/* Header Bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-2 shadow-lg shadow-black/50">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
@@ -392,7 +393,6 @@ export default function CharacterSheet() {
                   { key: 'cybernetics' as MiniTab, label: 'Cybernetics' },
                   { key: 'features' as MiniTab, label: 'Features' },
                   { key: 'bio' as MiniTab, label: 'Bio' },
-                  { key: 'dice' as MiniTab, label: 'Dice' },
                 ]).map(tab => (
                   <button
                     key={tab.key}
@@ -416,7 +416,6 @@ export default function CharacterSheet() {
                 {miniTab === 'cybernetics' && <CyberneticsPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'features' && <FeaturesPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'bio' && <BioPanel character={character} onUpdate={handleUpdate} backgroundOptions={backgroundOptions} />}
-                {miniTab === 'dice' && <DiceRoller />}
               </div>
             </CyberCard>
           </div>
@@ -436,6 +435,49 @@ export default function CharacterSheet() {
           isPending={updateMutation.isPending}
         />
       )}
+
+      {/* Dice Roller Side Panel */}
+      <div
+        className={`fixed right-0 top-0 h-screen w-72 z-50 bg-card/95 backdrop-blur border-l border-primary/40 flex flex-col transition-transform duration-300 ease-in-out ${
+          diceOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        style={{ boxShadow: diceOpen ? '-4px 0 24px rgba(0,255,255,0.08)' : 'none' }}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-primary/30 bg-primary/5 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Dices className="w-4 h-4 text-primary" />
+            <span className="font-mono text-xs text-primary tracking-[0.2em] uppercase">Dice Roller</span>
+          </div>
+          <button
+            onClick={() => setDiceOpen(false)}
+            className="text-muted-foreground hover:text-primary transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <DiceRoller />
+        </div>
+      </div>
+
+      {/* Dice Tab Handle — always visible on right edge */}
+      <button
+        onClick={() => setDiceOpen(prev => !prev)}
+        className={`fixed right-0 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center gap-2 w-10 py-6 cursor-pointer border-l border-primary/40 transition-all duration-300 ${
+          diceOpen
+            ? 'bg-primary/20 text-primary -translate-x-72'
+            : 'bg-card/95 text-muted-foreground hover:bg-primary/10 hover:text-primary'
+        }`}
+        title="Toggle Dice Roller"
+      >
+        <Dices className="w-4 h-4" />
+        <span
+          className="font-mono text-[9px] uppercase tracking-[0.15em] leading-none"
+          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+        >
+          Dice
+        </span>
+      </button>
     </div>
   );
 }

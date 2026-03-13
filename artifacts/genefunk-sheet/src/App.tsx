@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,7 +15,6 @@ const queryClient = new QueryClient();
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { data: auth, isLoading } = useAppAuth();
-  const [, setLocation] = useLocation();
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -24,8 +23,7 @@ function PrivateRoute({ component: Component, ...rest }: any) {
   );
 
   if (!auth?.isAuthenticated) {
-    setLocation('/');
-    return null;
+    return <Redirect to="/" />;
   }
 
   return <Component {...rest} />;
