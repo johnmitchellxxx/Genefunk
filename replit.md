@@ -50,8 +50,9 @@ artifacts-monorepo/
 - **Cyberpunk dark theme** with neon cyan/green/purple accents
 - **Rollable dice** — click any stat/skill to roll d20 + modifier
 - **Auto-calculated values** — proficiency bonus, skill modifiers, saving throws
-- **D&D Beyond-inspired flow** — tabbed layout (Overview, Combat, Abilities, Spells, Equipment, Bio)
-- **GeneFunk-specific sections** — Gene Mods and Cybernetics tabs
+- **D&D Beyond single-screen layout** — all core info visible at once: horizontal ability scores, combat stats strip, three-column body (Saves+Proficiencies | Skills | Conditions+mini-tabs)
+- **Mini tab panel** (bottom-right) — Actions, Spells, Inventory, Gene Mods, Cybernetics, Features, Bio
+- **Death saves & conditions** — interactive tracker with clickable circles and condition badges
 - **Debounced auto-save** to backend
 - **Animated dice roller** with toast notifications
 

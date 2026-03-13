@@ -38,7 +38,7 @@ export const SKILLS = [
   { key: 'persuasion', label: 'Persuasion', ability: 'charisma' },
   { key: 'religion', label: 'Religion', ability: 'intelligence' },
   { key: 'sleightOfHand', label: 'Sleight of Hand', ability: 'dexterity' },
-  { key: 'stealth', label: 'Sleight', ability: 'dexterity' },
+  { key: 'stealth', label: 'Stealth', ability: 'dexterity' },
   { key: 'survival', label: 'Survival', ability: 'wisdom' },
   // GeneFunk Specific Skills
   { key: 'hacking', label: 'Hacking', ability: 'intelligence' },
