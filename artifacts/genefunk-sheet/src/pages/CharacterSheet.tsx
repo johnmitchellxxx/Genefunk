@@ -8,9 +8,20 @@ import { SkillList } from '@/components/SkillList';
 import { ABILITIES, getModifier, formatModifier, getProficiencyBonus } from '@/lib/rules';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
-import type { Character } from '@workspace/api-client-react';
+import type {
+  Character,
+  AttackEntry,
+  SpellEntry,
+  EquipmentEntry,
+  FeatureEntry,
+  GeneModEntry,
+  CyberneticEntry,
+  CharacterSpellSlots,
+} from '@workspace/api-client-react';
 
 type MiniTab = 'actions' | 'spells' | 'inventory' | 'genemods' | 'cybernetics' | 'features' | 'bio';
+
+type UpdateFn = <K extends keyof Character>(field: K, value: Character[K]) => void;
 
 export default function CharacterSheet() {
   const [, params] = useRoute('/characters/:id');
@@ -24,7 +35,7 @@ export default function CharacterSheet() {
   
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
 
-  const handleUpdate = (field: string, value: any) => {
+  const handleUpdate = (field: string, value: unknown) => {
     if (!character) return;
     updateMutation.mutate({ id, data: { [field]: value } });
   };
@@ -85,68 +96,64 @@ export default function CharacterSheet() {
             <StatBox 
               key={stat.key} 
               label={stat.label} 
-              score={character[stat.key as keyof typeof character] as number}
+              score={character[stat.key as keyof Character] as number}
               onUpdate={(val) => handleUpdate(stat.key, val)}
             />
           ))}
-          <div className="flex gap-2 ml-auto items-stretch">
-            <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[60px]">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Prof</div>
-              <div className="text-xl font-bold text-primary">+{profBonus}</div>
-            </div>
-            <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[60px]">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Speed</div>
-              <EditableField value={character.speed} type="number" onSave={v => handleUpdate('speed', v)} className="text-xl font-bold text-foreground text-center" />
-            </div>
-            <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[60px]">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Insp</div>
-              <div 
-                className="text-xl font-bold text-accent cursor-pointer"
-                onClick={() => handleUpdate('inspiration', !character.inspiration)}
-              >
-                {character.inspiration ? '★' : '☆'}
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Combat Stats Row: AC | Initiative | HP */}
-        <div className="flex gap-3 items-stretch flex-wrap">
-          <div className="bg-card border border-border clip-edges px-4 py-2 flex items-center gap-3">
-            <Shield className="text-primary w-5 h-5" />
+        {/* Stats Strip: Prof | Speed | Inspiration | AC | Init | HP — all in one row */}
+        <div className="flex gap-2 items-stretch flex-wrap">
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[56px]">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Prof</div>
+            <div className="text-lg font-bold text-primary">+{profBonus}</div>
+          </div>
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[56px]">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Speed</div>
+            <EditableField value={character.speed} type="number" onSave={v => handleUpdate('speed', v)} className="text-lg font-bold text-foreground text-center" />
+          </div>
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[56px]">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Insp</div>
+            <div 
+              className="text-lg font-bold text-accent cursor-pointer"
+              onClick={() => handleUpdate('inspiration', !character.inspiration)}
+            >
+              {character.inspiration ? '★' : '☆'}
+            </div>
+          </div>
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex items-center gap-2">
+            <Shield className="text-primary w-4 h-4" />
             <div className="text-center">
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">AC</div>
-              <EditableField value={character.armorClass} type="number" onSave={v => handleUpdate('armorClass', v)} className="text-2xl font-bold text-primary text-center" />
+              <EditableField value={character.armorClass} type="number" onSave={v => handleUpdate('armorClass', v)} className="text-lg font-bold text-primary text-center" />
             </div>
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2 flex items-center gap-3">
-            <Zap className="text-accent w-5 h-5" />
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex items-center gap-2">
+            <Zap className="text-accent w-4 h-4" />
             <div className="text-center">
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Init</div>
-              <EditableField value={character.initiative} type="number" onSave={v => handleUpdate('initiative', v)} className="text-2xl font-bold text-accent text-center" />
+              <EditableField value={character.initiative} type="number" onSave={v => handleUpdate('initiative', v)} className="text-lg font-bold text-accent text-center" />
             </div>
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2 flex-1 flex items-center gap-4 min-w-[300px]">
-            <Heart className="text-destructive w-5 h-5 shrink-0" />
-            <div className="flex items-center gap-3 flex-1">
-              <div className="flex items-center gap-2">
-                <button onClick={() => handleUpdate('currentHitPoints', Math.max(0, character.currentHitPoints - 1))} className="w-7 h-7 bg-destructive/20 text-destructive rounded text-sm hover:bg-destructive hover:text-white transition-colors flex items-center justify-center font-bold">-</button>
-                <div className="text-center">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">HP</div>
-                  <EditableField value={character.currentHitPoints} type="number" onSave={v => handleUpdate('currentHitPoints', v)} className="text-2xl font-bold text-foreground text-center" />
-                </div>
-                <button onClick={() => handleUpdate('currentHitPoints', Math.min(character.maxHitPoints, character.currentHitPoints + 1))} className="w-7 h-7 bg-primary/20 text-primary rounded text-sm hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center font-bold">+</button>
-              </div>
-              <span className="text-muted-foreground text-xl">/</span>
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex-1 flex items-center gap-3 min-w-[280px]">
+            <Heart className="text-destructive w-4 h-4 shrink-0" />
+            <div className="flex items-center gap-2">
+              <button onClick={() => handleUpdate('currentHitPoints', Math.max(0, character.currentHitPoints - 1))} className="w-6 h-6 bg-destructive/20 text-destructive rounded text-sm hover:bg-destructive hover:text-white transition-colors flex items-center justify-center font-bold">-</button>
               <div className="text-center">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Max</div>
-                <EditableField value={character.maxHitPoints} type="number" onSave={v => handleUpdate('maxHitPoints', v)} className="text-xl font-bold text-muted-foreground text-center" />
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">HP</div>
+                <EditableField value={character.currentHitPoints} type="number" onSave={v => handleUpdate('currentHitPoints', v)} className="text-lg font-bold text-foreground text-center" />
               </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Temp</div>
-                <EditableField value={character.tempHitPoints || 0} type="number" onSave={v => handleUpdate('tempHitPoints', v)} className="text-lg font-bold text-accent text-center w-10" />
-              </div>
+              <button onClick={() => handleUpdate('currentHitPoints', Math.min(character.maxHitPoints, character.currentHitPoints + 1))} className="w-6 h-6 bg-primary/20 text-primary rounded text-sm hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center font-bold">+</button>
+            </div>
+            <span className="text-muted-foreground text-lg">/</span>
+            <div className="text-center">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Max</div>
+              <EditableField value={character.maxHitPoints} type="number" onSave={v => handleUpdate('maxHitPoints', v)} className="text-lg font-bold text-muted-foreground text-center" />
+            </div>
+            <div className="w-px h-6 bg-border" />
+            <div className="text-center">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Temp</div>
+              <EditableField value={character.temporaryHitPoints} type="number" onSave={v => handleUpdate('temporaryHitPoints', v)} className="text-sm font-bold text-accent text-center w-8" />
             </div>
           </div>
         </div>
@@ -155,13 +162,12 @@ export default function CharacterSheet() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
           {/* Left Column: Saves + Passives + Proficiencies */}
           <div className="lg:col-span-3 space-y-3">
-            {/* Saving Throws */}
             <CyberCard className="p-3">
               <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-2 border-b border-border/50 pb-1">Saving Throws</div>
               <div className="space-y-0.5 font-mono text-xs">
                 {ABILITIES.map(stat => {
                   const isProf = character.savingThrowProficiencies.includes(stat.key);
-                  const mod = getModifier(character[stat.key as keyof typeof character] as number);
+                  const mod = getModifier(character[stat.key as keyof Character] as number);
                   const total = mod + (isProf ? profBonus : 0);
                   return (
                     <div key={stat.key} className="flex items-center gap-2 py-0.5 hover:bg-primary/5 px-1 -mx-1 rounded group">
@@ -189,16 +195,15 @@ export default function CharacterSheet() {
               </div>
             </CyberCard>
 
-            {/* Passive Scores */}
             <CyberCard className="p-3">
               <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-2 border-b border-border/50 pb-1">Passive Scores</div>
               <div className="space-y-1 font-mono text-xs">
                 {[
-                  { label: 'Perception', skill: 'perception', ability: 'wisdom' },
-                  { label: 'Investigation', skill: 'investigation', ability: 'intelligence' },
-                  { label: 'Insight', skill: 'insight', ability: 'wisdom' },
+                  { label: 'Perception', skill: 'perception', ability: 'wisdom' as const },
+                  { label: 'Investigation', skill: 'investigation', ability: 'intelligence' as const },
+                  { label: 'Insight', skill: 'insight', ability: 'wisdom' as const },
                 ].map(p => {
-                  const abilityMod = getModifier(character[p.ability as keyof Character] as number);
+                  const abilityMod = getModifier(character[p.ability]);
                   const isProf = character.skillProficiencies.includes(p.skill);
                   const isExpert = character.skillExpertise.includes(p.skill);
                   let bonus = abilityMod;
@@ -214,20 +219,19 @@ export default function CharacterSheet() {
               </div>
             </CyberCard>
 
-            {/* Proficiencies */}
             <CyberCard className="p-3">
               <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-2 border-b border-border/50 pb-1">Proficiencies</div>
               <div className="space-y-2 text-xs font-mono">
-                {[
-                  { label: 'Armor', field: 'armorProficiencies' },
-                  { label: 'Weapons', field: 'weaponProficiencies' },
-                  { label: 'Tools', field: 'toolProficiencies' },
-                  { label: 'Languages', field: 'languages' },
-                ].map(p => (
+                {([
+                  { label: 'Armor', field: 'armorProficiencies' as const },
+                  { label: 'Weapons', field: 'weaponProficiencies' as const },
+                  { label: 'Tools', field: 'toolProficiencies' as const },
+                  { label: 'Languages', field: 'languages' as const },
+                ] as const).map(p => (
                   <div key={p.field}>
                     <div className="text-muted-foreground/70 uppercase text-[10px] tracking-widest">{p.label}</div>
                     <EditableField 
-                      value={(character as any)[p.field] || 'None'} 
+                      value={character[p.field] || 'None'} 
                       onSave={v => handleUpdate(p.field, v)} 
                       className="text-xs text-foreground/80"
                     />
@@ -247,7 +251,6 @@ export default function CharacterSheet() {
 
           {/* Right Column: Conditions + Death Saves + Mini Tabs */}
           <div className="lg:col-span-5 space-y-3">
-            {/* Death Saves + Conditions Row */}
             <div className="grid grid-cols-2 gap-3">
               <CyberCard className="p-3">
                 <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-2 border-b border-border/50 pb-1">Death Saves</div>
@@ -259,11 +262,11 @@ export default function CharacterSheet() {
                         <div
                           key={`s${i}`}
                           className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-colors ${
-                            (character.deathSaveSuccesses || 0) > i
+                            character.deathSaveSuccesses > i
                               ? 'bg-primary border-primary'
                               : 'border-muted-foreground/40 hover:border-primary'
                           }`}
-                          onClick={() => handleUpdate('deathSaveSuccesses', (character.deathSaveSuccesses || 0) > i ? i : i + 1)}
+                          onClick={() => handleUpdate('deathSaveSuccesses', character.deathSaveSuccesses > i ? i : i + 1)}
                         />
                       ))}
                     </div>
@@ -275,11 +278,11 @@ export default function CharacterSheet() {
                         <div
                           key={`f${i}`}
                           className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-colors ${
-                            (character.deathSaveFailures || 0) > i
+                            character.deathSaveFailures > i
                               ? 'bg-destructive border-destructive'
                               : 'border-muted-foreground/40 hover:border-destructive'
                           }`}
-                          onClick={() => handleUpdate('deathSaveFailures', (character.deathSaveFailures || 0) > i ? i : i + 1)}
+                          onClick={() => handleUpdate('deathSaveFailures', character.deathSaveFailures > i ? i : i + 1)}
                         />
                       ))}
                     </div>
@@ -290,17 +293,17 @@ export default function CharacterSheet() {
               <CyberCard className="p-3">
                 <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-2 border-b border-border/50 pb-1">Conditions</div>
                 <div className="flex flex-wrap gap-1">
-                  {(character.conditions || []).map((cond: string, i: number) => (
+                  {character.conditions.map((cond, i) => (
                     <span key={i} className="bg-destructive/20 text-destructive text-[10px] px-1.5 py-0.5 font-mono uppercase flex items-center gap-1 clip-edges">
                       {cond}
-                      <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => handleUpdate('conditions', (character.conditions || []).filter((_: string, j: number) => j !== i))} />
+                      <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => handleUpdate('conditions', character.conditions.filter((_, j) => j !== i))} />
                     </span>
                   ))}
                   <button
                     className="text-[10px] text-muted-foreground hover:text-primary border border-dashed border-muted-foreground/30 hover:border-primary px-1.5 py-0.5 font-mono uppercase transition-colors"
                     onClick={() => {
                       const cond = prompt("Condition:");
-                      if (cond) handleUpdate('conditions', [...(character.conditions || []), cond]);
+                      if (cond) handleUpdate('conditions', [...character.conditions, cond]);
                     }}
                   >+ Add</button>
                 </div>
@@ -311,14 +314,14 @@ export default function CharacterSheet() {
             <CyberCard className="p-0 flex flex-col" style={{ minHeight: '420px' }}>
               <div className="flex flex-wrap border-b border-border bg-card/50">
                 {([
-                  { key: 'actions', label: 'Actions' },
-                  { key: 'spells', label: 'Spells' },
-                  { key: 'inventory', label: 'Inventory' },
-                  { key: 'genemods', label: 'Gene Mods' },
-                  { key: 'cybernetics', label: 'Cybernetics' },
-                  { key: 'features', label: 'Features' },
-                  { key: 'bio', label: 'Bio' },
-                ] as { key: MiniTab; label: string }[]).map(tab => (
+                  { key: 'actions' as MiniTab, label: 'Actions' },
+                  { key: 'spells' as MiniTab, label: 'Spells' },
+                  { key: 'inventory' as MiniTab, label: 'Inventory' },
+                  { key: 'genemods' as MiniTab, label: 'Gene Mods' },
+                  { key: 'cybernetics' as MiniTab, label: 'Cybernetics' },
+                  { key: 'features' as MiniTab, label: 'Features' },
+                  { key: 'bio' as MiniTab, label: 'Bio' },
+                ]).map(tab => (
                   <button
                     key={tab.key}
                     onClick={() => setMiniTab(tab.key)}
@@ -350,7 +353,16 @@ export default function CharacterSheet() {
   );
 }
 
-function ActionsPanel({ character, onUpdate }: { character: Character; onUpdate: (f: string, v: any) => void }) {
+interface PanelProps {
+  character: Character;
+  onUpdate: (field: string, value: unknown) => void;
+}
+
+function updateArrayEntry<T extends { id: string }>(arr: T[], id: string, patch: Partial<T>): T[] {
+  return arr.map(item => item.id === id ? { ...item, ...patch } : item);
+}
+
+function ActionsPanel({ character, onUpdate }: PanelProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -358,7 +370,8 @@ function ActionsPanel({ character, onUpdate }: { character: Character; onUpdate:
         <CyberButton variant="ghost" className="text-[10px] px-2 py-1" onClick={() => {
           const name = prompt("Weapon Name:");
           if (name) {
-            onUpdate('attacks', [...character.attacks, { id: Math.random().toString(), name, attackBonus: '+0', damage: '1d6', damageType: 'Piercing', range: '5ft', notes: '' }]);
+            const entry: AttackEntry = { id: Math.random().toString(), name, attackBonus: '+0', damage: '1d6', damageType: 'Piercing', range: '5ft', notes: '' };
+            onUpdate('attacks', [...character.attacks, entry]);
           }
         }}><Crosshair className="w-3 h-3 mr-1" /> Add</CyberButton>
       </div>
@@ -379,11 +392,21 @@ function ActionsPanel({ character, onUpdate }: { character: Character; onUpdate:
               <tr><td colSpan={6} className="p-3 text-center text-muted-foreground italic">No weapons equipped</td></tr>
             ) : character.attacks.map((atk) => (
               <tr key={atk.id} className="border-b border-border/30 hover:bg-white/5 transition-colors">
-                <td className="p-1.5 text-foreground font-bold">{atk.name}</td>
-                <td className="p-1.5 text-primary">{atk.attackBonus}</td>
-                <td className="p-1.5 text-secondary">{atk.damage}</td>
-                <td className="p-1.5 text-muted-foreground">{atk.damageType}</td>
-                <td className="p-1.5 text-muted-foreground">{atk.range}</td>
+                <td className="p-1.5">
+                  <EditableField value={atk.name} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { name: String(v) }))} className="text-foreground font-bold text-xs" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={atk.attackBonus || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { attackBonus: String(v) }))} className="text-primary text-xs" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={atk.damage || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { damage: String(v) }))} className="text-secondary text-xs" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={atk.damageType || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { damageType: String(v) }))} className="text-muted-foreground text-xs" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={atk.range || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { range: String(v) }))} className="text-muted-foreground text-xs" />
+                </td>
                 <td className="p-1.5 text-right">
                   <button onClick={() => onUpdate('attacks', character.attacks.filter(a => a.id !== atk.id))} className="text-destructive hover:underline text-[10px]">DEL</button>
                 </td>
@@ -396,50 +419,83 @@ function ActionsPanel({ character, onUpdate }: { character: Character; onUpdate:
   );
 }
 
-function SpellsPanel({ character, onUpdate }: { character: Character; onUpdate: (f: string, v: any) => void }) {
+function SpellsPanel({ character, onUpdate }: PanelProps) {
+  const slots = character.spellSlots;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-primary uppercase tracking-widest font-mono font-bold">Spellcasting</span>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1 text-center font-mono text-xs">
-        {[1,2,3,4,5,6,7,8,9].map(lvl => (
-          <div key={lvl} className="border border-border/50 p-1.5 clip-edges bg-background/30">
-            <div className="text-[10px] text-muted-foreground">Lvl {lvl}</div>
-            <EditableField
-              value={(character.spellSlots as any)?.[`level${lvl}`] || 0}
-              type="number"
-              onSave={v => onUpdate('spellSlots', { ...(character.spellSlots || {}), [`level${lvl}`]: v })}
-              className="text-sm font-bold text-primary text-center"
-            />
-          </div>
-        ))}
+        {[1,2,3,4,5,6,7,8,9].map(lvl => {
+          const key = `level${lvl}`;
+          const slot = slots[key] || { total: 0, used: 0 };
+          return (
+            <div key={lvl} className="border border-border/50 p-1 clip-edges bg-background/30">
+              <div className="text-[10px] text-muted-foreground">Lvl {lvl}</div>
+              <div className="text-sm font-bold text-primary">{slot.used}/{slot.total}</div>
+              <div className="flex gap-0.5 justify-center mt-0.5">
+                <button
+                  className="text-[9px] text-muted-foreground hover:text-primary px-0.5"
+                  onClick={() => {
+                    const newSlots: CharacterSpellSlots = { ...slots, [key]: { ...slot, total: Math.max(0, slot.total + 1) } };
+                    onUpdate('spellSlots', newSlots);
+                  }}
+                  title="Increase total slots"
+                >T+</button>
+                <button
+                  className="text-[9px] text-muted-foreground hover:text-accent px-0.5"
+                  onClick={() => {
+                    const newSlots: CharacterSpellSlots = { ...slots, [key]: { ...slot, used: Math.min(slot.total, slot.used + 1) } };
+                    onUpdate('spellSlots', newSlots);
+                  }}
+                  title="Use a slot"
+                >U+</button>
+                <button
+                  className="text-[9px] text-muted-foreground hover:text-secondary px-0.5"
+                  onClick={() => {
+                    const newSlots: CharacterSpellSlots = { ...slots, [key]: { ...slot, used: 0 } };
+                    onUpdate('spellSlots', newSlots);
+                  }}
+                  title="Reset used slots"
+                >R</button>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <div className="space-y-1">
-        {(character.spells || []).map((spell: any, i: number) => (
-          <div key={i} className="flex items-center justify-between py-1 px-1 hover:bg-white/5 text-xs font-mono border-b border-border/20">
-            <span className="text-foreground">{spell.name || spell}</span>
-            <button onClick={() => onUpdate('spells', (character.spells || []).filter((_: any, j: number) => j !== i))} className="text-destructive text-[10px] hover:underline">DEL</button>
+        {character.spells.map((spell) => (
+          <div key={spell.id} className="flex items-center justify-between py-1 px-1 hover:bg-white/5 text-xs font-mono border-b border-border/20">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-muted-foreground text-[10px] w-4 shrink-0">L{spell.level}</span>
+              <EditableField value={spell.name} onSave={v => onUpdate('spells', updateArrayEntry(character.spells, spell.id, { name: String(v) }))} className="text-foreground text-xs" />
+            </div>
+            <button onClick={() => onUpdate('spells', character.spells.filter(s => s.id !== spell.id))} className="text-destructive text-[10px] hover:underline ml-1 shrink-0">DEL</button>
           </div>
         ))}
         <CyberButton variant="ghost" className="w-full text-[10px] mt-2 py-1" onClick={() => {
           const name = prompt("Spell Name:");
-          if (name) onUpdate('spells', [...(character.spells || []), { name, level: 0 }]);
+          if (name) {
+            const entry: SpellEntry = { id: Math.random().toString(), name, level: 0 };
+            onUpdate('spells', [...character.spells, entry]);
+          }
         }}>+ Add Spell</CyberButton>
       </div>
     </div>
   );
 }
 
-function InventoryPanel({ character, onUpdate }: { character: Character; onUpdate: (f: string, v: any) => void }) {
+function InventoryPanel({ character, onUpdate }: PanelProps) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-5 gap-1 text-center font-mono text-xs">
-        {['cp', 'sp', 'ep', 'gp', 'pp'].map((curr) => (
+        {(['cp', 'sp', 'ep', 'gp', 'pp'] as const).map((curr) => (
           <div key={curr} className="border border-border/50 p-1.5 bg-background/30 clip-edges">
             <div className="text-[10px] text-muted-foreground uppercase">{curr}</div>
             <EditableField 
-              value={character.currency[curr as keyof typeof character.currency]} 
+              value={character.currency[curr]} 
               type="number"
               onSave={(v) => onUpdate('currency', { ...character.currency, [curr]: v })}
               className="text-sm font-bold text-accent text-center" 
@@ -449,27 +505,32 @@ function InventoryPanel({ character, onUpdate }: { character: Character; onUpdat
       </div>
       <div className="space-y-0.5 font-mono text-xs">
         {character.equipment.map(eq => (
-          <div key={eq.id} className="flex items-center justify-between py-1 px-1 border-b border-border/20 hover:bg-white/5">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground w-6 text-right">{eq.quantity}x</span>
-              <span className="text-foreground">{eq.name}</span>
+          <div key={eq.id} className="flex items-center justify-between py-1 px-1 border-b border-border/20 hover:bg-white/5 gap-1">
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <EditableField value={eq.quantity} type="number" onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { quantity: Number(v) }))} className="text-muted-foreground w-6 text-right text-xs" />
+              <span className="text-muted-foreground">x</span>
+              <EditableField value={eq.name} onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { name: String(v) }))} className="text-foreground text-xs" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">{eq.weight ? `${eq.weight}lb` : ''}</span>
-              <button onClick={() => onUpdate('equipment', character.equipment.filter(e => e.id !== eq.id))} className="text-destructive text-[10px] hover:underline">DEL</button>
+            <div className="flex items-center gap-1 shrink-0">
+              <EditableField value={eq.weight || 0} type="number" onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { weight: Number(v) }))} className="text-muted-foreground text-xs w-6" />
+              <span className="text-muted-foreground text-[10px]">lb</span>
+              <button onClick={() => onUpdate('equipment', character.equipment.filter(e => e.id !== eq.id))} className="text-destructive text-[10px] hover:underline ml-1">DEL</button>
             </div>
           </div>
         ))}
         <CyberButton variant="ghost" className="w-full text-[10px] mt-2 py-1" onClick={() => {
           const name = prompt("Item name:");
-          if (name) onUpdate('equipment', [...character.equipment, { id: Math.random().toString(), name, quantity: 1, weight: 0, equipped: false, description: '' }]);
+          if (name) {
+            const entry: EquipmentEntry = { id: Math.random().toString(), name, quantity: 1, weight: 0, equipped: false };
+            onUpdate('equipment', [...character.equipment, entry]);
+          }
         }}>+ Add Item</CyberButton>
       </div>
     </div>
   );
 }
 
-function GeneModsPanel({ character, onUpdate }: { character: Character; onUpdate: (f: string, v: any) => void }) {
+function GeneModsPanel({ character, onUpdate }: PanelProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -478,24 +539,27 @@ function GeneModsPanel({ character, onUpdate }: { character: Character; onUpdate
       {character.geneMods.map(mod => (
         <div key={mod.id} className="p-2 border border-border bg-background/30 clip-edges">
           <div className="flex justify-between items-start">
-            <h4 className="font-bold text-primary text-xs">{mod.name}</h4>
+            <EditableField value={mod.name} onSave={v => onUpdate('geneMods', updateArrayEntry(character.geneMods, mod.id, { name: String(v) }))} className="font-bold text-primary text-xs" />
             <div className="flex items-center gap-1">
               <CyberBadge variant={mod.active ? 'primary' : 'outline'} className="text-[9px]">{mod.type || 'Passive'}</CyberBadge>
               <button onClick={() => onUpdate('geneMods', character.geneMods.filter(m => m.id !== mod.id))} className="text-destructive text-[10px] hover:underline ml-1">DEL</button>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1 font-mono leading-relaxed">{mod.description}</p>
+          <EditableField value={mod.description || ''} onSave={v => onUpdate('geneMods', updateArrayEntry(character.geneMods, mod.id, { description: String(v) }))} className="text-[11px] text-muted-foreground mt-1 font-mono" />
         </div>
       ))}
       <CyberButton variant="ghost" className="w-full text-[10px] py-1" onClick={() => {
         const name = prompt("Gene Mod Name:");
-        if (name) onUpdate('geneMods', [...character.geneMods, { id: Math.random().toString(), name, type: 'Passive', description: 'Describe the effect...', active: true }]);
+        if (name) {
+          const entry: GeneModEntry = { id: Math.random().toString(), name, type: 'Passive', description: 'Describe the effect...', active: true };
+          onUpdate('geneMods', [...character.geneMods, entry]);
+        }
       }}>+ Install Splicing</CyberButton>
     </div>
   );
 }
 
-function CyberneticsPanel({ character, onUpdate }: { character: Character; onUpdate: (f: string, v: any) => void }) {
+function CyberneticsPanel({ character, onUpdate }: PanelProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -504,63 +568,65 @@ function CyberneticsPanel({ character, onUpdate }: { character: Character; onUpd
       {character.cybernetics.map(cyber => (
         <div key={cyber.id} className="p-2 border border-border bg-background/30 clip-edges border-l-2 border-l-secondary">
           <div className="flex justify-between items-start">
-            <h4 className="font-bold text-secondary text-xs">{cyber.name}</h4>
+            <EditableField value={cyber.name} onSave={v => onUpdate('cybernetics', updateArrayEntry(character.cybernetics, cyber.id, { name: String(v) }))} className="font-bold text-secondary text-xs" />
             <div className="flex items-center gap-1">
               <span className="text-[9px] text-muted-foreground uppercase font-mono">{cyber.slot}</span>
               <button onClick={() => onUpdate('cybernetics', character.cybernetics.filter(c => c.id !== cyber.id))} className="text-destructive text-[10px] hover:underline ml-1">DEL</button>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1 font-mono leading-relaxed">{cyber.description}</p>
+          <EditableField value={cyber.description || ''} onSave={v => onUpdate('cybernetics', updateArrayEntry(character.cybernetics, cyber.id, { description: String(v) }))} className="text-[11px] text-muted-foreground mt-1 font-mono" />
         </div>
       ))}
       <CyberButton variant="ghost" className="w-full text-[10px] py-1" onClick={() => {
         const name = prompt("Cybernetic Implant Name:");
-        if (name) onUpdate('cybernetics', [...character.cybernetics, { id: Math.random().toString(), name, slot: 'Neural', description: 'Describe the hardware...', active: true }]);
+        if (name) {
+          const entry: CyberneticEntry = { id: Math.random().toString(), name, slot: 'Neural', description: 'Describe the hardware...', active: true };
+          onUpdate('cybernetics', [...character.cybernetics, entry]);
+        }
       }}>+ Graft Hardware</CyberButton>
     </div>
   );
 }
 
-function FeaturesPanel({ character, onUpdate }: { character: Character; onUpdate: (f: string, v: any) => void }) {
+function FeaturesPanel({ character, onUpdate }: PanelProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs text-primary uppercase tracking-widest font-mono font-bold">Features & Traits</span>
       </div>
-      {(character.features || []).map((feat: any, i: number) => (
-        <div key={i} className="p-2 border border-border bg-background/30 clip-edges">
+      {character.features.map((feat) => (
+        <div key={feat.id} className="p-2 border border-border bg-background/30 clip-edges">
           <div className="flex justify-between items-start">
-            <h4 className="font-bold text-primary text-xs">{feat.name || feat}</h4>
-            <button onClick={() => onUpdate('features', (character.features || []).filter((_: any, j: number) => j !== i))} className="text-destructive text-[10px] hover:underline">DEL</button>
+            <EditableField value={feat.name} onSave={v => onUpdate('features', updateArrayEntry(character.features, feat.id, { name: String(v) }))} className="font-bold text-primary text-xs" />
+            <button onClick={() => onUpdate('features', character.features.filter(f => f.id !== feat.id))} className="text-destructive text-[10px] hover:underline">DEL</button>
           </div>
-          {feat.description && <p className="text-[11px] text-muted-foreground mt-1 font-mono leading-relaxed">{feat.description}</p>}
+          <EditableField value={feat.description || ''} onSave={v => onUpdate('features', updateArrayEntry(character.features, feat.id, { description: String(v) }))} className="text-[11px] text-muted-foreground mt-1 font-mono" />
         </div>
       ))}
       <CyberButton variant="ghost" className="w-full text-[10px] py-1" onClick={() => {
         const name = prompt("Feature Name:");
-        if (name) onUpdate('features', [...(character.features || []), { name, description: '' }]);
+        if (name) {
+          const entry: FeatureEntry = { id: Math.random().toString(), name, description: '' };
+          onUpdate('features', [...character.features, entry]);
+        }
       }}>+ Add Feature</CyberButton>
     </div>
   );
 }
 
-function BioPanel({ character, onUpdate }: { character: Character; onUpdate: (f: string, v: any) => void }) {
+function BioPanel({ character, onUpdate }: PanelProps) {
   return (
     <div className="space-y-3">
-      {[
-        { label: 'Alignment', field: 'alignment' },
-        { label: 'Background', field: 'background' },
-        { label: 'Personality Traits', field: 'personalityTraits' },
-        { label: 'Ideals', field: 'ideals' },
-        { label: 'Bonds', field: 'bonds' },
-        { label: 'Flaws', field: 'flaws' },
-        { label: 'Appearance', field: 'appearance' },
-        { label: 'Backstory', field: 'backstory' },
-      ].map(item => (
+      {([
+        { label: 'Alignment', field: 'alignment' as const },
+        { label: 'Background', field: 'background' as const },
+        { label: 'Backstory', field: 'backstory' as const },
+        { label: 'Notes', field: 'notes' as const },
+      ]).map(item => (
         <div key={item.field}>
           <div className="text-[10px] text-primary uppercase tracking-widest font-mono font-bold mb-0.5">{item.label}</div>
           <EditableField
-            value={(character as any)[item.field] || ''}
+            value={character[item.field] || ''}
             onSave={v => onUpdate(item.field, v)}
             className="text-xs font-mono text-foreground/80 border-b border-border/30 w-full block py-0.5"
           />
