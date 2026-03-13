@@ -9,6 +9,7 @@ import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, ge
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
+import { DiceRoller } from '@/components/DiceRoller';
 import type { WeaponRef } from '@/lib/weaponData';
 import type {
   Character,
@@ -22,7 +23,7 @@ import type {
   CharacterSenses,
 } from '@workspace/api-client-react';
 
-type MiniTab = 'actions' | 'hacks' | 'inventory' | 'genemods' | 'cybernetics' | 'features' | 'bio';
+type MiniTab = 'actions' | 'hacks' | 'inventory' | 'genemods' | 'cybernetics' | 'features' | 'bio' | 'dice';
 
 type UpdateFn = <K extends keyof Character>(field: K, value: Character[K]) => void;
 
@@ -369,6 +370,7 @@ export default function CharacterSheet() {
                   { key: 'cybernetics' as MiniTab, label: 'Cybernetics' },
                   { key: 'features' as MiniTab, label: 'Features' },
                   { key: 'bio' as MiniTab, label: 'Bio' },
+                  { key: 'dice' as MiniTab, label: 'Dice' },
                 ]).map(tab => (
                   <button
                     key={tab.key}
@@ -392,6 +394,7 @@ export default function CharacterSheet() {
                 {miniTab === 'cybernetics' && <CyberneticsPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'features' && <FeaturesPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'bio' && <BioPanel character={character} onUpdate={handleUpdate} backgroundOptions={backgroundOptions} />}
+                {miniTab === 'dice' && <DiceRoller />}
               </div>
             </CyberCard>
           </div>
