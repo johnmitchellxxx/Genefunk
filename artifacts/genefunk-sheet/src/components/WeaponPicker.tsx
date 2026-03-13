@@ -116,7 +116,7 @@ export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
             )}
           </div>
           <div className="flex items-center justify-between mt-1.5">
-            <span className="text-[10px] text-muted-foreground font-mono">{filtered.length} weapons</span>
+            <span className="text-xs text-muted-foreground font-mono">{filtered.length} weapons</span>
           </div>
         </div>
 
@@ -134,8 +134,8 @@ export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
                 >
                   {collapsed[cat] ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   {CATEGORY_ICONS[cat]}
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest">{cat}</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto font-mono">{weapons.length}</span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest">{cat}</span>
+                  <span className="text-xs text-muted-foreground ml-auto font-mono">{weapons.length}</span>
                 </button>
                 {!collapsed[cat] && (
                   <div>
@@ -151,16 +151,16 @@ export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
                               {w.name}
                             </span>
                             {w.tier === 'premium' && (
-                              <span className="text-[9px] px-1 py-0 bg-accent/20 text-accent font-mono uppercase shrink-0">★</span>
+                              <span className="text-xs px-1 py-0 bg-accent/20 text-accent font-mono uppercase shrink-0">★</span>
                             )}
                           </div>
                           {w.properties && (
-                            <div className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 leading-tight truncate">
+                            <div className="text-xs text-muted-foreground/70 font-mono mt-0.5 leading-tight truncate">
                               {w.properties}
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 shrink-0 text-[11px] font-mono">
+                        <div className="flex items-center gap-3 shrink-0 text-xs font-mono">
                           <span className="text-secondary font-bold w-[70px] text-right">{w.damage}</span>
                           <span className="text-muted-foreground w-[55px] text-right truncate" title={w.damageType}>
                             {w.damageType.length > 8 ? w.damageType.split('/')[0].slice(0, 5) + '…' : w.damageType}

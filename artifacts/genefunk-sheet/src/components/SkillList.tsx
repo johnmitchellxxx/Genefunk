@@ -40,7 +40,7 @@ export function SkillList({ character, onUpdate }: SkillListProps) {
   };
 
   return (
-    <div className="space-y-1 font-mono text-sm">
+    <div className="space-y-1.5 font-mono text-sm">
       {SKILLS.map(skill => {
         const isProficient = character.skillProficiencies.includes(skill.key);
         const isExpertise = character.skillExpertise.includes(skill.key);
@@ -66,7 +66,7 @@ export function SkillList({ character, onUpdate }: SkillListProps) {
             {/* Exp Check (Hidden unless hovered or has expertise) */}
             <div 
               className={cn(
-                "w-4 h-4 flex items-center justify-center text-[10px] border border-border cursor-pointer mr-3 transition-colors",
+                "w-4 h-4 flex items-center justify-center text-xs border border-border cursor-pointer mr-3 transition-colors",
                 isExpertise ? "text-secondary border-secondary" : "text-transparent border-transparent group-hover:border-border"
               )}
               onClick={() => toggleProficiency(skill.key, true)}
@@ -83,7 +83,7 @@ export function SkillList({ character, onUpdate }: SkillListProps) {
             </div>
 
             <div className="flex-1 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(skill.label, totalMod)}>
-              {skill.label} <span className="text-[10px] uppercase opacity-50 ml-1">({skill.ability.substring(0,3)})</span>
+              {skill.label} <span className="text-xs uppercase opacity-60 ml-1">({skill.ability.substring(0,3)})</span>
             </div>
           </div>
         );

@@ -6,7 +6,7 @@ export function CyberCard({ className, children, ...props }: React.HTMLAttribute
   return (
     <div 
       className={cn(
-        "bg-card/80 backdrop-blur-md border border-border clip-edges p-6 relative overflow-hidden", 
+        "bg-card/80 backdrop-blur-md border border-border clip-edges p-7 relative overflow-hidden", 
         "before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:pointer-events-none",
         className
       )} 
@@ -101,7 +101,7 @@ export function EditableField({
         className
       )}
     >
-      {label && <span className="text-xs text-muted-foreground block mb-1 uppercase tracking-widest">{label}</span>}
+      {label && <span className="text-sm text-muted-foreground block mb-1 uppercase tracking-widest">{label}</span>}
       <span className={cn("block truncate", !localValue && "text-muted-foreground italic")}>
         {localValue || "Empty..."}
       </span>
@@ -119,7 +119,7 @@ export function CyberBadge({ children, className, variant = 'primary' }: { child
   };
   
   return (
-    <span className={cn("px-2 py-0.5 text-xs font-bold uppercase tracking-wider clip-edges", variants[variant], className)}>
+    <span className={cn("px-2.5 py-1 text-xs font-bold uppercase tracking-wider clip-edges", variants[variant], className)}>
       {children}
     </span>
   );
@@ -127,8 +127,8 @@ export function CyberBadge({ children, className, variant = 'primary' }: { child
 
 export function SectionHeader({ title, children }: { title: string, children?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-4 border-b border-border/50 pb-2">
-      <h3 className="text-xl font-bold text-primary tracking-widest uppercase">{title}</h3>
+    <div className="flex items-center justify-between mb-5 border-b border-border/50 pb-3">
+      <h3 className="text-2xl font-bold text-primary tracking-widest uppercase">{title}</h3>
       {children}
     </div>
   );
