@@ -502,6 +502,11 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        weaponType:
+          type: ["string", "null"]
+          enum: ["melee", "ranged", null]
+        isFinesse:
+          type: ["boolean", "null"]
       required:
         - id
         - name

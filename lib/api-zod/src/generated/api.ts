@@ -125,6 +125,10 @@ export const GetCharacterResponse = zod.object({
       damageType: zod.string().nullish(),
       range: zod.string().nullish(),
       notes: zod.string().nullish(),
+      weaponType: zod
+        .union([zod.literal("melee"), zod.literal("ranged"), zod.literal(null)])
+        .nullish(),
+      isFinesse: zod.boolean().nullish(),
     }),
   ),
   hacks: zod.array(
@@ -265,6 +269,14 @@ export const UpdateCharacterBody = zod.object({
         damageType: zod.string().nullish(),
         range: zod.string().nullish(),
         notes: zod.string().nullish(),
+        weaponType: zod
+          .union([
+            zod.literal("melee"),
+            zod.literal("ranged"),
+            zod.literal(null),
+          ])
+          .nullish(),
+        isFinesse: zod.boolean().nullish(),
       }),
     )
     .optional(),
@@ -410,6 +422,10 @@ export const UpdateCharacterResponse = zod.object({
       damageType: zod.string().nullish(),
       range: zod.string().nullish(),
       notes: zod.string().nullish(),
+      weaponType: zod
+        .union([zod.literal("melee"), zod.literal("ranged"), zod.literal(null)])
+        .nullish(),
+      isFinesse: zod.boolean().nullish(),
     }),
   ),
   hacks: zod.array(

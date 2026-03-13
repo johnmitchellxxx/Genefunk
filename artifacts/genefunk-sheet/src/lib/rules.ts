@@ -44,6 +44,26 @@ export const SKILLS = [
   { key: 'survival', label: 'Survival', ability: 'wisdom' },
 ] as const;
 
+export function getAttackBonus(
+  weaponType: 'melee' | 'ranged',
+  isFinesse: boolean,
+  strength: number,
+  dexterity: number,
+  proficiencyBonus: number,
+): number {
+  const strMod = getModifier(strength);
+  const dexMod = getModifier(dexterity);
+  let abilityMod: number;
+  if (isFinesse) {
+    abilityMod = Math.max(strMod, dexMod);
+  } else if (weaponType === 'ranged') {
+    abilityMod = dexMod;
+  } else {
+    abilityMod = strMod;
+  }
+  return abilityMod + proficiencyBonus;
+}
+
 export const SENSES = [
   { key: 'acuteOlfaction', label: 'Acute Olfaction' },
   { key: 'darkvision', label: 'Darkvision' },

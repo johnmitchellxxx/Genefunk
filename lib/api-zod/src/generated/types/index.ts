@@ -7,6 +7,7 @@
  */
 
 export * from "./attackEntry";
+export * from "./attackEntryWeaponType";
 export * from "./authUser";
 export * from "./character";
 export * from "./characterCurrency";

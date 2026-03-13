@@ -5,6 +5,7 @@
  * GeneFunk Character Sheet API
  * OpenAPI spec version: 0.1.0
  */
+import type { AttackEntryWeaponType } from "./attackEntryWeaponType";
 
 export interface AttackEntry {
   id: string;
@@ -19,4 +20,8 @@ export interface AttackEntry {
   range?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  weaponType?: AttackEntryWeaponType;
+  /** @nullable */
+  isFinesse?: boolean | null;
 }

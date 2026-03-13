@@ -5,7 +5,7 @@ import { useDice } from '@/hooks/use-dice';
 import { CyberCard, EditableField, CyberButton, CyberBadge } from '@/components/CyberUI';
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
-import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus } from '@/lib/rules';
+import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
@@ -409,14 +409,16 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
   const handleWeaponSelect = (weapon: WeaponRef | null) => {
     setPickerOpen(false);
     if (weapon) {
+      const isFinesse = /finesse/i.test(weapon.properties);
       const entry: AttackEntry = {
         id: Math.random().toString(),
         name: weapon.name,
-        attackBonus: '+0',
         damage: weapon.damage,
         damageType: weapon.damageType,
         range: weapon.range,
         notes: weapon.properties ? `${weapon.cost} | ${weapon.properties}` : weapon.cost,
+        weaponType: weapon.type,
+        isFinesse,
       };
       onUpdate('attacks', [...character.attacks, entry]);
     } else {
@@ -431,6 +433,32 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
       };
       onUpdate('attacks', [...character.attacks, entry]);
     }
+  };
+
+  const profBonus = getProficiencyBonus(character.level);
+
+  const renderHitCell = (atk: AttackEntry) => {
+    if (atk.weaponType === 'melee' || atk.weaponType === 'ranged') {
+      const bonus = getAttackBonus(
+        atk.weaponType,
+        !!atk.isFinesse,
+        character.strength,
+        character.dexterity,
+        profBonus,
+      );
+      const statLabel = atk.isFinesse
+        ? (getModifier(character.dexterity) >= getModifier(character.strength) ? 'DEX' : 'STR')
+        : atk.weaponType === 'ranged' ? 'DEX' : 'STR';
+      return (
+        <span className="text-primary text-sm font-mono" title={`${statLabel} mod + Proficiency bonus`}>
+          {formatModifier(bonus)}
+          <span className="text-[10px] text-muted-foreground ml-1">{statLabel}</span>
+        </span>
+      );
+    }
+    return (
+      <EditableField value={atk.attackBonus || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { attackBonus: String(v) }))} className="text-primary text-sm font-mono" />
+    );
   };
 
   return (
@@ -463,7 +491,7 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
                   <EditableField value={atk.name} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { name: String(v) }))} className="text-foreground font-semibold text-sm" />
                 </td>
                 <td className="p-2">
-                  <EditableField value={atk.attackBonus || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { attackBonus: String(v) }))} className="text-primary text-sm font-mono" />
+                  {renderHitCell(atk)}
                 </td>
                 <td className="p-2">
                   <EditableField value={atk.damage || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { damage: String(v) }))} className="text-secondary text-sm font-mono" />

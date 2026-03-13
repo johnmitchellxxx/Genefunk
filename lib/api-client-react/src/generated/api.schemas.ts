@@ -65,6 +65,18 @@ export type CharacterCurrency = {
   satoshi: number;
 };
 
+/**
+ * @nullable
+ */
+export type AttackEntryWeaponType =
+  | (typeof AttackEntryWeaponType)[keyof typeof AttackEntryWeaponType]
+  | null;
+
+export const AttackEntryWeaponType = {
+  melee: "melee",
+  ranged: "ranged",
+} as const;
+
 export interface AttackEntry {
   id: string;
   name: string;
@@ -78,6 +90,10 @@ export interface AttackEntry {
   range?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  weaponType?: AttackEntryWeaponType;
+  /** @nullable */
+  isFinesse?: boolean | null;
 }
 
 export interface HackEntry {
