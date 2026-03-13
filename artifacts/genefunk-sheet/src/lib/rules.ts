@@ -22,26 +22,26 @@ export const ABILITIES = [
 ] as const;
 
 export const SKILLS = [
-  { key: 'athletics', label: 'Athletics', ability: 'strength' },
   { key: 'acrobatics', label: 'Acrobatics', ability: 'dexterity' },
-  { key: 'drive', label: 'Drive', ability: 'dexterity' },
-  { key: 'sleightOfHand', label: 'Sleight of Hand', ability: 'dexterity' },
-  { key: 'stealth', label: 'Stealth', ability: 'dexterity' },
+  { key: 'athletics', label: 'Athletics', ability: 'strength' },
   { key: 'bureaucracy', label: 'Bureaucracy', ability: 'intelligence' },
   { key: 'computers', label: 'Computers', ability: 'intelligence' },
+  { key: 'deception', label: 'Deception', ability: 'charisma' },
+  { key: 'drive', label: 'Drive', ability: 'dexterity' },
+  { key: 'insight', label: 'Insight', ability: 'wisdom' },
+  { key: 'intimidation', label: 'Intimidation', ability: 'charisma' },
   { key: 'investigation', label: 'Investigation', ability: 'intelligence' },
   { key: 'lifeScience', label: 'Life Science', ability: 'intelligence' },
   { key: 'mechanics', label: 'Mechanics', ability: 'intelligence' },
-  { key: 'physicalScience', label: 'Physical Science', ability: 'intelligence' },
-  { key: 'socialScience', label: 'Social Science', ability: 'intelligence' },
-  { key: 'streetwise', label: 'Streetwise', ability: 'intelligence' },
-  { key: 'insight', label: 'Insight', ability: 'wisdom' },
   { key: 'perception', label: 'Perception', ability: 'wisdom' },
-  { key: 'survival', label: 'Survival', ability: 'wisdom' },
-  { key: 'deception', label: 'Deception', ability: 'charisma' },
-  { key: 'intimidation', label: 'Intimidation', ability: 'charisma' },
   { key: 'performance', label: 'Performance', ability: 'charisma' },
   { key: 'persuasion', label: 'Persuasion', ability: 'charisma' },
+  { key: 'physicalScience', label: 'Physical Science', ability: 'intelligence' },
+  { key: 'sleightOfHand', label: 'Sleight of Hand', ability: 'dexterity' },
+  { key: 'socialScience', label: 'Social Science', ability: 'intelligence' },
+  { key: 'stealth', label: 'Stealth', ability: 'dexterity' },
+  { key: 'streetwise', label: 'Streetwise', ability: 'intelligence' },
+  { key: 'survival', label: 'Survival', ability: 'wisdom' },
 ] as const;
 
 export const SENSES = [
