@@ -85,7 +85,7 @@ export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       <div
         ref={modalRef}
-        className="relative w-[95vw] max-w-[700px] max-h-[80vh] bg-card border border-primary/60 clip-edges-lg flex flex-col"
+        className="relative w-[95vw] max-w-[700px] max-h-[80vh] bg-card border border-primary/60 rounded-sm flex flex-col overflow-hidden"
         style={{ boxShadow: '0 0 40px hsl(190 100% 50% / 0.15), 0 0 80px hsl(190 100% 50% / 0.05)' }}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/80">
@@ -130,7 +130,7 @@ export function WeaponPicker({ open, onClose, onSelect }: WeaponPickerProps) {
               <div key={cat}>
                 <button
                   onClick={() => toggleCat(cat)}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-left border-b border-border/30 hover:bg-white/5 transition-colors ${CATEGORY_COLORS[cat] || 'text-primary'}`}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-left border-b border-border/30 bg-card hover:bg-white/5 transition-colors sticky top-0 z-10 ${CATEGORY_COLORS[cat] || 'text-primary'}`}
                 >
                   {collapsed[cat] ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   {CATEGORY_ICONS[cat]}
