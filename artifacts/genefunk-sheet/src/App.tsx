@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,15 +13,21 @@ import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-// Auth Guard component
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { data: auth, isLoading } = useAppAuth();
+  const [, setLocation] = useLocation();
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-12 h-12 text-primary animate-spin" /></div>;
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-12 h-12 text-primary animate-spin" />
+    </div>
+  );
+
   if (!auth?.isAuthenticated) {
-    window.location.href = `/api/login?returnTo=${window.location.pathname}`;
+    setLocation('/');
     return null;
   }
+
   return <Component {...rest} />;
 }
 
