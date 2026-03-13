@@ -1,0 +1,69 @@
+import React from 'react';
+import { useAppCharacters, useAppCreateCharacter } from '@/hooks/use-api';
+import { Link } from 'wouter';
+import { CyberCard, CyberButton } from '@/components/CyberUI';
+import { Plus, User, Activity, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+
+export default function CharacterList() {
+  const { data: characters, isLoading } = useAppCharacters();
+  const createMutation = useAppCreateCharacter();
+
+  const handleCreate = () => {
+    const name = prompt("Enter operative designation (Name):");
+    if (name) {
+      createMutation.mutate({ data: { name } });
+    }
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-primary"><Activity className="animate-spin" /></div>;
+  }
+
+  return (
+    <div className="min-h-screen p-8 bg-background scanlines">
+      <div className="max-w-6xl mx-auto relative z-10">
+        
+        <div className="flex justify-between items-center mb-12 border-b border-border pb-6">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground tracking-widest uppercase">Operative Roster</h1>
+            <p className="text-primary font-mono mt-2">Active database connection established.</p>
+          </div>
+          <CyberButton onClick={handleCreate} disabled={createMutation.isPending}>
+            {createMutation.isPending ? "Constructing..." : <><Plus className="inline mr-2 w-4 h-4"/> New Operative</>}
+          </CyberButton>
+        </div>
+
+        {(!characters || characters.length === 0) ? (
+          <div className="text-center py-24 text-muted-foreground border border-dashed border-border clip-edges bg-background/50">
+            <User className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p className="text-xl font-mono">No operatives found in database.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {characters.map(char => (
+              <Link key={char.id} href={`/characters/${char.id}`} className="block group">
+                <CyberCard className="h-full hover:border-primary cursor-pointer transition-all duration-300 transform group-hover:-translate-y-1">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{char.name}</h2>
+                      <p className="text-muted-foreground text-sm font-mono mt-1">Level {char.level} {char.class || 'Unknown Class'}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/50 group-hover:bg-primary/20">
+                      <User className="text-primary" />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 pt-4 border-t border-border/50 flex items-center text-xs text-muted-foreground font-mono">
+                    <Calendar className="w-3 h-3 mr-2" />
+                    Last Updated: {format(new Date(char.updatedAt), 'MMM d, yyyy')}
+                  </div>
+                </CyberCard>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

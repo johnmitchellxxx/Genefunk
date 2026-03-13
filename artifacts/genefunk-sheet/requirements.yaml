@@ -1,0 +1,17 @@
+packages:
+  "framer-motion": "For highly polished cyberpunk animations, glitch effects, and dice rolls"
+  "clsx": "Utility for conditionally joining classNames"
+  "tailwind-merge": "Utility for merging tailwind classes without conflicts"
+
+images:
+  - path: "artifacts/genefunk-sheet/public/images/cyber-bg.png"
+    description: "Dark gritty cyberpunk city background, raining, neon cyan and magenta lights, subtle depth of field, atmospheric, no text"
+    aspect_ratio: "16:9"
+  - path: "artifacts/genefunk-sheet/public/images/avatar-placeholder.png"
+    description: "Silhouette of a futuristic cyberpunk character with glowing augmented eyes, dark background, minimal details, vector style"
+    aspect_ratio: "1:1"
+
+notes:
+  - "The app uses Replit Auth via /api/auth/user and /api/login?returnTo=/"
+  - "Generated React Query hooks are imported directly from @workspace/api-client-react"
+  - "Requires complete UI implementation for full D&D 5e / GeneFunk character sheet functionality"
