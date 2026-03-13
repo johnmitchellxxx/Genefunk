@@ -53,6 +53,7 @@ artifacts-monorepo/
 - **D&D Beyond single-screen layout** — all core info visible at once: horizontal ability scores, combat stats strip, three-column body (Saves+Proficiencies | Skills | Conditions+mini-tabs)
 - **Mini tab panel** (bottom-right) — Actions, Spells, Inventory, Gene Mods, Cybernetics, Features, Bio
 - **Death saves & conditions** — interactive tracker with clickable circles and condition badges
+- **Weapon Picker** — searchable modal with all 68 GeneFunk 2090 weapons pre-loaded (melee, firearms, premium, explosives) from the official rulebook; selecting a weapon auto-fills damage, type, range, and properties
 - **Debounced auto-save** to backend
 - **Animated dice roller** with toast notifications
 

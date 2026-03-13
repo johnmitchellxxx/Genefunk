@@ -8,6 +8,8 @@ import { SkillList } from '@/components/SkillList';
 import { ABILITIES, getModifier, formatModifier, getProficiencyBonus } from '@/lib/rules';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { WeaponPicker } from '@/components/WeaponPicker';
+import type { WeaponRef } from '@/lib/weaponData';
 import type {
   Character,
   AttackEntry,
@@ -363,17 +365,43 @@ function updateArrayEntry<T extends { id: string }>(arr: T[], id: string, patch:
 }
 
 function ActionsPanel({ character, onUpdate }: PanelProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleWeaponSelect = (weapon: WeaponRef | null) => {
+    setPickerOpen(false);
+    if (weapon) {
+      const entry: AttackEntry = {
+        id: Math.random().toString(),
+        name: weapon.name,
+        attackBonus: '+0',
+        damage: weapon.damage,
+        damageType: weapon.damageType,
+        range: weapon.range,
+        notes: weapon.properties ? `${weapon.cost} | ${weapon.properties}` : weapon.cost,
+      };
+      onUpdate('attacks', [...character.attacks, entry]);
+    } else {
+      const entry: AttackEntry = {
+        id: Math.random().toString(),
+        name: 'Custom Weapon',
+        attackBonus: '+0',
+        damage: '1d6',
+        damageType: 'Piercing',
+        range: 'Melee',
+        notes: '',
+      };
+      onUpdate('attacks', [...character.attacks, entry]);
+    }
+  };
+
   return (
     <div>
+      <WeaponPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={handleWeaponSelect} />
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-primary uppercase tracking-widest font-mono font-bold">Attacks & Actions</span>
-        <CyberButton variant="ghost" className="text-[10px] px-2 py-1" onClick={() => {
-          const name = prompt("Weapon Name:");
-          if (name) {
-            const entry: AttackEntry = { id: Math.random().toString(), name, attackBonus: '+0', damage: '1d6', damageType: 'Piercing', range: '5ft', notes: '' };
-            onUpdate('attacks', [...character.attacks, entry]);
-          }
-        }}><Crosshair className="w-3 h-3 mr-1" /> Add</CyberButton>
+        <CyberButton variant="ghost" className="text-[10px] px-2 py-1" onClick={() => setPickerOpen(true)}>
+          <Crosshair className="w-3 h-3 mr-1" /> Add
+        </CyberButton>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
