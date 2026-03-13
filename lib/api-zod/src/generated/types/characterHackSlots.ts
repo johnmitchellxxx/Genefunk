@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type UpdateCharacterBodySpellSlots = {
+export type CharacterHackSlots = {
   [key: string]: {
     total: number;
     used: number;

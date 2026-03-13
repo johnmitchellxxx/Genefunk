@@ -23,7 +23,7 @@ router.get("/characters", async (req, res) => {
       .select({
         id: charactersTable.id,
         name: charactersTable.name,
-        race: charactersTable.race,
+        genome: charactersTable.genome,
         class: charactersTable.class,
         level: charactersTable.level,
         updatedAt: charactersTable.updatedAt,

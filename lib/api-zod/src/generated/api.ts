@@ -40,7 +40,7 @@ export const GetCurrentAuthUserResponse = zod.object({
 export const GetCharactersResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
-  race: zod.string().nullish(),
+  genome: zod.string().nullish(),
   class: zod.string().nullish(),
   level: zod.number(),
   updatedAt: zod.date(),
@@ -65,7 +65,8 @@ export const GetCharacterResponse = zod.object({
   id: zod.number(),
   userId: zod.string(),
   name: zod.string(),
-  race: zod.string().nullish(),
+  genome: zod.string().nullish(),
+  cadre: zod.string().nullish(),
   class: zod.string().nullish(),
   subclass: zod.string().nullish(),
   background: zod.string().nullish(),
@@ -87,10 +88,12 @@ export const GetCharacterResponse = zod.object({
   intelligence: zod.number(),
   wisdom: zod.number(),
   charisma: zod.number(),
+  mosaicScore: zod.number(),
   maxHitPoints: zod.number(),
   currentHitPoints: zod.number(),
   temporaryHitPoints: zod.number(),
   armorClass: zod.number(),
+  damageReduction: zod.number(),
   speed: zod.number(),
   initiative: zod.number(),
   hitDice: zod.string().nullish(),
@@ -101,6 +104,14 @@ export const GetCharacterResponse = zod.object({
   savingThrowProficiencies: zod.array(zod.string()),
   skillProficiencies: zod.array(zod.string()),
   skillExpertise: zod.array(zod.string()),
+  senses: zod.object({
+    acuteOlfaction: zod.boolean(),
+    darkvision: zod.boolean(),
+    macrovision: zod.boolean(),
+    microvision: zod.boolean(),
+    penetration: zod.boolean(),
+    spectrum: zod.boolean(),
+  }),
   languages: zod.string().nullish(),
   toolProficiencies: zod.string().nullish(),
   armorProficiencies: zod.string().nullish(),
@@ -116,24 +127,20 @@ export const GetCharacterResponse = zod.object({
       notes: zod.string().nullish(),
     }),
   ),
-  spells: zod.array(
+  hacks: zod.array(
     zod.object({
       id: zod.string(),
       name: zod.string(),
       level: zod.number(),
-      school: zod.string().nullish(),
-      castingTime: zod.string().nullish(),
-      range: zod.string().nullish(),
-      components: zod.string().nullish(),
-      duration: zod.string().nullish(),
-      description: zod.string().nullish(),
-      prepared: zod.boolean(),
+      type: zod.string().nullish(),
+      launchTime: zod.string().nullish(),
+      effect: zod.string().nullish(),
     }),
   ),
-  spellcastingAbility: zod.string().nullish(),
-  spellSaveDC: zod.number().nullish(),
-  spellAttackBonus: zod.number().nullish(),
-  spellSlots: zod.record(
+  hackingAbility: zod.string().nullish(),
+  hackSaveDC: zod.number().nullish(),
+  hackAttackBonus: zod.number().nullish(),
+  hackSlots: zod.record(
     zod.string(),
     zod.object({
       total: zod.number(),
@@ -151,11 +158,7 @@ export const GetCharacterResponse = zod.object({
     }),
   ),
   currency: zod.object({
-    cp: zod.number(),
-    sp: zod.number(),
-    ep: zod.number(),
-    gp: zod.number(),
-    pp: zod.number(),
+    satoshi: zod.number(),
   }),
   features: zod.array(
     zod.object({
@@ -199,7 +202,8 @@ export const UpdateCharacterParams = zod.object({
 
 export const UpdateCharacterBody = zod.object({
   name: zod.string().optional(),
-  race: zod.string().nullish(),
+  genome: zod.string().nullish(),
+  cadre: zod.string().nullish(),
   class: zod.string().nullish(),
   subclass: zod.string().nullish(),
   background: zod.string().nullish(),
@@ -221,10 +225,12 @@ export const UpdateCharacterBody = zod.object({
   intelligence: zod.number().optional(),
   wisdom: zod.number().optional(),
   charisma: zod.number().optional(),
+  mosaicScore: zod.number().optional(),
   maxHitPoints: zod.number().optional(),
   currentHitPoints: zod.number().optional(),
   temporaryHitPoints: zod.number().optional(),
   armorClass: zod.number().optional(),
+  damageReduction: zod.number().optional(),
   speed: zod.number().optional(),
   initiative: zod.number().optional(),
   hitDice: zod.string().nullish(),
@@ -235,6 +241,16 @@ export const UpdateCharacterBody = zod.object({
   savingThrowProficiencies: zod.array(zod.string()).optional(),
   skillProficiencies: zod.array(zod.string()).optional(),
   skillExpertise: zod.array(zod.string()).optional(),
+  senses: zod
+    .object({
+      acuteOlfaction: zod.boolean(),
+      darkvision: zod.boolean(),
+      macrovision: zod.boolean(),
+      microvision: zod.boolean(),
+      penetration: zod.boolean(),
+      spectrum: zod.boolean(),
+    })
+    .optional(),
   languages: zod.string().nullish(),
   toolProficiencies: zod.string().nullish(),
   armorProficiencies: zod.string().nullish(),
@@ -252,26 +268,22 @@ export const UpdateCharacterBody = zod.object({
       }),
     )
     .optional(),
-  spells: zod
+  hacks: zod
     .array(
       zod.object({
         id: zod.string(),
         name: zod.string(),
         level: zod.number(),
-        school: zod.string().nullish(),
-        castingTime: zod.string().nullish(),
-        range: zod.string().nullish(),
-        components: zod.string().nullish(),
-        duration: zod.string().nullish(),
-        description: zod.string().nullish(),
-        prepared: zod.boolean(),
+        type: zod.string().nullish(),
+        launchTime: zod.string().nullish(),
+        effect: zod.string().nullish(),
       }),
     )
     .optional(),
-  spellcastingAbility: zod.string().nullish(),
-  spellSaveDC: zod.number().nullish(),
-  spellAttackBonus: zod.number().nullish(),
-  spellSlots: zod
+  hackingAbility: zod.string().nullish(),
+  hackSaveDC: zod.number().nullish(),
+  hackAttackBonus: zod.number().nullish(),
+  hackSlots: zod
     .record(
       zod.string(),
       zod.object({
@@ -294,11 +306,7 @@ export const UpdateCharacterBody = zod.object({
     .optional(),
   currency: zod
     .object({
-      cp: zod.number(),
-      sp: zod.number(),
-      ep: zod.number(),
-      gp: zod.number(),
-      pp: zod.number(),
+      satoshi: zod.number(),
     })
     .optional(),
   features: zod
@@ -342,7 +350,8 @@ export const UpdateCharacterResponse = zod.object({
   id: zod.number(),
   userId: zod.string(),
   name: zod.string(),
-  race: zod.string().nullish(),
+  genome: zod.string().nullish(),
+  cadre: zod.string().nullish(),
   class: zod.string().nullish(),
   subclass: zod.string().nullish(),
   background: zod.string().nullish(),
@@ -364,10 +373,12 @@ export const UpdateCharacterResponse = zod.object({
   intelligence: zod.number(),
   wisdom: zod.number(),
   charisma: zod.number(),
+  mosaicScore: zod.number(),
   maxHitPoints: zod.number(),
   currentHitPoints: zod.number(),
   temporaryHitPoints: zod.number(),
   armorClass: zod.number(),
+  damageReduction: zod.number(),
   speed: zod.number(),
   initiative: zod.number(),
   hitDice: zod.string().nullish(),
@@ -378,6 +389,14 @@ export const UpdateCharacterResponse = zod.object({
   savingThrowProficiencies: zod.array(zod.string()),
   skillProficiencies: zod.array(zod.string()),
   skillExpertise: zod.array(zod.string()),
+  senses: zod.object({
+    acuteOlfaction: zod.boolean(),
+    darkvision: zod.boolean(),
+    macrovision: zod.boolean(),
+    microvision: zod.boolean(),
+    penetration: zod.boolean(),
+    spectrum: zod.boolean(),
+  }),
   languages: zod.string().nullish(),
   toolProficiencies: zod.string().nullish(),
   armorProficiencies: zod.string().nullish(),
@@ -393,24 +412,20 @@ export const UpdateCharacterResponse = zod.object({
       notes: zod.string().nullish(),
     }),
   ),
-  spells: zod.array(
+  hacks: zod.array(
     zod.object({
       id: zod.string(),
       name: zod.string(),
       level: zod.number(),
-      school: zod.string().nullish(),
-      castingTime: zod.string().nullish(),
-      range: zod.string().nullish(),
-      components: zod.string().nullish(),
-      duration: zod.string().nullish(),
-      description: zod.string().nullish(),
-      prepared: zod.boolean(),
+      type: zod.string().nullish(),
+      launchTime: zod.string().nullish(),
+      effect: zod.string().nullish(),
     }),
   ),
-  spellcastingAbility: zod.string().nullish(),
-  spellSaveDC: zod.number().nullish(),
-  spellAttackBonus: zod.number().nullish(),
-  spellSlots: zod.record(
+  hackingAbility: zod.string().nullish(),
+  hackSaveDC: zod.number().nullish(),
+  hackAttackBonus: zod.number().nullish(),
+  hackSlots: zod.record(
     zod.string(),
     zod.object({
       total: zod.number(),
@@ -428,11 +443,7 @@ export const UpdateCharacterResponse = zod.object({
     }),
   ),
   currency: zod.object({
-    cp: zod.number(),
-    sp: zod.number(),
-    ep: zod.number(),
-    gp: zod.number(),
-    pp: zod.number(),
+    satoshi: zod.number(),
   }),
   features: zod.array(
     zod.object({

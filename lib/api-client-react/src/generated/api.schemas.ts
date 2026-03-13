@@ -38,14 +38,23 @@ export interface CharacterSummary {
   id: number;
   name: string;
   /** @nullable */
-  race?: string | null;
+  genome?: string | null;
   /** @nullable */
   class?: string | null;
   level: number;
   updatedAt: string;
 }
 
-export type CharacterSpellSlots = {
+export interface CharacterSenses {
+  acuteOlfaction: boolean;
+  darkvision: boolean;
+  macrovision: boolean;
+  microvision: boolean;
+  penetration: boolean;
+  spectrum: boolean;
+}
+
+export type CharacterHackSlots = {
   [key: string]: {
     total: number;
     used: number;
@@ -53,11 +62,7 @@ export type CharacterSpellSlots = {
 };
 
 export type CharacterCurrency = {
-  cp: number;
-  sp: number;
-  ep: number;
-  gp: number;
-  pp: number;
+  satoshi: number;
 };
 
 export interface AttackEntry {
@@ -75,23 +80,16 @@ export interface AttackEntry {
   notes?: string | null;
 }
 
-export interface SpellEntry {
+export interface HackEntry {
   id: string;
   name: string;
   level: number;
   /** @nullable */
-  school?: string | null;
+  type?: string | null;
   /** @nullable */
-  castingTime?: string | null;
+  launchTime?: string | null;
   /** @nullable */
-  range?: string | null;
-  /** @nullable */
-  components?: string | null;
-  /** @nullable */
-  duration?: string | null;
-  /** @nullable */
-  description?: string | null;
-  prepared: boolean;
+  effect?: string | null;
 }
 
 export interface EquipmentEntry {
@@ -139,7 +137,9 @@ export interface Character {
   userId: string;
   name: string;
   /** @nullable */
-  race?: string | null;
+  genome?: string | null;
+  /** @nullable */
+  cadre?: string | null;
   /** @nullable */
   class?: string | null;
   /** @nullable */
@@ -174,10 +174,12 @@ export interface Character {
   intelligence: number;
   wisdom: number;
   charisma: number;
+  mosaicScore: number;
   maxHitPoints: number;
   currentHitPoints: number;
   temporaryHitPoints: number;
   armorClass: number;
+  damageReduction: number;
   speed: number;
   initiative: number;
   /** @nullable */
@@ -190,6 +192,7 @@ export interface Character {
   savingThrowProficiencies: string[];
   skillProficiencies: string[];
   skillExpertise: string[];
+  senses: CharacterSenses;
   /** @nullable */
   languages?: string | null;
   /** @nullable */
@@ -199,14 +202,14 @@ export interface Character {
   /** @nullable */
   weaponProficiencies?: string | null;
   attacks: AttackEntry[];
-  spells: SpellEntry[];
+  hacks: HackEntry[];
   /** @nullable */
-  spellcastingAbility?: string | null;
+  hackingAbility?: string | null;
   /** @nullable */
-  spellSaveDC?: number | null;
+  hackSaveDC?: number | null;
   /** @nullable */
-  spellAttackBonus?: number | null;
-  spellSlots: CharacterSpellSlots;
+  hackAttackBonus?: number | null;
+  hackSlots: CharacterHackSlots;
   equipment: EquipmentEntry[];
   currency: CharacterCurrency;
   features: FeatureEntry[];
@@ -241,7 +244,7 @@ export interface CreateCharacterBody {
   name: string;
 }
 
-export type UpdateCharacterBodySpellSlots = {
+export type UpdateCharacterBodyHackSlots = {
   [key: string]: {
     total: number;
     used: number;
@@ -249,17 +252,15 @@ export type UpdateCharacterBodySpellSlots = {
 };
 
 export type UpdateCharacterBodyCurrency = {
-  cp: number;
-  sp: number;
-  ep: number;
-  gp: number;
-  pp: number;
+  satoshi: number;
 };
 
 export interface UpdateCharacterBody {
   name?: string;
   /** @nullable */
-  race?: string | null;
+  genome?: string | null;
+  /** @nullable */
+  cadre?: string | null;
   /** @nullable */
   class?: string | null;
   /** @nullable */
@@ -294,10 +295,12 @@ export interface UpdateCharacterBody {
   intelligence?: number;
   wisdom?: number;
   charisma?: number;
+  mosaicScore?: number;
   maxHitPoints?: number;
   currentHitPoints?: number;
   temporaryHitPoints?: number;
   armorClass?: number;
+  damageReduction?: number;
   speed?: number;
   initiative?: number;
   /** @nullable */
@@ -310,6 +313,7 @@ export interface UpdateCharacterBody {
   savingThrowProficiencies?: string[];
   skillProficiencies?: string[];
   skillExpertise?: string[];
+  senses?: CharacterSenses;
   /** @nullable */
   languages?: string | null;
   /** @nullable */
@@ -319,14 +323,14 @@ export interface UpdateCharacterBody {
   /** @nullable */
   weaponProficiencies?: string | null;
   attacks?: AttackEntry[];
-  spells?: SpellEntry[];
+  hacks?: HackEntry[];
   /** @nullable */
-  spellcastingAbility?: string | null;
+  hackingAbility?: string | null;
   /** @nullable */
-  spellSaveDC?: number | null;
+  hackSaveDC?: number | null;
   /** @nullable */
-  spellAttackBonus?: number | null;
-  spellSlots?: UpdateCharacterBodySpellSlots;
+  hackAttackBonus?: number | null;
+  hackSlots?: UpdateCharacterBodyHackSlots;
   equipment?: EquipmentEntry[];
   currency?: UpdateCharacterBodyCurrency;
   features?: FeatureEntry[];

@@ -7,19 +7,22 @@
  */
 import type { AttackEntry } from "./attackEntry";
 import type { CharacterCurrency } from "./characterCurrency";
-import type { CharacterSpellSlots } from "./characterSpellSlots";
+import type { CharacterHackSlots } from "./characterHackSlots";
+import type { CharacterSenses } from "./characterSenses";
 import type { CyberneticEntry } from "./cyberneticEntry";
 import type { EquipmentEntry } from "./equipmentEntry";
 import type { FeatureEntry } from "./featureEntry";
 import type { GeneModEntry } from "./geneModEntry";
-import type { SpellEntry } from "./spellEntry";
+import type { HackEntry } from "./hackEntry";
 
 export interface Character {
   id: number;
   userId: string;
   name: string;
   /** @nullable */
-  race?: string | null;
+  genome?: string | null;
+  /** @nullable */
+  cadre?: string | null;
   /** @nullable */
   class?: string | null;
   /** @nullable */
@@ -54,10 +57,12 @@ export interface Character {
   intelligence: number;
   wisdom: number;
   charisma: number;
+  mosaicScore: number;
   maxHitPoints: number;
   currentHitPoints: number;
   temporaryHitPoints: number;
   armorClass: number;
+  damageReduction: number;
   speed: number;
   initiative: number;
   /** @nullable */
@@ -70,6 +75,7 @@ export interface Character {
   savingThrowProficiencies: string[];
   skillProficiencies: string[];
   skillExpertise: string[];
+  senses: CharacterSenses;
   /** @nullable */
   languages?: string | null;
   /** @nullable */
@@ -79,14 +85,14 @@ export interface Character {
   /** @nullable */
   weaponProficiencies?: string | null;
   attacks: AttackEntry[];
-  spells: SpellEntry[];
+  hacks: HackEntry[];
   /** @nullable */
-  spellcastingAbility?: string | null;
+  hackingAbility?: string | null;
   /** @nullable */
-  spellSaveDC?: number | null;
+  hackSaveDC?: number | null;
   /** @nullable */
-  spellAttackBonus?: number | null;
-  spellSlots: CharacterSpellSlots;
+  hackAttackBonus?: number | null;
+  hackSlots: CharacterHackSlots;
   equipment: EquipmentEntry[];
   currency: CharacterCurrency;
   features: FeatureEntry[];

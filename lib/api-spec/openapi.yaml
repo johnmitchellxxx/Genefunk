@@ -241,7 +241,7 @@ components:
           type: integer
         name:
           type: string
-        race:
+        genome:
           type: ["string", "null"]
         class:
           type: ["string", "null"]
@@ -256,6 +256,29 @@ components:
         - level
         - updatedAt
 
+    CharacterSenses:
+      type: object
+      properties:
+        acuteOlfaction:
+          type: boolean
+        darkvision:
+          type: boolean
+        macrovision:
+          type: boolean
+        microvision:
+          type: boolean
+        penetration:
+          type: boolean
+        spectrum:
+          type: boolean
+      required:
+        - acuteOlfaction
+        - darkvision
+        - macrovision
+        - microvision
+        - penetration
+        - spectrum
+
     Character:
       type: object
       properties:
@@ -265,7 +288,9 @@ components:
           type: string
         name:
           type: string
-        race:
+        genome:
+          type: ["string", "null"]
+        cadre:
           type: ["string", "null"]
         class:
           type: ["string", "null"]
@@ -309,6 +334,8 @@ components:
           type: integer
         charisma:
           type: integer
+        mosaicScore:
+          type: integer
         maxHitPoints:
           type: integer
         currentHitPoints:
@@ -316,6 +343,8 @@ components:
         temporaryHitPoints:
           type: integer
         armorClass:
+          type: integer
+        damageReduction:
           type: integer
         speed:
           type: integer
@@ -343,6 +372,8 @@ components:
           type: array
           items:
             type: string
+        senses:
+          $ref: "#/components/schemas/CharacterSenses"
         languages:
           type: ["string", "null"]
         toolProficiencies:
@@ -355,17 +386,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AttackEntry"
-        spells:
+        hacks:
           type: array
           items:
-            $ref: "#/components/schemas/SpellEntry"
-        spellcastingAbility:
+            $ref: "#/components/schemas/HackEntry"
+        hackingAbility:
           type: ["string", "null"]
-        spellSaveDC:
+        hackSaveDC:
           type: ["integer", "null"]
-        spellAttackBonus:
+        hackAttackBonus:
           type: ["integer", "null"]
-        spellSlots:
+        hackSlots:
           type: object
           additionalProperties:
             type: object
@@ -384,22 +415,10 @@ components:
         currency:
           type: object
           properties:
-            cp:
-              type: integer
-            sp:
-              type: integer
-            ep:
-              type: integer
-            gp:
-              type: integer
-            pp:
+            satoshi:
               type: integer
           required:
-            - cp
-            - sp
-            - ep
-            - gp
-            - pp
+            - satoshi
         features:
           type: array
           items:
@@ -437,10 +456,12 @@ components:
         - intelligence
         - wisdom
         - charisma
+        - mosaicScore
         - maxHitPoints
         - currentHitPoints
         - temporaryHitPoints
         - armorClass
+        - damageReduction
         - speed
         - initiative
         - deathSaveSuccesses
@@ -451,9 +472,10 @@ components:
         - savingThrowProficiencies
         - skillProficiencies
         - skillExpertise
+        - senses
         - attacks
-        - spells
-        - spellSlots
+        - hacks
+        - hackSlots
         - equipment
         - currency
         - features
@@ -484,7 +506,7 @@ components:
         - id
         - name
 
-    SpellEntry:
+    HackEntry:
       type: object
       properties:
         id:
@@ -493,25 +515,16 @@ components:
           type: string
         level:
           type: integer
-        school:
+        type:
           type: ["string", "null"]
-        castingTime:
+        launchTime:
           type: ["string", "null"]
-        range:
+        effect:
           type: ["string", "null"]
-        components:
-          type: ["string", "null"]
-        duration:
-          type: ["string", "null"]
-        description:
-          type: ["string", "null"]
-        prepared:
-          type: boolean
       required:
         - id
         - name
         - level
-        - prepared
 
     EquipmentEntry:
       type: object
@@ -633,7 +646,9 @@ components:
       properties:
         name:
           type: string
-        race:
+        genome:
+          type: ["string", "null"]
+        cadre:
           type: ["string", "null"]
         class:
           type: ["string", "null"]
@@ -677,6 +692,8 @@ components:
           type: integer
         charisma:
           type: integer
+        mosaicScore:
+          type: integer
         maxHitPoints:
           type: integer
         currentHitPoints:
@@ -684,6 +701,8 @@ components:
         temporaryHitPoints:
           type: integer
         armorClass:
+          type: integer
+        damageReduction:
           type: integer
         speed:
           type: integer
@@ -711,6 +730,8 @@ components:
           type: array
           items:
             type: string
+        senses:
+          $ref: "#/components/schemas/CharacterSenses"
         languages:
           type: ["string", "null"]
         toolProficiencies:
@@ -723,17 +744,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AttackEntry"
-        spells:
+        hacks:
           type: array
           items:
-            $ref: "#/components/schemas/SpellEntry"
-        spellcastingAbility:
+            $ref: "#/components/schemas/HackEntry"
+        hackingAbility:
           type: ["string", "null"]
-        spellSaveDC:
+        hackSaveDC:
           type: ["integer", "null"]
-        spellAttackBonus:
+        hackAttackBonus:
           type: ["integer", "null"]
-        spellSlots:
+        hackSlots:
           type: object
           additionalProperties:
             type: object
@@ -752,22 +773,10 @@ components:
         currency:
           type: object
           properties:
-            cp:
-              type: integer
-            sp:
-              type: integer
-            ep:
-              type: integer
-            gp:
-              type: integer
-            pp:
+            satoshi:
               type: integer
           required:
-            - cp
-            - sp
-            - ep
-            - gp
-            - pp
+            - satoshi
         features:
           type: array
           items:

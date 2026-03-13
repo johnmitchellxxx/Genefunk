@@ -5,23 +5,24 @@ import { useDice } from '@/hooks/use-dice';
 import { CyberCard, EditableField, CyberButton, CyberBadge } from '@/components/CyberUI';
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
-import { ABILITIES, getModifier, formatModifier, getProficiencyBonus } from '@/lib/rules';
-import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X } from 'lucide-react';
+import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus } from '@/lib/rules';
+import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import type { WeaponRef } from '@/lib/weaponData';
 import type {
   Character,
   AttackEntry,
-  SpellEntry,
+  HackEntry,
   EquipmentEntry,
   FeatureEntry,
   GeneModEntry,
   CyberneticEntry,
-  CharacterSpellSlots,
+  CharacterHackSlots,
+  CharacterSenses,
 } from '@workspace/api-client-react';
 
-type MiniTab = 'actions' | 'spells' | 'inventory' | 'genemods' | 'cybernetics' | 'features' | 'bio';
+type MiniTab = 'actions' | 'hacks' | 'inventory' | 'genemods' | 'cybernetics' | 'features' | 'bio';
 
 type UpdateFn = <K extends keyof Character>(field: K, value: Character[K]) => void;
 
@@ -80,7 +81,11 @@ export default function CharacterSheet() {
                 Lvl <EditableField value={character.level} type="number" onSave={(v) => handleUpdate('level', v)} className="w-6 inline-block" /> 
                 <EditableField value={character.class || ''} onSave={(v) => handleUpdate('class', v)} className="inline-block min-w-[60px]" />
                 <span className="text-muted-foreground">|</span>
-                <EditableField value={character.race || ''} onSave={(v) => handleUpdate('race', v)} className="inline-block text-muted-foreground min-w-[60px]" />
+                <span className="text-[10px] text-muted-foreground uppercase">Genome:</span>
+                <EditableField value={character.genome || ''} onSave={(v) => handleUpdate('genome', v)} className="inline-block text-muted-foreground min-w-[60px]" />
+                <span className="text-muted-foreground">|</span>
+                <span className="text-[10px] text-muted-foreground uppercase">Cadre:</span>
+                <EditableField value={character.cadre || ''} onSave={(v) => handleUpdate('cadre', v)} className="inline-block text-muted-foreground min-w-[60px]" />
               </div>
             </div>
           </div>
@@ -104,11 +109,15 @@ export default function CharacterSheet() {
           ))}
         </div>
 
-        {/* Stats Strip: Prof | Speed | Inspiration | AC | Init | HP — all in one row */}
+        {/* Stats Strip */}
         <div className="flex gap-2 items-stretch flex-wrap">
           <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[56px]">
             <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Prof</div>
             <div className="text-lg font-bold text-primary">+{profBonus}</div>
+          </div>
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[56px]">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">MOSAIC</div>
+            <EditableField value={character.mosaicScore} type="number" onSave={v => handleUpdate('mosaicScore', v)} className="text-lg font-bold text-accent text-center" />
           </div>
           <div className="bg-card border border-border clip-edges px-3 py-1.5 flex flex-col items-center justify-center min-w-[56px]">
             <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Speed</div>
@@ -120,7 +129,7 @@ export default function CharacterSheet() {
               className="text-lg font-bold text-accent cursor-pointer"
               onClick={() => handleUpdate('inspiration', !character.inspiration)}
             >
-              {character.inspiration ? '★' : '☆'}
+              {character.inspiration ? '\u2605' : '\u2606'}
             </div>
           </div>
           <div className="bg-card border border-border clip-edges px-3 py-1.5 flex items-center gap-2">
@@ -128,6 +137,13 @@ export default function CharacterSheet() {
             <div className="text-center">
               <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">AC</div>
               <EditableField value={character.armorClass} type="number" onSave={v => handleUpdate('armorClass', v)} className="text-lg font-bold text-primary text-center" />
+            </div>
+          </div>
+          <div className="bg-card border border-border clip-edges px-3 py-1.5 flex items-center gap-2">
+            <Shield className="text-secondary w-4 h-4" />
+            <div className="text-center">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">DR</div>
+              <EditableField value={character.damageReduction} type="number" onSave={v => handleUpdate('damageReduction', v)} className="text-lg font-bold text-secondary text-center" />
             </div>
           </div>
           <div className="bg-card border border-border clip-edges px-3 py-1.5 flex items-center gap-2">
@@ -162,7 +178,7 @@ export default function CharacterSheet() {
 
         {/* Three-Column Body */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-          {/* Left Column: Saves + Passives + Proficiencies */}
+          {/* Left Column: Saves + Senses + Passives + Proficiencies */}
           <div className="lg:col-span-3 space-y-3">
             <CyberCard className="p-3">
               <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-2 border-b border-border/50 pb-1">Saving Throws</div>
@@ -191,6 +207,29 @@ export default function CharacterSheet() {
                       <span className="text-muted-foreground uppercase group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(`${stat.label} Save`, total)}>
                         {stat.label}
                       </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CyberCard>
+
+            <CyberCard className="p-3">
+              <div className="text-xs text-primary uppercase tracking-widest font-mono font-bold mb-2 border-b border-border/50 pb-1 flex items-center gap-1">
+                <Eye className="w-3 h-3" /> Senses
+              </div>
+              <div className="space-y-1 font-mono text-xs">
+                {SENSES.map(sense => {
+                  const senses = character.senses || { acuteOlfaction: false, darkvision: false, macrovision: false, microvision: false, penetration: false, spectrum: false };
+                  const isActive = senses[sense.key as keyof CharacterSenses];
+                  return (
+                    <div key={sense.key} className="flex items-center gap-2 py-0.5 hover:bg-primary/5 px-1 -mx-1 rounded cursor-pointer"
+                      onClick={() => {
+                        const newSenses = { ...senses, [sense.key]: !isActive };
+                        handleUpdate('senses', newSenses);
+                      }}
+                    >
+                      <div className={`w-3.5 h-3.5 rounded border-2 transition-colors ${isActive ? 'bg-accent border-accent' : 'border-muted-foreground/40 hover:border-accent'}`} />
+                      <span className={`${isActive ? 'text-accent' : 'text-muted-foreground'} transition-colors`}>{sense.label}</span>
                     </div>
                   );
                 })}
@@ -317,7 +356,7 @@ export default function CharacterSheet() {
               <div className="flex flex-wrap border-b border-border bg-card/50">
                 {([
                   { key: 'actions' as MiniTab, label: 'Actions' },
-                  { key: 'spells' as MiniTab, label: 'Spells' },
+                  { key: 'hacks' as MiniTab, label: 'Hacks' },
                   { key: 'inventory' as MiniTab, label: 'Inventory' },
                   { key: 'genemods' as MiniTab, label: 'Gene Mods' },
                   { key: 'cybernetics' as MiniTab, label: 'Cybernetics' },
@@ -340,7 +379,7 @@ export default function CharacterSheet() {
 
               <div className="flex-1 overflow-y-auto p-3">
                 {miniTab === 'actions' && <ActionsPanel character={character} onUpdate={handleUpdate} />}
-                {miniTab === 'spells' && <SpellsPanel character={character} onUpdate={handleUpdate} />}
+                {miniTab === 'hacks' && <HacksPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'inventory' && <InventoryPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'genemods' && <GeneModsPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'cybernetics' && <CyberneticsPanel character={character} onUpdate={handleUpdate} />}
@@ -447,16 +486,26 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
   );
 }
 
-function SpellsPanel({ character, onUpdate }: PanelProps) {
-  const slots = character.spellSlots;
+function HacksPanel({ character, onUpdate }: PanelProps) {
+  const slots = character.hackSlots;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-primary uppercase tracking-widest font-mono font-bold">Spellcasting</span>
+        <span className="text-xs text-primary uppercase tracking-widest font-mono font-bold">Hacking</span>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1 text-center font-mono text-xs">
-        {[1,2,3,4,5,6,7,8,9].map(lvl => {
+      <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-2">
+        <div className="border border-border/50 p-2 bg-background/30 clip-edges">
+          <div className="text-[10px] text-muted-foreground uppercase">Hack Attack Bonus</div>
+          <EditableField value={character.hackAttackBonus ?? 0} type="number" onSave={v => onUpdate('hackAttackBonus', v)} className="text-sm font-bold text-primary" />
+        </div>
+        <div className="border border-border/50 p-2 bg-background/30 clip-edges">
+          <div className="text-[10px] text-muted-foreground uppercase">Hack Save DC</div>
+          <EditableField value={character.hackSaveDC ?? 0} type="number" onSave={v => onUpdate('hackSaveDC', v)} className="text-sm font-bold text-primary" />
+        </div>
+      </div>
+      <div className="grid grid-cols-5 gap-1 text-center font-mono text-xs">
+        {[1,2,3,4,5].map(lvl => {
           const key = `level${lvl}`;
           const slot = slots[key] || { total: 0, used: 0 };
           return (
@@ -467,24 +516,24 @@ function SpellsPanel({ character, onUpdate }: PanelProps) {
                 <button
                   className="text-[9px] text-muted-foreground hover:text-primary px-0.5"
                   onClick={() => {
-                    const newSlots: CharacterSpellSlots = { ...slots, [key]: { ...slot, total: Math.max(0, slot.total + 1) } };
-                    onUpdate('spellSlots', newSlots);
+                    const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, total: Math.max(0, slot.total + 1) } };
+                    onUpdate('hackSlots', newSlots);
                   }}
                   title="Increase total slots"
                 >T+</button>
                 <button
                   className="text-[9px] text-muted-foreground hover:text-accent px-0.5"
                   onClick={() => {
-                    const newSlots: CharacterSpellSlots = { ...slots, [key]: { ...slot, used: Math.min(slot.total, slot.used + 1) } };
-                    onUpdate('spellSlots', newSlots);
+                    const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, used: Math.min(slot.total, slot.used + 1) } };
+                    onUpdate('hackSlots', newSlots);
                   }}
                   title="Use a slot"
                 >U+</button>
                 <button
                   className="text-[9px] text-muted-foreground hover:text-secondary px-0.5"
                   onClick={() => {
-                    const newSlots: CharacterSpellSlots = { ...slots, [key]: { ...slot, used: 0 } };
-                    onUpdate('spellSlots', newSlots);
+                    const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, used: 0 } };
+                    onUpdate('hackSlots', newSlots);
                   }}
                   title="Reset used slots"
                 >R</button>
@@ -493,24 +542,53 @@ function SpellsPanel({ character, onUpdate }: PanelProps) {
           );
         })}
       </div>
-      <div className="space-y-1">
-        {character.spells.map((spell) => (
-          <div key={spell.id} className="flex items-center justify-between py-1 px-1 hover:bg-white/5 text-xs font-mono border-b border-border/20">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-muted-foreground text-[10px] w-4 shrink-0">L{spell.level}</span>
-              <EditableField value={spell.name} onSave={v => onUpdate('spells', updateArrayEntry(character.spells, spell.id, { name: String(v) }))} className="text-foreground text-xs" />
-            </div>
-            <button onClick={() => onUpdate('spells', character.spells.filter(s => s.id !== spell.id))} className="text-destructive text-[10px] hover:underline ml-1 shrink-0">DEL</button>
-          </div>
-        ))}
-        <CyberButton variant="ghost" className="w-full text-[10px] mt-2 py-1" onClick={() => {
-          const name = prompt("Spell Name:");
-          if (name) {
-            const entry: SpellEntry = { id: Math.random().toString(), name, level: 0 };
-            onUpdate('spells', [...character.spells, entry]);
-          }
-        }}>+ Add Spell</CyberButton>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-foreground font-mono">
+              <th className="p-1.5">Name</th>
+              <th className="p-1.5">Level</th>
+              <th className="p-1.5">Type</th>
+              <th className="p-1.5">Launch Time</th>
+              <th className="p-1.5">Effect</th>
+              <th className="p-1.5"></th>
+            </tr>
+          </thead>
+          <tbody className="text-xs font-mono">
+            {character.hacks.length === 0 ? (
+              <tr><td colSpan={6} className="p-3 text-center text-muted-foreground italic">No hacks installed</td></tr>
+            ) : character.hacks.map((hack) => (
+              <tr key={hack.id} className="border-b border-border/30 hover:bg-white/5 transition-colors">
+                <td className="p-1.5">
+                  <EditableField value={hack.name} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { name: String(v) }))} className="text-foreground font-bold text-xs" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={hack.level} type="number" onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { level: Number(v) }))} className="text-muted-foreground text-xs w-6" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={hack.type || ''} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { type: String(v) }))} className="text-primary text-xs" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={hack.launchTime || ''} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { launchTime: String(v) }))} className="text-muted-foreground text-xs" />
+                </td>
+                <td className="p-1.5">
+                  <EditableField value={hack.effect || ''} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { effect: String(v) }))} className="text-secondary text-xs" />
+                </td>
+                <td className="p-1.5 text-right">
+                  <button onClick={() => onUpdate('hacks', character.hacks.filter(h => h.id !== hack.id))} className="text-destructive hover:underline text-[10px]">DEL</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      <CyberButton variant="ghost" className="w-full text-[10px] mt-2 py-1" onClick={() => {
+        const name = prompt("Hack Name:");
+        if (name) {
+          const entry: HackEntry = { id: Math.random().toString(), name, level: 1 };
+          onUpdate('hacks', [...character.hacks, entry]);
+        }
+      }}>+ Add Hack</CyberButton>
     </div>
   );
 }
@@ -518,18 +596,16 @@ function SpellsPanel({ character, onUpdate }: PanelProps) {
 function InventoryPanel({ character, onUpdate }: PanelProps) {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-5 gap-1 text-center font-mono text-xs">
-        {(['cp', 'sp', 'ep', 'gp', 'pp'] as const).map((curr) => (
-          <div key={curr} className="border border-border/50 p-1.5 bg-background/30 clip-edges">
-            <div className="text-[10px] text-muted-foreground uppercase">{curr}</div>
-            <EditableField 
-              value={character.currency[curr]} 
-              type="number"
-              onSave={(v) => onUpdate('currency', { ...character.currency, [curr]: v })}
-              className="text-sm font-bold text-accent text-center" 
-            />
-          </div>
-        ))}
+      <div className="text-center font-mono text-xs">
+        <div className="border border-border/50 p-2 bg-background/30 clip-edges inline-block min-w-[120px]">
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{'\u30B7'} Satoshi</div>
+          <EditableField 
+            value={character.currency.satoshi} 
+            type="number"
+            onSave={(v) => onUpdate('currency', { satoshi: Number(v) || 0 })}
+            className="text-lg font-bold text-accent text-center" 
+          />
+        </div>
       </div>
       <div className="space-y-0.5 font-mono text-xs">
         {character.equipment.map(eq => (
@@ -649,7 +725,7 @@ function BioPanel({ character, onUpdate }: PanelProps) {
         { label: 'Alignment', field: 'alignment' as const },
         { label: 'Background', field: 'background' as const },
         { label: 'Backstory', field: 'backstory' as const },
-        { label: 'Notes', field: 'notes' as const },
+        { label: 'Contract Notes', field: 'notes' as const },
       ]).map(item => (
         <div key={item.field}>
           <div className="text-[10px] text-primary uppercase tracking-widest font-mono font-bold mb-0.5">{item.label}</div>

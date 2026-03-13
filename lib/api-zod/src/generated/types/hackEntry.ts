@@ -6,13 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CharacterSummary {
-  id: number;
+export interface HackEntry {
+  id: string;
   name: string;
-  /** @nullable */
-  genome?: string | null;
-  /** @nullable */
-  class?: string | null;
   level: number;
-  updatedAt: Date;
+  /** @nullable */
+  type?: string | null;
+  /** @nullable */
+  launchTime?: string | null;
+  /** @nullable */
+  effect?: string | null;
 }

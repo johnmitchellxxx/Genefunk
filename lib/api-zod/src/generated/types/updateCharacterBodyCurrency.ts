@@ -7,9 +7,5 @@
  */
 
 export type UpdateCharacterBodyCurrency = {
-  cp: number;
-  sp: number;
-  ep: number;
-  gp: number;
-  pp: number;
+  satoshi: number;
 };
