@@ -592,21 +592,20 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
 
   const renderHitCell = (atk: AttackEntry) => {
     if (atk.weaponType === 'melee' || atk.weaponType === 'ranged') {
-      const bonus = getAttackBonus(
-        atk.weaponType,
-        !!atk.isFinesse,
-        character.strength,
-        character.dexterity,
-        profBonus,
-      );
+      const strMod = getModifier(character.strength);
+      const dexMod = getModifier(character.dexterity);
       const statLabel = atk.isFinesse
-        ? (getModifier(character.dexterity) >= getModifier(character.strength) ? 'DEX' : 'STR')
+        ? (dexMod >= strMod ? 'DEX' : 'STR')
         : atk.weaponType === 'ranged' ? 'DEX' : 'STR';
+      const abilityMod = statLabel === 'DEX' ? dexMod : strMod;
+      const bonus = abilityMod + profBonus;
+      const rollName = `${atk.name} Attack (${formatModifier(abilityMod)} ${statLabel}, ${formatModifier(profBonus)} Prof)`;
+      const tooltip = `1d20  ${formatModifier(abilityMod)} (${statLabel})  +  ${formatModifier(profBonus)} (Prof)  =  ${formatModifier(bonus)} to hit`;
       return (
         <button
           className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer text-left"
-          title={`Click to roll D20 ${formatModifier(bonus)} (${statLabel} mod + Prof)`}
-          onClick={() => rollDice(`${atk.name} Attack`, bonus)}
+          title={tooltip}
+          onClick={() => rollDice(rollName, bonus)}
         >
           {formatModifier(bonus)}
           <span className="text-[10px] text-muted-foreground ml-1">{statLabel}</span>
@@ -618,7 +617,7 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
       return (
         <button
           className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
-          title="Click to roll D20 + bonus"
+          title={`Click to roll 1d20 ${formatModifier(manualBonus)}`}
           onClick={() => rollDice(`${atk.name} Attack`, manualBonus)}
         >
           {atk.attackBonus}
