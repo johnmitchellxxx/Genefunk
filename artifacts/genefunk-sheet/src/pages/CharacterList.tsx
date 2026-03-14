@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppAuth } from '@/hooks/use-api';
 import { Link, useLocation } from 'wouter';
 import { CyberCard, CyberButton } from '@/components/CyberUI';
-import { Plus, User, Activity, Calendar, Shield } from 'lucide-react';
+import { Plus, User, Activity, Calendar, Shield, FileEdit, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { CharacterWizard } from '@/components/CharacterWizard';
 
@@ -13,9 +13,30 @@ export default function CharacterList() {
   const createMutation = useAppCreateCharacter();
   const updateMutation = useAppUpdateCharacter();
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [blankOpen, setBlankOpen] = useState(false);
+  const [blankName, setBlankName] = useState('');
+  const blankInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
 
   const [wizardError, setWizardError] = useState<string | null>(null);
+
+  const handleBlankCreate = () => {
+    const name = blankName.trim();
+    if (!name) return;
+    createMutation.mutate(
+      { data: { name } },
+      {
+        onSuccess: (created: { id: number }) => {
+          setBlankOpen(false);
+          setBlankName('');
+          setLocation(`/characters/${created.id}`);
+        },
+        onError: () => {
+          setWizardError('Failed to create character. Please try again.');
+        },
+      }
+    );
+  };
 
   const handleWizardComplete = (data: Record<string, unknown>) => {
     const { name, ...rest } = data;
@@ -65,9 +86,18 @@ export default function CharacterList() {
               <p className="text-primary font-mono mt-2">Active database connection established.</p>
             )}
           </div>
-          <CyberButton onClick={() => setWizardOpen(true)} disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Constructing..." : <><Plus className="inline mr-2 w-4 h-4"/> New Operative</>}
-          </CyberButton>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setBlankOpen(true); setTimeout(() => blankInputRef.current?.focus(), 50); }}
+              disabled={createMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-mono uppercase tracking-wider border border-border text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-all clip-edges"
+            >
+              <FileEdit className="w-4 h-4" /> Blank Sheet
+            </button>
+            <CyberButton onClick={() => setWizardOpen(true)} disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Constructing..." : <><Plus className="inline mr-2 w-4 h-4"/> New Operative</>}
+            </CyberButton>
+          </div>
         </div>
 
         {wizardError && (
@@ -120,6 +150,45 @@ export default function CharacterList() {
           onComplete={handleWizardComplete}
           isPending={createMutation.isPending || updateMutation.isPending}
         />
+      )}
+
+      {blankOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border clip-edges p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold font-mono uppercase tracking-widest text-foreground">Blank Sheet</h2>
+              <button onClick={() => { setBlankOpen(false); setBlankName(''); }} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-muted-foreground text-sm mb-4">Enter your operative's name. All other fields will be blank for manual entry.</p>
+            <input
+              ref={blankInputRef}
+              type="text"
+              value={blankName}
+              onChange={e => setBlankName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleBlankCreate()}
+              placeholder="Operative name..."
+              maxLength={50}
+              className="w-full bg-background border border-border px-3 py-2 font-mono text-foreground placeholder-muted-foreground/50 focus:outline-none focus:border-primary clip-edges mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setBlankOpen(false); setBlankName(''); }}
+                className="flex-1 px-4 py-2 font-mono text-sm uppercase tracking-wider border border-border text-muted-foreground hover:text-foreground transition-all clip-edges"
+              >
+                Cancel
+              </button>
+              <CyberButton
+                onClick={handleBlankCreate}
+                disabled={!blankName.trim() || createMutation.isPending}
+                className="flex-1"
+              >
+                {createMutation.isPending ? 'Creating...' : 'Create'}
+              </CyberButton>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
