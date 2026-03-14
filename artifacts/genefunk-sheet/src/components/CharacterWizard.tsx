@@ -144,7 +144,7 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
       currentHitPoints: Math.max(1, hp),
       hitDice: `1d${cls.hitDie}`,
       speed: genome.speed,
-      initiative: getModifier(finalScores.dexterity),
+      initiative: 0,
       armorClass: 10 + getModifier(finalScores.dexterity),
       savingThrowProficiencies: cls.savingThrows,
       skillProficiencies: allSkillProfs,

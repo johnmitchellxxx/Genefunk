@@ -188,19 +188,42 @@ export default function CharacterSheet() {
               <EditableField value={character.damageReduction} type="number" onSave={v => handleUpdate('damageReduction', v)} className="text-lg font-bold text-secondary text-center" />
             </div>
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2">
-            <Zap className="text-accent w-5 h-5 shrink-0" />
-            <div className="text-center">
-              <button
-                onClick={() => rollDice('Initiative', character.initiative ?? 0)}
-                title="Roll Initiative (1d20 + Init)"
-                className="text-xs text-muted-foreground uppercase tracking-widest font-mono hover:text-primary transition-colors"
-              >
-                Init ▶
-              </button>
-              <EditableField value={character.initiative} type="number" onSave={v => handleUpdate('initiative', v)} className="text-lg font-bold text-accent text-center" />
-            </div>
-          </div>
+          {(() => {
+            const dexMod = getModifier(character.dexterity);
+            const customBonus = character.initiative ?? 0;
+            const totalInit = dexMod + customBonus;
+            const tooltip = `Initiative = DEX ${formatModifier(dexMod)} + bonus ${formatModifier(customBonus)} = ${formatModifier(totalInit)}\nClick to roll 1d20 ${formatModifier(totalInit)}`;
+            const rollName = customBonus !== 0
+              ? `Initiative (${formatModifier(dexMod)} DEX + ${formatModifier(customBonus)} bonus)`
+              : `Initiative (${formatModifier(dexMod)} DEX)`;
+            return (
+              <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2">
+                <Zap className="text-accent w-5 h-5 shrink-0" />
+                <div className="text-center">
+                  <button
+                    onClick={() => rollDice(rollName, totalInit)}
+                    title={tooltip}
+                    className="text-xs text-muted-foreground uppercase tracking-widest font-mono hover:text-primary transition-colors whitespace-nowrap"
+                  >
+                    Init ▶
+                  </button>
+                  <div className="text-lg font-bold text-accent leading-none" title={tooltip}>
+                    {formatModifier(totalInit)}
+                  </div>
+                  <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                    <span className="text-[9px] text-muted-foreground/50 font-mono">+</span>
+                    <EditableField
+                      value={customBonus}
+                      type="number"
+                      onSave={v => handleUpdate('initiative', v)}
+                      className="text-[10px] text-muted-foreground/70 text-center w-6 font-mono"
+                    />
+                    <span className="text-[9px] text-muted-foreground/50 font-mono">bonus</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           <div className="bg-card border border-border clip-edges px-4 py-2.5 flex-1 flex items-center gap-3 min-w-[280px]">
             <Heart className="text-destructive w-4 h-4 shrink-0" />
             <div className="flex items-center gap-2">
