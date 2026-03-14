@@ -116,6 +116,8 @@ export default function CharacterSheet() {
                 <span className="text-muted-foreground">|</span>
                 <span className="text-xs text-muted-foreground uppercase">Cadre:</span>
                 <EditableField value={character.cadre || ''} onSave={(v) => handleUpdate('cadre', v)} className="inline-block text-muted-foreground min-w-[60px]" />
+                <span className="text-muted-foreground">|</span>
+                <span className="text-xs text-muted-foreground/60 font-mono">by {character.userId}</span>
               </div>
             </div>
           </div>

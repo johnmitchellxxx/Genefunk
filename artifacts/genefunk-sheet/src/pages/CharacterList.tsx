@@ -121,10 +121,9 @@ export default function CharacterList() {
                     <div>
                       <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{char.name}</h2>
                       <p className="text-muted-foreground text-sm font-mono mt-1">Level {char.level} {char.class || 'Unknown Class'}</p>
-                      {isAdmin && (char as { userId?: string }).userId && (
-                        <p className="text-yellow-400/80 text-xs font-mono mt-1 flex items-center gap-1">
-                          <Shield className="w-3 h-3" />
-                          {(char as { userId?: string }).userId}
+                      {(char as { userId?: string }).userId && (
+                        <p className="text-muted-foreground/60 text-xs font-mono mt-1">
+                          by {(char as { userId?: string }).userId}
                         </p>
                       )}
                     </div>
