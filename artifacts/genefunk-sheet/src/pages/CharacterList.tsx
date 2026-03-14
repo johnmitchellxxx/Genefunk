@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppAuth, useAppTrashedCharacters, useAppRestoreCharacter, useAppPermanentlyDeleteCharacter, useAppBackupNow } from '@/hooks/use-api';
+import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppAuth, useAppTrashedCharacters, useAppRestoreCharacter, useAppPermanentlyDeleteCharacter, useAppBackupNow, useAppAllUsers, useAppDeleteUser } from '@/hooks/use-api';
 import { Link, useLocation } from 'wouter';
 import { CyberCard, CyberButton } from '@/components/CyberUI';
 import { Plus, User, Activity, Calendar, Shield, FileEdit, X, Trash2, RotateCcw, AlertTriangle, Inbox, Download } from 'lucide-react';
@@ -24,7 +24,10 @@ export default function CharacterList() {
   const [blankName, setBlankName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [confirmPermDeleteId, setConfirmPermDeleteId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'roster' | 'trash'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'trash' | 'users'>('roster');
+  const { data: allUsers, isLoading: usersLoading } = useAppAllUsers();
+  const deleteUserMutation = useAppDeleteUser();
+  const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
   const blankInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
 
@@ -162,6 +165,22 @@ export default function CharacterList() {
               {trashedCount > 0 && (
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${activeTab === 'trash' ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground'}`}>
                   {trashedCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-5 py-2 font-mono text-sm uppercase tracking-wider transition-all border-b-2 -mb-px flex items-center gap-2 ${
+                activeTab === 'users'
+                  ? 'border-yellow-400 text-yellow-400'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              Users
+              {allUsers && (
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${activeTab === 'users' ? 'bg-yellow-400/20 text-yellow-400' : 'bg-muted text-muted-foreground'}`}>
+                  {allUsers.length}
                 </span>
               )}
             </button>
@@ -334,6 +353,75 @@ export default function CharacterList() {
               </div>
             )}
           </>
+        )}
+
+        {activeTab === 'users' && isAdmin && (
+          <div>
+            <div className="flex items-start gap-3 mb-6 p-3 border border-yellow-500/30 bg-yellow-500/5 clip-edges">
+              <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <p className="text-yellow-400/80 text-xs font-mono">
+                Deleting a user moves all their characters to the trash. This can be undone from the Trash tab.
+                You cannot delete the admin user.
+              </p>
+            </div>
+
+            {usersLoading ? (
+              <div className="flex items-center justify-center py-16 text-primary"><Activity className="animate-spin" /></div>
+            ) : !allUsers || allUsers.length === 0 ? (
+              <div className="text-center py-24 text-muted-foreground border border-dashed border-border clip-edges bg-background/50">
+                <User className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-xl font-mono">No users found.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {allUsers.map(u => (
+                  <div
+                    key={u.userId}
+                    className="flex items-center justify-between px-5 py-4 border border-border bg-card/80 clip-edges"
+                    onClick={() => setConfirmDeleteUserId(null)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/30">
+                        <User className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-mono text-foreground text-sm">{u.userId}</p>
+                        <p className="text-muted-foreground text-xs font-mono">
+                          {u.characterCount} operative{u.characterCount !== 1 ? 's' : ''}
+                          {u.userId === 'john' && <span className="ml-2 text-yellow-400">[admin]</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {u.userId !== 'john' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirmDeleteUserId === u.userId) {
+                            deleteUserMutation.mutate(u.userId, {
+                              onSuccess: () => setConfirmDeleteUserId(null),
+                            });
+                          } else {
+                            setConfirmDeleteUserId(u.userId);
+                          }
+                        }}
+                        disabled={deleteUserMutation.isPending}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded transition-all clip-edges ${
+                          confirmDeleteUserId === u.userId
+                            ? 'bg-destructive text-destructive-foreground border border-destructive animate-pulse'
+                            : 'border border-destructive/40 text-destructive/60 hover:bg-destructive/10 hover:text-destructive'
+                        }`}
+                        title={confirmDeleteUserId === u.userId ? 'Click again to move all their characters to trash' : 'Remove user'}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        {confirmDeleteUserId === u.userId ? 'Confirm remove?' : 'Remove'}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 

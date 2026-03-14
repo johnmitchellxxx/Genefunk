@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   useGetCharacters, 
   useCreateCharacter, 
@@ -181,6 +181,54 @@ export function useAppBackupNow() {
       return res.json() as Promise<{ success: boolean; created: number; skipped: number }>;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getGetTrashedCharactersQueryKey() });
+    },
+  });
+}
+
+export type AppUser = { userId: string; characterCount: number };
+
+export function useAppUsers() {
+  return useQuery<AppUser[]>({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const res = await fetch('/api/users', { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useAppAllUsers() {
+  return useQuery<AppUser[]>({
+    queryKey: ['users', 'all'],
+    queryFn: async () => {
+      const res = await fetch('/api/users/all', { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useAppDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as any).error ?? `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<{ success: boolean; deleted: number }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: getGetCharactersQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetTrashedCharactersQueryKey() });
     },
   });
