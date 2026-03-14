@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { CyberButton, CyberCard } from '@/components/CyberUI';
 import { GENOMES, CLASSES, BACKGROUNDS, POINT_BUY_COSTS, POINT_BUY_TOTAL, ASI_LEVELS } from '@/lib/rulebookData';
 import type { GenomeData, ClassData, BackgroundData, AbilityKey, SenseKey } from '@/lib/rulebookData';
 import { ABILITIES, SKILLS, SENSES, getModifier, formatModifier } from '@/lib/rules';
-import { ChevronLeft, ChevronRight, Check, X, Dna, Swords, BookOpen, Brain, ListChecks, ClipboardCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, Dna, Swords, BookOpen, Brain, ListChecks, ClipboardCheck, AlertTriangle } from 'lucide-react';
 
 interface WizardState {
   name: string;
@@ -46,6 +46,9 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
     usePointBuy: true,
     skillPicks: [],
   });
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [modalName, setModalName] = useState('');
+  const nameModalRef = useRef<HTMLInputElement>(null);
 
   const canAdvance = useMemo(() => {
     switch (step) {
@@ -63,7 +66,7 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
         const needed = getRequiredSkillPicks();
         return state.skillPicks.length === needed;
       }
-      case 5: return state.name.trim().length > 0;
+      case 5: return true;
       default: return false;
     }
   }, [step, state]);
@@ -94,7 +97,28 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
   }
 
   function handleDeploy() {
-    if (!state.genome || !state.characterClass || !state.background || !state.name.trim()) return;
+    if (!state.name.trim()) {
+      setModalName('');
+      setShowNameModal(true);
+      setTimeout(() => nameModalRef.current?.focus(), 60);
+      return;
+    }
+    doDeployWithName(state.name.trim());
+  }
+
+  function handleModalDeploy() {
+    const name = modalName.trim();
+    if (!name) {
+      nameModalRef.current?.focus();
+      return;
+    }
+    setState(prev => ({ ...prev, name }));
+    setShowNameModal(false);
+    doDeployWithName(name);
+  }
+
+  function doDeployWithName(name: string) {
+    if (!state.genome || !state.characterClass || !state.background) return;
 
     const genome = state.genome;
     const cls = state.characterClass;
@@ -129,7 +153,7 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
     if (bg.toolProficiencies) profParts.push(bg.toolProficiencies);
 
     onComplete({
-      name: state.name.trim(),
+      name,
       genome: genome.name,
       class: cls.name,
       background: bg.name,
@@ -221,11 +245,58 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
             Next <ChevronRight className="w-4 h-4 inline ml-1" />
           </CyberButton>
         ) : (
-          <CyberButton onClick={handleDeploy} disabled={!canAdvance || isPending}>
+          <CyberButton onClick={handleDeploy} disabled={isPending}>
             {isPending ? 'Deploying...' : 'Deploy Operative'}
           </CyberButton>
         )}
       </div>
+
+      {showNameModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-lg">
+          <div className="bg-card border-2 border-secondary clip-edges p-8 w-full max-w-md mx-6 shadow-2xl"
+               style={{ boxShadow: '0 0 40px hsl(320 100% 55% / 0.4), 0 0 80px hsl(320 100% 55% / 0.15)' }}>
+            <div className="flex flex-col items-center text-center gap-5">
+              <div className="w-16 h-16 rounded-full bg-secondary/10 border-2 border-secondary flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-secondary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold tracking-widest uppercase font-mono text-secondary mb-2">
+                  You Must Name the Operative
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  to continue
+                </p>
+              </div>
+              <input
+                ref={nameModalRef}
+                type="text"
+                value={modalName}
+                onChange={e => setModalName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleModalDeploy()}
+                placeholder="Enter operative name..."
+                maxLength={50}
+                autoFocus
+                className="w-full bg-background border-2 border-secondary/60 focus:border-secondary px-4 py-3 font-mono text-lg text-foreground placeholder-muted-foreground/40 focus:outline-none clip-edges text-center tracking-wider"
+              />
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowNameModal(false)}
+                  className="flex-1 px-4 py-2.5 font-mono text-sm uppercase tracking-wider border border-border text-muted-foreground hover:text-foreground transition-all clip-edges"
+                >
+                  Cancel
+                </button>
+                <CyberButton
+                  onClick={handleModalDeploy}
+                  disabled={!modalName.trim() || isPending}
+                  className="flex-1"
+                >
+                  {isPending ? 'Deploying...' : 'Deploy Operative'}
+                </CyberButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
