@@ -390,7 +390,26 @@ export default function CharacterSheet() {
           <div className="lg:col-span-5 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <CyberCard className="p-4">
-                <div className="text-sm text-primary uppercase tracking-widest font-mono font-bold mb-3 border-b border-border/50 pb-1.5">Death Saves</div>
+                <button
+                  className="w-full text-left text-sm text-primary uppercase tracking-widest font-mono font-bold mb-3 border-b border-border/50 pb-1.5 hover:text-secondary transition-colors flex items-center gap-2 group"
+                  title="Roll a Death Save (d20) — 11+ success, 10 or below failure, nat 20 stabilise"
+                  onClick={() => rollDice('Death Save', 0, (total) => {
+                    if (total === 20) {
+                      handleUpdate('currentHitPoints', 1);
+                      handleUpdate('deathSaveSuccesses', 0);
+                      handleUpdate('deathSaveFailures', 0);
+                    } else if (total === 1) {
+                      handleUpdate('deathSaveFailures', Math.min(3, (character.deathSaveFailures ?? 0) + 2));
+                    } else if (total >= 11) {
+                      handleUpdate('deathSaveSuccesses', Math.min(3, (character.deathSaveSuccesses ?? 0) + 1));
+                    } else {
+                      handleUpdate('deathSaveFailures', Math.min(3, (character.deathSaveFailures ?? 0) + 1));
+                    }
+                  })}
+                >
+                  <span>Death Saves</span>
+                  <span className="text-[10px] text-muted-foreground group-hover:text-secondary font-mono normal-case tracking-normal">roll d20 →</span>
+                </button>
                 <div className="space-y-2 font-mono text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-primary w-12">Success</span>
@@ -399,11 +418,11 @@ export default function CharacterSheet() {
                         <div
                           key={`s${i}`}
                           className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-colors ${
-                            character.deathSaveSuccesses > i
+                            (character.deathSaveSuccesses ?? 0) > i
                               ? 'bg-primary border-primary'
                               : 'border-muted-foreground/40 hover:border-primary'
                           }`}
-                          onClick={() => handleUpdate('deathSaveSuccesses', character.deathSaveSuccesses > i ? i : i + 1)}
+                          onClick={() => handleUpdate('deathSaveSuccesses', (character.deathSaveSuccesses ?? 0) > i ? i : i + 1)}
                         />
                       ))}
                     </div>
@@ -415,15 +434,19 @@ export default function CharacterSheet() {
                         <div
                           key={`f${i}`}
                           className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-colors ${
-                            character.deathSaveFailures > i
+                            (character.deathSaveFailures ?? 0) > i
                               ? 'bg-destructive border-destructive'
                               : 'border-muted-foreground/40 hover:border-destructive'
                           }`}
-                          onClick={() => handleUpdate('deathSaveFailures', character.deathSaveFailures > i ? i : i + 1)}
+                          onClick={() => handleUpdate('deathSaveFailures', (character.deathSaveFailures ?? 0) > i ? i : i + 1)}
                         />
                       ))}
                     </div>
                   </div>
+                  <button
+                    className="text-[10px] text-muted-foreground/50 font-mono hover:text-muted-foreground transition-colors mt-1"
+                    onClick={() => { handleUpdate('deathSaveSuccesses', 0); handleUpdate('deathSaveFailures', 0); }}
+                  >reset</button>
                 </div>
               </CyberCard>
 

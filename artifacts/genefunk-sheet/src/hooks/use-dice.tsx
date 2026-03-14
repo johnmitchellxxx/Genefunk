@@ -33,7 +33,7 @@ type CustomRoll = {
 type Phase = 'tumble' | 'result' | 'done';
 
 interface DiceContextType {
-  rollDice: (name: string, modifier: number) => void;
+  rollDice: (name: string, modifier: number, onResult?: (total: number) => void) => void;
   rollCustom: (dice: { sides: DieType; count: number }[], modifier: number, name: string) => void;
   beyond20Active: boolean;
   setCharacterName: (name: string) => void;
@@ -79,7 +79,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     timersRef.current = [t];
   }, [clearTimers]);
 
-  const rollDice = useCallback((name: string, modifier: number) => {
+  const rollDice = useCallback((name: string, modifier: number, onResult?: (total: number) => void) => {
     clearTimers();
     setCustomPhase('done');
     setCustomRoll(null);
@@ -100,7 +100,10 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       : '1d20';
     sendRollToBeyond20(name, expr, { characterName });
 
-    const t1 = setTimeout(() => setD20Phase('result'), 1200);
+    const t1 = setTimeout(() => {
+      setD20Phase('result');
+      onResult?.(roll.total);
+    }, 1200);
     const t2 = setTimeout(() => dismissD20(), 30000);
     timersRef.current = [t1, t2];
   }, [clearTimers, dismissD20, characterName]);
