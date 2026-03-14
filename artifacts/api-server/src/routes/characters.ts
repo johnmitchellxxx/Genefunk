@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, createEstebanSeedData } from "@workspace/db";
+import { db } from "@workspace/db";
 import { charactersTable } from "@workspace/db/schema";
 import { eq, and, isNull, isNotNull } from "drizzle-orm";
 import { runWeeklyBackup } from "../services/backup";
@@ -15,38 +15,7 @@ const router: IRouter = Router();
 
 const ADMIN_USER_ID = "john";
 
-const seededUsers = new Set<string>();
-
-async function ensureSeedCharacter(userId: string) {
-  if (seededUsers.has(userId)) return;
-
-  const estebanExists = await db
-    .select({ id: charactersTable.id })
-    .from(charactersTable)
-    .where(
-      and(
-        eq(charactersTable.userId, userId),
-        eq(charactersTable.name, "Esteban")
-      )
-    )
-    .limit(1);
-
-  if (estebanExists.length === 0) {
-    try {
-      const seedData = createEstebanSeedData(userId);
-      await db.insert(charactersTable).values(seedData);
-    } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes("duplicate")) {
-        // concurrent request already inserted Esteban
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  seededUsers.add(userId);
-}
-
+// List all active characters — visible to every authenticated user
 router.get("/characters", async (req, res) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -54,10 +23,6 @@ router.get("/characters", async (req, res) => {
   }
 
   try {
-    const isAdmin = req.user.id === ADMIN_USER_ID;
-
-    await ensureSeedCharacter(req.user.id);
-
     const characters = await db
       .select({
         id: charactersTable.id,
@@ -70,11 +35,7 @@ router.get("/characters", async (req, res) => {
         deletedAt: charactersTable.deletedAt,
       })
       .from(charactersTable)
-      .where(
-        isAdmin
-          ? isNull(charactersTable.deletedAt)
-          : and(eq(charactersTable.userId, req.user.id), isNull(charactersTable.deletedAt))
-      );
+      .where(isNull(charactersTable.deletedAt));
 
     res.json(characters);
   } catch (err) {
@@ -166,6 +127,7 @@ router.get("/characters/trash", async (req, res) => {
   }
 });
 
+// Any authenticated user can read any active character
 router.get("/characters/:id", async (req, res) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -178,20 +140,15 @@ router.get("/characters/:id", async (req, res) => {
     return;
   }
 
-  const isAdmin = req.user.id === ADMIN_USER_ID;
-
   try {
     const [character] = await db
       .select()
       .from(charactersTable)
       .where(
-        isAdmin
-          ? and(eq(charactersTable.id, parsed.data.id), isNull(charactersTable.deletedAt))
-          : and(
-              eq(charactersTable.id, parsed.data.id),
-              eq(charactersTable.userId, req.user.id),
-              isNull(charactersTable.deletedAt)
-            )
+        and(
+          eq(charactersTable.id, parsed.data.id),
+          isNull(charactersTable.deletedAt)
+        )
       );
 
     if (!character) {
@@ -206,6 +163,7 @@ router.get("/characters/:id", async (req, res) => {
   }
 });
 
+// Only the owner (or admin) can edit a character
 router.put("/characters/:id", async (req, res) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -241,7 +199,7 @@ router.put("/characters/:id", async (req, res) => {
       );
 
     if (!existing.length) {
-      res.status(404).json({ error: "Character not found" });
+      res.status(403).json({ error: "You can only edit your own characters" });
       return;
     }
 
@@ -262,7 +220,7 @@ router.put("/characters/:id", async (req, res) => {
   }
 });
 
-// Soft delete — moves character to trash
+// Soft delete — only the owner (or admin) can delete
 router.delete("/characters/:id", async (req, res) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -293,7 +251,7 @@ router.delete("/characters/:id", async (req, res) => {
       .returning({ id: charactersTable.id });
 
     if (!updated) {
-      res.status(404).json({ error: "Character not found" });
+      res.status(403).json({ error: "Character not found or you don't own it" });
       return;
     }
 

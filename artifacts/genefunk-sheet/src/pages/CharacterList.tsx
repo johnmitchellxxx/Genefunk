@@ -118,13 +118,10 @@ export default function CharacterList() {
         <div className="flex justify-between items-center mb-8 border-b border-border pb-6">
           <div>
             <h1 className="text-4xl font-bold text-foreground tracking-widest uppercase">Operative Roster</h1>
-            {isAdmin ? (
-              <p className="text-yellow-400 font-mono mt-2 flex items-center gap-2">
-                <Shield className="w-4 h-4" /> Admin view — all operatives across all users
-              </p>
-            ) : (
-              <p className="text-primary font-mono mt-2">Active database connection established.</p>
-            )}
+            <p className="text-primary font-mono mt-2">
+              {isAdmin ? <><Shield className="inline w-4 h-4 mr-2 text-yellow-400" /><span className="text-yellow-400">Admin</span> — </> : null}
+              All operatives visible. You can only edit or delete your own.
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -194,7 +191,7 @@ export default function CharacterList() {
                         <div>
                           <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{char.name}</h2>
                           <p className="text-muted-foreground text-sm font-mono mt-1">Level {char.level} {char.class || 'Unknown Class'}</p>
-                          {isAdmin && (char as { userId?: string }).userId && (
+                          {(char as { userId?: string }).userId && (
                             <p className="text-muted-foreground/60 text-xs font-mono mt-1">
                               by {(char as { userId?: string }).userId}
                             </p>
@@ -210,18 +207,20 @@ export default function CharacterList() {
                           <Calendar className="w-3 h-3 mr-2" />
                           {format(new Date(char.updatedAt), 'MMM d, yyyy')}
                         </span>
-                        <button
-                          onClick={(e) => handleDelete(e, char.id)}
-                          className={`flex items-center gap-1 px-2 py-1 rounded transition-all ${
-                            confirmDeleteId === char.id
-                              ? 'text-destructive border border-destructive bg-destructive/10 animate-pulse'
-                              : 'text-muted-foreground/50 hover:text-destructive'
-                          }`}
-                          title={confirmDeleteId === char.id ? 'Click again to move to trash' : 'Move to trash'}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          {confirmDeleteId === char.id && <span className="text-[10px] uppercase tracking-wider">Move to trash?</span>}
-                        </button>
+                        {(isAdmin || (char as { userId?: string }).userId === auth?.user?.id) && (
+                          <button
+                            onClick={(e) => handleDelete(e, char.id)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded transition-all ${
+                              confirmDeleteId === char.id
+                                ? 'text-destructive border border-destructive bg-destructive/10 animate-pulse'
+                                : 'text-muted-foreground/50 hover:text-destructive'
+                            }`}
+                            title={confirmDeleteId === char.id ? 'Click again to move to trash' : 'Move to trash'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {confirmDeleteId === char.id && <span className="text-[10px] uppercase tracking-wider">Move to trash?</span>}
+                          </button>
+                        )}
                       </div>
                     </CyberCard>
                   </Link>
