@@ -29,6 +29,7 @@ export function CyberButton({ className, variant = 'primary', ...props }: React.
     <button 
       className={cn(
         "px-6 py-2 font-mono tracking-widest uppercase text-sm font-bold transition-all duration-300 clip-edges relative overflow-hidden group",
+        "disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none disabled:saturate-0",
         variants[variant],
         className
       )}

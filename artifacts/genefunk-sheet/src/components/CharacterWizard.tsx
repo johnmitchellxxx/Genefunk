@@ -671,8 +671,11 @@ function ReviewStep({ state, setState }: StepProps) {
         <p className="text-muted-foreground text-sm">Review your operative's configuration before deployment.</p>
       </div>
 
-      <CyberCard className="!p-4">
-        <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-2">Operative Designation</div>
+      <CyberCard className={`!p-4 ${!state.name.trim() ? 'border-primary/60 shadow-[0_0_12px_hsl(var(--primary)/0.3)]' : 'border-accent/60'}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">Operative Designation</div>
+          {!state.name.trim() && <div className="text-xs text-primary font-mono animate-pulse">← required to deploy</div>}
+        </div>
         <input
           type="text"
           value={state.name}
