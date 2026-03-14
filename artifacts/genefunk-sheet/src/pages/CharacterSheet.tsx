@@ -92,7 +92,7 @@ export default function CharacterSheet() {
   const profBonus = getProficiencyBonus(character.level);
 
   return (
-    <div className="min-h-screen bg-background scanlines pb-4 pr-10">
+    <div className="min-h-screen bg-background scanlines pb-24 sm:pb-4 sm:pr-10">
       {/* Header Bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-2 shadow-lg shadow-black/50">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
@@ -467,10 +467,11 @@ export default function CharacterSheet() {
         </div>
       </div>
 
-      {/* Dice Tab Handle — always visible on right edge */}
+      {/* Dice Tab Handle — desktop: vertical side tab; mobile: FAB bottom-right */}
+      {/* Desktop side tab */}
       <button
         onClick={() => setDiceOpen(prev => !prev)}
-        className={`fixed right-0 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center gap-2 w-10 py-6 cursor-pointer border-l border-primary/40 transition-all duration-300 ${
+        className={`hidden sm:flex fixed right-0 top-1/2 -translate-y-1/2 z-50 flex-col items-center justify-center gap-2 w-10 py-6 cursor-pointer border-l border-primary/40 transition-all duration-300 ${
           diceOpen
             ? 'bg-primary/20 text-primary -translate-x-72'
             : 'bg-card/95 text-muted-foreground hover:bg-primary/10 hover:text-primary'
@@ -484,6 +485,18 @@ export default function CharacterSheet() {
         >
           Dice
         </span>
+      </button>
+      {/* Mobile FAB */}
+      <button
+        onClick={() => setDiceOpen(prev => !prev)}
+        className={`sm:hidden fixed bottom-6 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-black/50 transition-all duration-300 border ${
+          diceOpen
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-card border-primary/60 text-primary hover:bg-primary/20'
+        }`}
+        title="Toggle Dice Roller"
+      >
+        <Dices className="w-6 h-6" />
       </button>
     </div>
   );

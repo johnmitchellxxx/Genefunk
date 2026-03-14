@@ -159,26 +159,32 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
 
   return (
     <div className="fixed inset-0 z-50 bg-background/98 backdrop-blur-sm flex flex-col overflow-hidden">
-      <div className="border-b border-border bg-card/50 px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <button onClick={onClose} className="text-muted-foreground hover:text-primary transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-          <h1 className="text-xl font-bold text-foreground tracking-widest uppercase font-mono">New Operative</h1>
+      {/* Header: title row + step progress bar */}
+      <div className="border-b border-border bg-card/50 shrink-0">
+        {/* Title row */}
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="text-muted-foreground hover:text-primary transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <h1 className="text-base sm:text-xl font-bold text-foreground tracking-widest uppercase font-mono">New Operative</h1>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono">Step {step + 1} / {STEPS.length}</span>
         </div>
-        <div className="flex items-center gap-1">
+        {/* Step indicators — scrollable row on mobile */}
+        <div className="flex overflow-x-auto px-4 pb-3 gap-1 scrollbar-none">
           {STEPS.map((s, i) => {
             const Icon = s.icon;
             return (
               <div
                 key={i}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-all shrink-0 ${
                   i === step ? 'text-primary bg-primary/10 border border-primary' :
                   i < step ? 'text-accent' : 'text-muted-foreground/50'
                 } clip-edges`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{s.label}</span>
+                <span>{s.label}</span>
                 {i < step && <Check className="w-3 h-3 text-accent" />}
               </div>
             );
@@ -186,7 +192,7 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           {step === 0 && <GenomeStep state={state} setState={setState} />}
           {step === 1 && <ClassStep state={state} setState={setState} />}
