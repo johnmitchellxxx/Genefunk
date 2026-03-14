@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&family=Chakra+Petch:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Chakra Petch', sans-serif;
+  --font-sans: 'Inter', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
+  --font-display: 'Chakra Petch', sans-serif;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -27,29 +28,29 @@
 :root {
   /* Dark Cyberpunk Theme */
   --background: 240 10% 4%;
-  --foreground: 180 30% 95%;
+  --foreground: 210 20% 98%;
   
   /* Electric Cyan */
-  --primary: 190 100% 50%;
+  --primary: 190 100% 52%;
   --primary-foreground: 240 10% 4%;
   
   /* Neon Pink/Magenta */
-  --secondary: 320 100% 50%;
+  --secondary: 320 100% 55%;
   --secondary-foreground: 0 0% 100%;
   
   /* Warning/Highlight Yellow */
-  --accent: 45 100% 50%;
+  --accent: 45 100% 55%;
   --accent-foreground: 240 10% 4%;
   
   /* Danger Red */
-  --destructive: 350 100% 55%;
+  --destructive: 350 100% 60%;
   --destructive-foreground: 0 0% 100%;
   
-  --muted: 240 10% 15%;
-  --muted-foreground: 180 12% 75%;
+  --muted: 240 10% 16%;
+  --muted-foreground: 210 15% 82%;
   
   --card: 240 10% 6%;
-  --card-foreground: 180 30% 95%;
+  --card-foreground: 210 20% 98%;
   
   --border: 190 100% 25%;
   --input: 190 50% 15%;
@@ -64,11 +65,20 @@
       linear-gradient(to bottom, hsl(var(--border) / 0.05) 1px, transparent 1px);
     background-size: 40px 40px;
     background-attachment: fixed;
+    font-size: 15px;
+    line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
+    font-family: 'Chakra Petch', sans-serif;
     @apply font-bold tracking-wider uppercase;
     text-shadow: 0 0 10px hsl(var(--primary) / 0.3);
+  }
+
+  /* Keep Chakra Petch on monospace display labels */
+  .font-mono {
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 0.03em;
   }
 }
 
