@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   useGetCharacters, 
   useCreateCharacter, 
@@ -16,7 +17,6 @@ import {
   useGetRulebookGenomes,
   useGetRulebookCadres,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 
 export function useAppAuth() {
   return useGetCurrentAuthUser({
@@ -164,4 +164,24 @@ export function useAppPermanentlyDeleteCharacter() {
       });
     }
   };
+}
+
+export function useAppBackupNow() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/characters/backup', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as any).error ?? `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<{ success: boolean; created: number; skipped: number }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getGetTrashedCharactersQueryKey() });
+    },
+  });
 }

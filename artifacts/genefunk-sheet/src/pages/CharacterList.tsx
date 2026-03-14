@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppAuth, useAppTrashedCharacters, useAppRestoreCharacter, useAppPermanentlyDeleteCharacter } from '@/hooks/use-api';
+import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppAuth, useAppTrashedCharacters, useAppRestoreCharacter, useAppPermanentlyDeleteCharacter, useAppBackupNow } from '@/hooks/use-api';
 import { Link, useLocation } from 'wouter';
 import { CyberCard, CyberButton } from '@/components/CyberUI';
-import { Plus, User, Activity, Calendar, Shield, FileEdit, X, Trash2, RotateCcw, AlertTriangle, Inbox } from 'lucide-react';
+import { Plus, User, Activity, Calendar, Shield, FileEdit, X, Trash2, RotateCcw, AlertTriangle, Inbox, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { CharacterWizard } from '@/components/CharacterWizard';
 
@@ -16,6 +16,8 @@ export default function CharacterList() {
   const deleteMutation = useAppDeleteCharacter();
   const restoreMutation = useAppRestoreCharacter();
   const permDeleteMutation = useAppPermanentlyDeleteCharacter();
+  const backupMutation = useAppBackupNow();
+  const [backupMessage, setBackupMessage] = useState<string | null>(null);
 
   const [wizardOpen, setWizardOpen] = useState(false);
   const [blankOpen, setBlankOpen] = useState(false);
@@ -231,12 +233,47 @@ export default function CharacterList() {
 
         {activeTab === 'trash' && isAdmin && (
           <>
-            <div className="flex items-center gap-3 mb-4 p-3 border border-yellow-500/30 bg-yellow-500/5 clip-edges">
-              <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-              <p className="text-yellow-400/80 text-xs font-mono">
-                Trashed operatives are hidden from all users. Restore to make them accessible again, or permanently delete to erase all data. Permanent deletion cannot be undone.
-              </p>
+            <div className="flex items-start gap-3 mb-4 p-3 border border-yellow-500/30 bg-yellow-500/5 clip-edges">
+              <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-yellow-400/80 text-xs font-mono">
+                  Trashed operatives are hidden from all users. Restore to make them accessible again, or permanently delete to erase all data. Permanent deletion cannot be undone.
+                </p>
+                <p className="text-yellow-400/60 text-xs font-mono mt-1">
+                  Weekly snapshots run automatically every Sunday at midnight — dated copies land here so you can roll back to any week.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setBackupMessage(null);
+                  backupMutation.mutate(undefined, {
+                    onSuccess: (data: { created: number; skipped: number }) => {
+                      setBackupMessage(
+                        data.created > 0
+                          ? `Snapshot saved — ${data.created} operative${data.created !== 1 ? 's' : ''} backed up.`
+                          : `All operatives already have a snapshot for today.`
+                      );
+                    },
+                    onError: (err: Error) => {
+                      setBackupMessage(`Backup failed: ${err.message}`);
+                    },
+                  });
+                }}
+                disabled={backupMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider border border-primary/50 text-primary hover:bg-primary/10 transition-all clip-edges flex-shrink-0 disabled:opacity-40"
+                title="Snapshot all active operatives to trash now"
+              >
+                <DatabaseBackup className="w-3.5 h-3.5" />
+                {backupMutation.isPending ? 'Saving...' : 'Backup Now'}
+              </button>
             </div>
+
+            {backupMessage && (
+              <div className={`flex items-center gap-2 mb-4 px-4 py-2 text-xs font-mono clip-edges border ${backupMessage.startsWith('Backup failed') ? 'border-destructive/50 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/5 text-primary'}`}>
+                {backupMessage}
+                <button onClick={() => setBackupMessage(null)} className="ml-auto text-current/50 hover:text-current"><X className="w-3 h-3" /></button>
+              </div>
+            )}
 
             {trashLoading ? (
               <div className="flex items-center justify-center py-16 text-primary"><Activity className="animate-spin" /></div>
