@@ -85,7 +85,7 @@ export default function CharacterList() {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-background scanlines" onClick={() => setConfirmDeleteId(null)}>
+    <div className="min-h-screen p-8 bg-transparent scanlines" onClick={() => setConfirmDeleteId(null)}>
       <div className="max-w-6xl mx-auto relative z-10">
         
         <div className="flex justify-between items-center mb-12 border-b border-border pb-6">

@@ -99,7 +99,7 @@ export default function CharacterSheet() {
   const profBonus = getProficiencyBonus(character.level);
 
   return (
-    <div className="min-h-screen bg-background scanlines pb-24 sm:pb-4 sm:pr-10">
+    <div className="min-h-screen bg-transparent scanlines pb-24 sm:pb-4 sm:pr-10">
       {/* Header Bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-2 shadow-lg shadow-black/50">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">

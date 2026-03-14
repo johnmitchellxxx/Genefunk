@@ -41,14 +41,42 @@ function Router() {
 }
 
 function App() {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <DiceProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
+          {/* Full-screen background layer */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 0,
+              backgroundImage: `url('${base}/images/genefunk-bg.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'saturate(0.75) brightness(0.45)',
+            }}
+          />
+          {/* Vignette + color tint overlay */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 1,
+              background: 'radial-gradient(ellipse at center, transparent 30%, hsl(240 10% 3% / 0.7) 100%), linear-gradient(180deg, hsl(190 100% 10% / 0.15) 0%, hsl(240 10% 3% / 0.3) 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <WouterRouter base={base}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </div>
         </DiceProvider>
       </TooltipProvider>
     </QueryClientProvider>

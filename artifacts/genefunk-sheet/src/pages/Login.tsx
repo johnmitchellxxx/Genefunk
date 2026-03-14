@@ -47,7 +47,7 @@ export default function Login() {
   }, [name, queryClient, setLocation]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden scanlines">
+    <div className="min-h-screen flex items-center justify-center bg-transparent relative overflow-hidden scanlines">
       <div
         className="absolute inset-0 z-0 opacity-20 bg-cover bg-center"
         style={{ backgroundImage: `url(${import.meta.env.BASE_URL}images/cyber-bg.png)` }}

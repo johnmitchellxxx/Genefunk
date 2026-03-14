@@ -59,10 +59,11 @@
 
 @layer base {
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
+    background-color: transparent;
     background-image: 
-      linear-gradient(to right, hsl(var(--border) / 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--border) / 0.05) 1px, transparent 1px);
+      linear-gradient(to right, hsl(var(--border) / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.06) 1px, transparent 1px);
     background-size: 40px 40px;
     background-attachment: fixed;
     font-size: 15px;
