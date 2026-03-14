@@ -7,6 +7,7 @@ import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } fro
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
+import { UPGRADES, type UpgradeData } from '@/lib/rulebookData';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Dices } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
@@ -799,60 +800,176 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
   );
 }
 
+function UpgradeSlotCounter({ character }: { character: Character }) {
+  const biowareSlots = character.geneMods.filter(m => m.type !== 'Cosmetic').length;
+  const cyberSlots = character.cybernetics.length;
+  const total = biowareSlots + cyberSlots;
+  const MAX = 8;
+  const over = total > MAX;
+  return (
+    <div className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border rounded-sm ${over ? 'border-destructive text-destructive' : 'border-border text-muted-foreground'}`}>
+      <span className="uppercase tracking-widest">Upgrade Slots</span>
+      <span className={`font-bold ${over ? 'text-destructive' : total >= MAX ? 'text-yellow-400' : 'text-primary'}`}>{total} / {MAX}</span>
+    </div>
+  );
+}
+
 function GeneModsPanel({ character, onUpdate }: PanelProps) {
+  const [selectedKey, setSelectedKey] = useState('');
+  const biowareOptions = UPGRADES.filter(u => u.type === 'bioware');
+  const preview: UpgradeData | undefined = biowareOptions.find(u => `${u.name}|||${u.brand}` === selectedKey);
+
+  function installBioware() {
+    if (!preview) return;
+    const entry: GeneModEntry = {
+      id: Math.random().toString(),
+      name: `${preview.name} (${preview.brand})`,
+      type: preview.countsAsSlot ? 'Bioware' : 'Cosmetic',
+      description: preview.effectSummary,
+      active: true,
+    };
+    onUpdate('geneMods', [...character.geneMods, entry]);
+    setSelectedKey('');
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-primary uppercase tracking-widest font-mono font-bold">Genetic Enhancements</span>
+        <span className="text-sm text-primary uppercase tracking-widest font-mono font-bold">Bioware</span>
+        <UpgradeSlotCounter character={character} />
       </div>
+
+      {/* Catalogue picker */}
+      <div className="flex gap-1">
+        <select
+          value={selectedKey}
+          onChange={e => setSelectedKey(e.target.value)}
+          className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-primary"
+        >
+          <option value="">— Browse bioware catalogue —</option>
+          {biowareOptions.map(u => (
+            <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
+              {u.name} [{u.brand}] {u.cost}
+            </option>
+          ))}
+        </select>
+        <CyberButton variant="primary" className="text-xs px-2 py-1" onClick={installBioware} disabled={!selectedKey}>
+          Install
+        </CyberButton>
+      </div>
+
+      {/* Preview of selected upgrade */}
+      {preview && (
+        <div className="p-2 border border-primary/40 bg-primary/5 rounded-sm text-xs font-mono text-foreground/80 leading-relaxed">
+          <div className="font-bold text-primary mb-0.5">{preview.name} <span className="text-muted-foreground">[{preview.brand}]</span> · {preview.cost}</div>
+          <div>{preview.effectSummary}</div>
+          {!preview.countsAsSlot && <div className="text-yellow-400 mt-1">★ Does not consume an upgrade slot.</div>}
+        </div>
+      )}
+
+      {/* Installed bioware */}
       {character.geneMods.map(mod => (
-        <div key={mod.id} className="p-3 border border-border bg-background/30 clip-edges">
-          <div className="flex justify-between items-start">
-            <EditableField value={mod.name} onSave={v => onUpdate('geneMods', updateArrayEntry(character.geneMods, mod.id, { name: String(v) }))} className="font-bold text-primary text-sm" />
-            <div className="flex items-center gap-1">
-              <CyberBadge variant={mod.active ? 'primary' : 'outline'} className="text-xs">{mod.type || 'Passive'}</CyberBadge>
+        <div key={mod.id} className="p-3 border border-border bg-background/30 overflow-hidden rounded-sm border-l-2 border-l-primary">
+          <div className="flex justify-between items-start gap-2">
+            <span className="font-bold text-primary text-sm font-mono leading-tight">{mod.name}</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <CyberBadge variant={mod.type === 'Cosmetic' ? 'outline' : 'primary'} className="text-xs">{mod.type || 'Bioware'}</CyberBadge>
               <button onClick={() => onUpdate('geneMods', character.geneMods.filter(m => m.id !== mod.id))} className="text-destructive text-xs hover:underline ml-1 font-mono">DEL</button>
             </div>
           </div>
-          <EditableField value={mod.description || ''} onSave={v => onUpdate('geneMods', updateArrayEntry(character.geneMods, mod.id, { description: String(v) }))} className="text-sm text-foreground/70 mt-1.5 font-mono" />
+          <div className="text-xs text-foreground/60 mt-1 font-mono leading-relaxed">{mod.description}</div>
         </div>
       ))}
-      <CyberButton variant="ghost" className="w-full text-xs py-1" onClick={() => {
-        const name = prompt("Gene Mod Name:");
-        if (name) {
-          const entry: GeneModEntry = { id: Math.random().toString(), name, type: 'Passive', description: 'Describe the effect...', active: true };
-          onUpdate('geneMods', [...character.geneMods, entry]);
-        }
-      }}>+ Install Splicing</CyberButton>
+
+      {character.geneMods.length === 0 && (
+        <div className="text-xs text-muted-foreground font-mono text-center py-3">No bioware installed.</div>
+      )}
     </div>
   );
 }
 
 function CyberneticsPanel({ character, onUpdate }: PanelProps) {
+  const [selectedKey, setSelectedKey] = useState('');
+  const cyberOptions = UPGRADES.filter(u => u.type === 'cybernetic' || u.type === 'daemon');
+  const preview: UpgradeData | undefined = cyberOptions.find(u => `${u.name}|||${u.brand}` === selectedKey);
+
+  function installCybernetic() {
+    if (!preview) return;
+    const entry: CyberneticEntry = {
+      id: Math.random().toString(),
+      name: `${preview.name} (${preview.brand})`,
+      slot: preview.type === 'daemon' ? 'Daemon' : 'Cybernetic',
+      description: preview.effectSummary,
+      active: true,
+    };
+    onUpdate('cybernetics', [...character.cybernetics, entry]);
+    setSelectedKey('');
+  }
+
+  const cyberwareList = cyberOptions.filter(u => u.type === 'cybernetic');
+  const daemonList = cyberOptions.filter(u => u.type === 'daemon');
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-secondary uppercase tracking-widest font-mono font-bold">Hardware Implants</span>
+        <span className="text-sm text-secondary uppercase tracking-widest font-mono font-bold">Cyberware & Daemon</span>
+        <UpgradeSlotCounter character={character} />
       </div>
+
+      {/* Catalogue picker */}
+      <div className="flex gap-1">
+        <select
+          value={selectedKey}
+          onChange={e => setSelectedKey(e.target.value)}
+          className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-secondary"
+        >
+          <option value="">— Browse implant catalogue —</option>
+          <optgroup label="── Cybernetic Upgrades ──">
+            {cyberwareList.map(u => (
+              <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
+                {u.name} [{u.brand}] {u.cost}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="── Daemon Upgrades ──">
+            {daemonList.map(u => (
+              <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
+                {u.name} [{u.brand}] {u.cost}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+        <CyberButton variant="secondary" className="text-xs px-2 py-1" onClick={installCybernetic} disabled={!selectedKey}>
+          Graft
+        </CyberButton>
+      </div>
+
+      {/* Preview of selected upgrade */}
+      {preview && (
+        <div className="p-2 border border-secondary/40 bg-secondary/5 rounded-sm text-xs font-mono text-foreground/80 leading-relaxed">
+          <div className="font-bold text-secondary mb-0.5">{preview.name} <span className="text-muted-foreground">[{preview.brand}]</span> · {preview.cost}</div>
+          <div className="text-yellow-400/70 text-[10px] uppercase tracking-widest mb-0.5">{preview.type}</div>
+          <div>{preview.effectSummary}</div>
+        </div>
+      )}
+
+      {/* Installed cybernetics/daemon */}
       {character.cybernetics.map(cyber => (
-        <div key={cyber.id} className="p-3 border border-border bg-background/30 clip-edges border-l-2 border-l-secondary">
-          <div className="flex justify-between items-start">
-            <EditableField value={cyber.name} onSave={v => onUpdate('cybernetics', updateArrayEntry(character.cybernetics, cyber.id, { name: String(v) }))} className="font-bold text-secondary text-sm" />
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground uppercase font-mono">{cyber.slot}</span>
+        <div key={cyber.id} className="p-3 border border-border bg-background/30 overflow-hidden rounded-sm border-l-2 border-l-secondary">
+          <div className="flex justify-between items-start gap-2">
+            <span className="font-bold text-secondary text-sm font-mono leading-tight">{cyber.name}</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <CyberBadge variant="secondary" className="text-xs">{cyber.slot || 'Cybernetic'}</CyberBadge>
               <button onClick={() => onUpdate('cybernetics', character.cybernetics.filter(c => c.id !== cyber.id))} className="text-destructive text-xs hover:underline ml-1 font-mono">DEL</button>
             </div>
           </div>
-          <EditableField value={cyber.description || ''} onSave={v => onUpdate('cybernetics', updateArrayEntry(character.cybernetics, cyber.id, { description: String(v) }))} className="text-sm text-foreground/70 mt-1.5 font-mono" />
+          <div className="text-xs text-foreground/60 mt-1 font-mono leading-relaxed">{cyber.description}</div>
         </div>
       ))}
-      <CyberButton variant="ghost" className="w-full text-xs py-1" onClick={() => {
-        const name = prompt("Cybernetic Implant Name:");
-        if (name) {
-          const entry: CyberneticEntry = { id: Math.random().toString(), name, slot: 'Neural', description: 'Describe the hardware...', active: true };
-          onUpdate('cybernetics', [...character.cybernetics, entry]);
-        }
-      }}>+ Graft Hardware</CyberButton>
+
+      {character.cybernetics.length === 0 && (
+        <div className="text-xs text-muted-foreground font-mono text-center py-3">No implants installed.</div>
+      )}
     </div>
   );
 }
