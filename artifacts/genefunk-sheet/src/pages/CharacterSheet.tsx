@@ -1247,6 +1247,11 @@ function UpgradeSlotCounter({ character }: { character: Character }) {
 
 function GeneModsPanel({ character, onUpdate }: PanelProps) {
   const [selectedKey, setSelectedKey] = useState('');
+  const [customMode, setCustomMode] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customDescription, setCustomDescription] = useState('');
+  const [customType, setCustomType] = useState<'Bioware' | 'Cosmetic'>('Bioware');
+
   const biowareOptions = UPGRADES.filter(u => u.type === 'bioware');
   const preview: UpgradeData | undefined = biowareOptions.find(u => `${u.name}|||${u.brand}` === selectedKey);
 
@@ -1263,6 +1268,22 @@ function GeneModsPanel({ character, onUpdate }: PanelProps) {
     setSelectedKey('');
   }
 
+  function installCustom() {
+    if (!customName.trim()) return;
+    const entry: GeneModEntry = {
+      id: Math.random().toString(),
+      name: customName.trim(),
+      type: customType,
+      description: customDescription.trim(),
+      active: true,
+    };
+    onUpdate('geneMods', [...character.geneMods, entry]);
+    setCustomName('');
+    setCustomDescription('');
+    setCustomType('Bioware');
+    setCustomMode(false);
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -1270,31 +1291,83 @@ function GeneModsPanel({ character, onUpdate }: PanelProps) {
         <UpgradeSlotCounter character={character} />
       </div>
 
-      {/* Catalogue picker */}
-      <div className="flex gap-1">
-        <select
-          value={selectedKey}
-          onChange={e => setSelectedKey(e.target.value)}
-          className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-primary"
-        >
-          <option value="">— Browse bioware catalogue —</option>
-          {biowareOptions.map(u => (
-            <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
-              {u.name} [{u.brand}] {u.cost}
-            </option>
-          ))}
-        </select>
-        <CyberButton variant="primary" className="text-xs px-2 py-1" onClick={installBioware} disabled={!selectedKey}>
-          Install
-        </CyberButton>
-      </div>
+      {!customMode ? (
+        <>
+          {/* Catalogue picker */}
+          <div className="flex gap-1">
+            <select
+              value={selectedKey}
+              onChange={e => setSelectedKey(e.target.value)}
+              className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-primary"
+            >
+              <option value="">— Browse bioware catalogue —</option>
+              {biowareOptions.map(u => (
+                <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
+                  {u.name} [{u.brand}] {u.cost}
+                </option>
+              ))}
+            </select>
+            <CyberButton variant="primary" className="text-xs px-2 py-1" onClick={installBioware} disabled={!selectedKey}>
+              Install
+            </CyberButton>
+          </div>
+          <button
+            onClick={() => { setCustomMode(true); setSelectedKey(''); }}
+            className="w-full text-xs font-mono text-primary/70 hover:text-primary border border-dashed border-primary/30 hover:border-primary/60 py-1.5 rounded-sm transition-colors"
+          >
+            + Custom Entry
+          </button>
 
-      {/* Preview of selected upgrade */}
-      {preview && (
-        <div className="p-2 border border-primary/40 bg-primary/5 rounded-sm text-xs font-mono text-foreground/80 leading-relaxed">
-          <div className="font-bold text-primary mb-0.5">{preview.name} <span className="text-muted-foreground">[{preview.brand}]</span> · {preview.cost}</div>
-          <div>{preview.effectSummary}</div>
-          {!preview.countsAsSlot && <div className="text-yellow-400 mt-1">★ Does not consume an upgrade slot.</div>}
+          {/* Preview of selected upgrade */}
+          {preview && (
+            <div className="p-2 border border-primary/40 bg-primary/5 rounded-sm text-xs font-mono text-foreground/80 leading-relaxed">
+              <div className="font-bold text-primary mb-0.5">{preview.name} <span className="text-muted-foreground">[{preview.brand}]</span> · {preview.cost}</div>
+              <div>{preview.effectSummary}</div>
+              {!preview.countsAsSlot && <div className="text-yellow-400 mt-1">★ Does not consume an upgrade slot.</div>}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Custom entry form */
+        <div className="border border-primary/40 bg-primary/5 rounded-sm p-3 space-y-2">
+          <div className="text-xs text-primary font-mono uppercase tracking-widest mb-1">Custom Bioware Entry</div>
+          <input
+            autoFocus
+            type="text"
+            value={customName}
+            onChange={e => setCustomName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && installCustom()}
+            placeholder="Name (e.g. Myofibril Weave)"
+            className="w-full bg-background border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-primary rounded-sm"
+          />
+          <textarea
+            value={customDescription}
+            onChange={e => setCustomDescription(e.target.value)}
+            placeholder="Effect / description (optional)"
+            rows={2}
+            className="w-full bg-background border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-primary rounded-sm resize-none"
+          />
+          <div className="flex items-center gap-2">
+            <select
+              value={customType}
+              onChange={e => setCustomType(e.target.value as 'Bioware' | 'Cosmetic')}
+              className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-primary"
+            >
+              <option value="Bioware">Bioware (uses slot)</option>
+              <option value="Cosmetic">Cosmetic (no slot)</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setCustomMode(false); setCustomName(''); setCustomDescription(''); }}
+              className="flex-1 text-xs font-mono py-1.5 border border-border text-muted-foreground hover:text-foreground transition-colors rounded-sm"
+            >
+              Cancel
+            </button>
+            <CyberButton variant="primary" className="flex-1 text-xs py-1" onClick={installCustom} disabled={!customName.trim()}>
+              Install
+            </CyberButton>
+          </div>
         </div>
       )}
 
@@ -1321,6 +1394,11 @@ function GeneModsPanel({ character, onUpdate }: PanelProps) {
 
 function CyberneticsPanel({ character, onUpdate }: PanelProps) {
   const [selectedKey, setSelectedKey] = useState('');
+  const [customMode, setCustomMode] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customDescription, setCustomDescription] = useState('');
+  const [customSlot, setCustomSlot] = useState<'Cybernetic' | 'Daemon'>('Cybernetic');
+
   const cyberOptions = UPGRADES.filter(u => u.type === 'cybernetic' || u.type === 'daemon');
   const preview: UpgradeData | undefined = cyberOptions.find(u => `${u.name}|||${u.brand}` === selectedKey);
 
@@ -1337,6 +1415,22 @@ function CyberneticsPanel({ character, onUpdate }: PanelProps) {
     setSelectedKey('');
   }
 
+  function installCustom() {
+    if (!customName.trim()) return;
+    const entry: CyberneticEntry = {
+      id: Math.random().toString(),
+      name: customName.trim(),
+      slot: customSlot,
+      description: customDescription.trim(),
+      active: true,
+    };
+    onUpdate('cybernetics', [...character.cybernetics, entry]);
+    setCustomName('');
+    setCustomDescription('');
+    setCustomSlot('Cybernetic');
+    setCustomMode(false);
+  }
+
   const cyberwareList = cyberOptions.filter(u => u.type === 'cybernetic');
   const daemonList = cyberOptions.filter(u => u.type === 'daemon');
 
@@ -1347,40 +1441,92 @@ function CyberneticsPanel({ character, onUpdate }: PanelProps) {
         <UpgradeSlotCounter character={character} />
       </div>
 
-      {/* Catalogue picker */}
-      <div className="flex gap-1">
-        <select
-          value={selectedKey}
-          onChange={e => setSelectedKey(e.target.value)}
-          className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-secondary"
-        >
-          <option value="">— Browse implant catalogue —</option>
-          <optgroup label="── Cybernetic Upgrades ──">
-            {cyberwareList.map(u => (
-              <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
-                {u.name} [{u.brand}] {u.cost}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="── Daemon Upgrades ──">
-            {daemonList.map(u => (
-              <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
-                {u.name} [{u.brand}] {u.cost}
-              </option>
-            ))}
-          </optgroup>
-        </select>
-        <CyberButton variant="secondary" className="text-xs px-2 py-1" onClick={installCybernetic} disabled={!selectedKey}>
-          Graft
-        </CyberButton>
-      </div>
+      {!customMode ? (
+        <>
+          {/* Catalogue picker */}
+          <div className="flex gap-1">
+            <select
+              value={selectedKey}
+              onChange={e => setSelectedKey(e.target.value)}
+              className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-secondary"
+            >
+              <option value="">— Browse implant catalogue —</option>
+              <optgroup label="── Cybernetic Upgrades ──">
+                {cyberwareList.map(u => (
+                  <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
+                    {u.name} [{u.brand}] {u.cost}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="── Daemon Upgrades ──">
+                {daemonList.map(u => (
+                  <option key={`${u.name}|||${u.brand}`} value={`${u.name}|||${u.brand}`}>
+                    {u.name} [{u.brand}] {u.cost}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            <CyberButton variant="secondary" className="text-xs px-2 py-1" onClick={installCybernetic} disabled={!selectedKey}>
+              Graft
+            </CyberButton>
+          </div>
+          <button
+            onClick={() => { setCustomMode(true); setSelectedKey(''); }}
+            className="w-full text-xs font-mono text-secondary/70 hover:text-secondary border border-dashed border-secondary/30 hover:border-secondary/60 py-1.5 rounded-sm transition-colors"
+          >
+            + Custom Entry
+          </button>
 
-      {/* Preview of selected upgrade */}
-      {preview && (
-        <div className="p-2 border border-secondary/40 bg-secondary/5 rounded-sm text-xs font-mono text-foreground/80 leading-relaxed">
-          <div className="font-bold text-secondary mb-0.5">{preview.name} <span className="text-muted-foreground">[{preview.brand}]</span> · {preview.cost}</div>
-          <div className="text-yellow-400/70 text-[10px] uppercase tracking-widest mb-0.5">{preview.type}</div>
-          <div>{preview.effectSummary}</div>
+          {/* Preview of selected upgrade */}
+          {preview && (
+            <div className="p-2 border border-secondary/40 bg-secondary/5 rounded-sm text-xs font-mono text-foreground/80 leading-relaxed">
+              <div className="font-bold text-secondary mb-0.5">{preview.name} <span className="text-muted-foreground">[{preview.brand}]</span> · {preview.cost}</div>
+              <div className="text-yellow-400/70 text-[10px] uppercase tracking-widest mb-0.5">{preview.type}</div>
+              <div>{preview.effectSummary}</div>
+            </div>
+          )}
+        </>
+      ) : (
+        /* Custom entry form */
+        <div className="border border-secondary/40 bg-secondary/5 rounded-sm p-3 space-y-2">
+          <div className="text-xs text-secondary font-mono uppercase tracking-widest mb-1">Custom Implant Entry</div>
+          <input
+            autoFocus
+            type="text"
+            value={customName}
+            onChange={e => setCustomName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && installCustom()}
+            placeholder="Name (e.g. Neural Lattice v2)"
+            className="w-full bg-background border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-secondary rounded-sm"
+          />
+          <textarea
+            value={customDescription}
+            onChange={e => setCustomDescription(e.target.value)}
+            placeholder="Effect / description (optional)"
+            rows={2}
+            className="w-full bg-background border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-secondary rounded-sm resize-none"
+          />
+          <div className="flex items-center gap-2">
+            <select
+              value={customSlot}
+              onChange={e => setCustomSlot(e.target.value as 'Cybernetic' | 'Daemon')}
+              className="flex-1 text-xs font-mono bg-background border border-border rounded-sm px-2 py-1.5 text-foreground focus:outline-none focus:border-secondary"
+            >
+              <option value="Cybernetic">Cybernetic (hardware)</option>
+              <option value="Daemon">Daemon (software)</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setCustomMode(false); setCustomName(''); setCustomDescription(''); }}
+              className="flex-1 text-xs font-mono py-1.5 border border-border text-muted-foreground hover:text-foreground transition-colors rounded-sm"
+            >
+              Cancel
+            </button>
+            <CyberButton variant="secondary" className="flex-1 text-xs py-1" onClick={installCustom} disabled={!customName.trim()}>
+              Graft
+            </CyberButton>
+          </div>
         </div>
       )}
 
