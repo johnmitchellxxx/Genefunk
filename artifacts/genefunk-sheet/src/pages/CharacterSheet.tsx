@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRoute } from 'wouter';
 import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookClasses, useAppRulebookBackgrounds, useAppRulebookGenomes } from '@/hooks/use-api';
-import { useDice } from '@/hooks/use-dice';
+import { useDice, type DieType } from '@/hooks/use-dice';
 import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } from '@/components/CyberUI';
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
@@ -456,7 +456,7 @@ export default function CharacterSheet() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
-          <DiceRoller />
+          <DiceRoller onClose={() => setDiceOpen(false)} />
         </div>
       </div>
 
@@ -491,8 +491,19 @@ function updateArrayEntry<T extends { id: string }>(arr: T[], id: string, patch:
   return arr.map(item => item.id === id ? { ...item, ...patch } : item);
 }
 
+function parseDiceExpression(expr: string): { sides: number; count: number; modifier: number } | null {
+  const m = expr.trim().match(/^(\d+)d(\d+)\s*([+-]\s*\d+)?$/i);
+  if (!m) return null;
+  return {
+    count: parseInt(m[1]),
+    sides: parseInt(m[2]),
+    modifier: m[3] ? parseInt(m[3].replace(/\s+/g, '')) : 0,
+  };
+}
+
 function ActionsPanel({ character, onUpdate }: PanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const { rollDice, rollCustom } = useDice();
 
   const handleWeaponSelect = (weapon: WeaponRef | null) => {
     setPickerOpen(false);
@@ -538,10 +549,26 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
         ? (getModifier(character.dexterity) >= getModifier(character.strength) ? 'DEX' : 'STR')
         : atk.weaponType === 'ranged' ? 'DEX' : 'STR';
       return (
-        <span className="text-primary text-sm font-mono" title={`${statLabel} mod + Proficiency bonus`}>
+        <button
+          className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer text-left"
+          title={`Click to roll D20 ${formatModifier(bonus)} (${statLabel} mod + Prof)`}
+          onClick={() => rollDice(`${atk.name} Attack`, bonus)}
+        >
           {formatModifier(bonus)}
           <span className="text-[10px] text-muted-foreground ml-1">{statLabel}</span>
-        </span>
+        </button>
+      );
+    }
+    const manualBonus = atk.attackBonus ? parseInt(String(atk.attackBonus).replace(/^\+/, '')) : NaN;
+    if (!isNaN(manualBonus)) {
+      return (
+        <button
+          className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
+          title="Click to roll D20 + bonus"
+          onClick={() => rollDice(`${atk.name} Attack`, manualBonus)}
+        >
+          {atk.attackBonus}
+        </button>
       );
     }
     return (
@@ -582,7 +609,23 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
                   {renderHitCell(atk)}
                 </td>
                 <td className="p-2">
-                  <EditableField value={atk.damage || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { damage: String(v) }))} className="text-secondary text-sm font-mono" />
+                  {(() => {
+                    const parsed = atk.damage ? parseDiceExpression(atk.damage) : null;
+                    if (parsed) {
+                      return (
+                        <button
+                          className="text-secondary text-sm font-mono hover:text-secondary/80 hover:underline cursor-pointer"
+                          title={`Click to roll ${atk.damage}`}
+                          onClick={() => rollCustom([{ sides: parsed.sides as DieType, count: parsed.count }], parsed.modifier, `${atk.name} Damage`)}
+                        >
+                          {atk.damage}
+                        </button>
+                      );
+                    }
+                    return (
+                      <EditableField value={atk.damage || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { damage: String(v) }))} className="text-secondary text-sm font-mono" />
+                    );
+                  })()}
                 </td>
                 <td className="p-2">
                   <EditableField value={atk.damageType || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { damageType: String(v) }))} className="text-foreground/80 text-sm" />
