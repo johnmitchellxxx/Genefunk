@@ -652,27 +652,11 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
 
   const profBonus = getProficiencyBonus(character.level);
 
-  const WEAPON_TYPE_CYCLE: Array<{ type: 'melee' | 'ranged'; isFinesse: boolean; label: string }> = [
-    { type: 'melee',  isFinesse: false, label: 'MEL' },
-    { type: 'ranged', isFinesse: false, label: 'RNG' },
-    { type: 'melee',  isFinesse: true,  label: 'FIN' },
-  ];
-
-  const cycleWeaponType = (atk: AttackEntry) => {
-    const idx = WEAPON_TYPE_CYCLE.findIndex(w => w.type === atk.weaponType && w.isFinesse === !!atk.isFinesse);
-    const next = WEAPON_TYPE_CYCLE[(idx + 1) % WEAPON_TYPE_CYCLE.length];
-    onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { weaponType: next.type, isFinesse: next.isFinesse, attackBonus: '' }));
-  };
-
-  const clearWeaponType = (atk: AttackEntry) => {
-    onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { weaponType: undefined, isFinesse: false }));
-  };
-
   const renderHitCell = (atk: AttackEntry) => {
     const strMod = getModifier(character.strength);
     const dexMod = getModifier(character.dexterity);
-    const currentTypeEntry = WEAPON_TYPE_CYCLE.find(w => w.type === atk.weaponType && w.isFinesse === !!atk.isFinesse);
 
+    // If a weapon type is set, auto-calculate from ability mod + prof bonus
     if (atk.weaponType === 'melee' || atk.weaponType === 'ranged') {
       const statLabel = atk.isFinesse
         ? (dexMod >= strMod ? 'DEX' : 'STR')
@@ -680,55 +664,38 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
       const abilityMod = statLabel === 'DEX' ? dexMod : strMod;
       const bonus = abilityMod + profBonus;
       const rollName = `${atk.name} Attack (${formatModifier(abilityMod)} ${statLabel}, ${formatModifier(profBonus)} Prof)`;
-      const tooltip = `1d20  ${formatModifier(abilityMod)} (${statLabel})  +  ${formatModifier(profBonus)} (Prof)  =  ${formatModifier(bonus)} to hit\nType: ${currentTypeEntry?.label} — click badge to cycle, right-click to clear`;
+      const tooltip = `${formatModifier(abilityMod)} ${statLabel} + ${formatModifier(profBonus)} Prof = ${formatModifier(bonus)} to hit — click to roll`;
       const attackParts = [
         { value: abilityMod, label: statLabel },
         { value: profBonus, label: 'Prof' },
       ];
       return (
-        <span className="flex items-center gap-1">
-          <button
-            className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
-            title={tooltip}
-            onClick={() => rollDice(rollName, bonus, { parts: attackParts })}
-          >
-            {formatModifier(bonus)}
-          </button>
-          <button
-            className="text-[10px] font-mono px-1 rounded border border-primary/30 text-primary/60 hover:border-primary hover:text-primary transition-colors"
-            title={`Weapon type: ${currentTypeEntry?.label} — click to cycle (MEL → RNG → FIN), right-click to set manual`}
-            onClick={() => cycleWeaponType(atk)}
-            onContextMenu={e => { e.preventDefault(); clearWeaponType(atk); }}
-          >
-            {currentTypeEntry?.label}
-          </button>
-        </span>
+        <button
+          className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
+          title={tooltip}
+          onClick={() => rollDice(rollName, bonus, { parts: attackParts })}
+        >
+          {formatModifier(bonus)}
+        </button>
       );
     }
 
-    // No weapon type — show manual bonus with a "?" badge to assign a type
+    // Manual bonus — click to roll, click the value to edit
     const manualBonus = atk.attackBonus ? parseInt(String(atk.attackBonus).replace(/^\+/, '')) : NaN;
-    return (
-      <span className="flex items-center gap-1">
-        {!isNaN(manualBonus) ? (
-          <button
-            className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
-            title={`Manual bonus — click to roll 1d20 ${formatModifier(manualBonus)}\nThis doesn't update when your stats change`}
-            onClick={() => rollDice(`${atk.name} Attack`, manualBonus)}
-          >
-            {atk.attackBonus}
-          </button>
-        ) : (
-          <EditableField value={atk.attackBonus || ''} onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { attackBonus: String(v) }))} className="text-primary text-sm font-mono w-10" />
-        )}
-        <button
-          className="text-[10px] font-mono px-1 rounded border border-muted-foreground/30 text-muted-foreground/50 hover:border-primary hover:text-primary transition-colors"
-          title="No weapon type set — click to assign MEL/RNG/FIN so to-hit auto-calculates from your stats"
-          onClick={() => cycleWeaponType(atk)}
-        >
-          ?
-        </button>
-      </span>
+    return !isNaN(manualBonus) ? (
+      <button
+        className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
+        title={`Click to roll 1d20 ${formatModifier(manualBonus)}`}
+        onClick={() => rollDice(`${atk.name} Attack`, manualBonus)}
+      >
+        {atk.attackBonus}
+      </button>
+    ) : (
+      <EditableField
+        value={atk.attackBonus || ''}
+        onSave={v => onUpdate('attacks', updateArrayEntry(character.attacks, atk.id, { attackBonus: String(v) }))}
+        className="text-primary text-sm font-mono w-10"
+      />
     );
   };
 
