@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatModifier } from '@/lib/rules';
 import { D20Die } from '@/components/D20Die';
 import { AnimatedDie } from '@/components/AnimatedDie';
-import { sendRollToBeyond20, isBeyond20Available, onBeyond20Change } from '@/lib/beyond20';
+import { sendRollToBeyond20, isBeyond20Available, onBeyond20Change, type RollPart } from '@/lib/beyond20';
 
 export type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100;
 
@@ -36,6 +36,12 @@ interface RollDiceOptions {
   onResult?: (total: number) => void;
   /** Pass 'initiative' to route the roll into Roll20's initiative tracker via Beyond20 */
   rollKind?: 'custom' | 'initiative' | 'ability-check' | 'saving-throw' | 'attack' | 'damage';
+  /**
+   * Labeled modifier components.  When provided, Beyond20 sends a labeled
+   * expression (e.g. `1d20+4[DEX]+4[Init bonus]`) so Roll20 shows the
+   * breakdown inline in chat.
+   */
+  parts?: RollPart[];
 }
 
 interface DiceContextType {
@@ -90,7 +96,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     const options: RollDiceOptions = typeof onResultOrOptions === 'function'
       ? { onResult: onResultOrOptions }
       : (onResultOrOptions ?? {});
-    const { onResult, rollKind = 'custom' } = options;
+    const { onResult, rollKind = 'custom', parts } = options;
 
     clearTimers();
     setCustomPhase('done');
@@ -107,10 +113,11 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     setD20Roll(roll);
     setD20Phase('tumble');
 
+    // Fallback plain expression used when no labeled parts are provided
     const expr = modifier !== 0
       ? `1d20${modifier >= 0 ? '+' : ''}${modifier}`
       : '1d20';
-    sendRollToBeyond20(name, expr, { characterName, rollKind, numericModifier: modifier });
+    sendRollToBeyond20(name, expr, { characterName, rollKind, numericModifier: modifier, parts });
 
     const t1 = setTimeout(() => {
       setD20Phase('result');

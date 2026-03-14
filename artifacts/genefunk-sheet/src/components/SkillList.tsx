@@ -52,6 +52,17 @@ export function SkillList({ character, onUpdate }: SkillListProps) {
         if (isExpertise) totalMod += (profBonus * 2);
         else if (isProficient) totalMod += profBonus;
 
+        const abilityAbbr = skill.ability.substring(0, 3).toUpperCase();
+        const skillParts = [
+          { value: statMod, label: abilityAbbr },
+          ...(isExpertise
+            ? [{ value: profBonus * 2, label: 'Exp' }]
+            : isProficient
+            ? [{ value: profBonus, label: 'Prof' }]
+            : []),
+        ];
+        const skillName = `${skill.label} (${abilityAbbr})`;
+
         return (
           <div key={skill.key} className="flex items-center group hover:bg-primary/5 p-1 -mx-1 rounded transition-colors">
             {/* Prof Check */}
@@ -77,12 +88,12 @@ export function SkillList({ character, onUpdate }: SkillListProps) {
 
             <div 
               className="w-8 font-bold text-right mr-3 cursor-pointer text-primary hover:text-secondary transition-colors"
-              onClick={() => rollDice(`${skill.label} (${skill.ability.substring(0,3).toUpperCase()})`, totalMod)}
+              onClick={() => rollDice(skillName, totalMod, { parts: skillParts })}
             >
               {formatModifier(totalMod)}
             </div>
 
-            <div className="flex-1 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(`${skill.label} (${skill.ability.substring(0,3).toUpperCase()})`, totalMod)}>
+            <div className="flex-1 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(skillName, totalMod, { parts: skillParts })}>
               {skill.label} <span className="text-xs uppercase opacity-60 ml-1">({skill.ability.substring(0,3)})</span>
             </div>
           </div>

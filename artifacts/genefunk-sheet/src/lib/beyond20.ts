@@ -49,6 +49,12 @@ export function onBeyond20Change(fn: (available: boolean) => void) {
   return () => { _listeners = _listeners.filter(l => l !== fn); };
 }
 
+/** A single labeled bonus component, e.g. { value: 4, label: 'DEX' } */
+export interface RollPart {
+  value: number;
+  label: string;
+}
+
 interface B20RollOptions {
   characterName?: string;
   rollType?: number;    // RollType enum
@@ -58,6 +64,23 @@ interface B20RollOptions {
   rollKind?: 'custom' | 'initiative' | 'ability-check' | 'saving-throw' | 'attack' | 'damage' | 'spell-card';
   /** Numeric modifier for initiative / ability rolls (Beyond20 expects a number, not the full expr) */
   numericModifier?: number;
+  /**
+   * Labeled breakdown of the modifier.  When provided the roll expression is built as
+   * `1d20+4[DEX]+4[Init bonus]` so Roll20 displays each component inline.
+   * Parts are also auto-formatted into the description field so the breakdown
+   * appears below the roll in Roll20 chat.
+   */
+  parts?: RollPart[];
+}
+
+/** Build a Roll20-compatible labeled dice expression from an array of parts.
+ *  e.g. [{value:4,label:'DEX'},{value:4,label:'bonus'}] → '+4[DEX]+4[bonus]'
+ */
+function buildPartsExpr(parts: RollPart[]): string {
+  return parts
+    .filter(p => p.value !== 0)
+    .map(p => `${p.value >= 0 ? '+' : ''}${p.value}[${p.label}]`)
+    .join('');
 }
 
 /**
@@ -75,16 +98,28 @@ export function sendRollToBeyond20(
     characterName = 'GeneFunk Character',
     rollType = RollType.Normal,
     whisper = WhisperType.Public,
-    description,
     rollKind = 'custom',
     numericModifier,
+    parts,
   } = options;
+
+  // If labeled parts are provided, build a labeled roll expression so Roll20
+  // shows each component (e.g. "1d20 + 4[DEX] + 4[Init bonus]")
+  const finalRoll = parts && parts.length > 0
+    ? `1d20${buildPartsExpr(parts)}`
+    : rollExpr;
+
+  // Auto-build description from parts when none is explicitly provided
+  const description = options.description
+    ?? (parts && parts.length > 0
+      ? parts.filter(p => p.value !== 0).map(p => `${p.value >= 0 ? '+' : ''}${p.value} ${p.label}`).join('  ')
+      : undefined);
 
   const request: Record<string, unknown> = {
     action: 'roll',
     type: rollKind,
     name,
-    roll: rollExpr,
+    roll: finalRoll,
     // Beyond20 uses 'modifier' as the numeric bonus for initiative/ability checks
     modifier: numericModifier !== undefined ? String(numericModifier) : rollExpr,
     advantage: rollType,

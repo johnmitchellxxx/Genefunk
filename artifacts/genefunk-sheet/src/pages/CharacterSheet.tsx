@@ -194,12 +194,16 @@ export default function CharacterSheet() {
             const rollName = customBonus !== 0
               ? `Initiative (${formatModifier(dexMod)} DEX + ${formatModifier(customBonus)} bonus)`
               : `Initiative (${formatModifier(dexMod)} DEX)`;
+            const initParts = [
+              { value: dexMod, label: 'DEX' },
+              ...(customBonus !== 0 ? [{ value: customBonus, label: 'Init bonus' }] : []),
+            ];
             return (
               <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2">
                 <Zap className="text-accent w-5 h-5 shrink-0" />
                 <div className="text-center">
                   <button
-                    onClick={() => rollDice(rollName, totalInit, { rollKind: 'initiative' })}
+                    onClick={() => rollDice(rollName, totalInit, { rollKind: 'initiative', parts: initParts })}
                     title={tooltip}
                     className="text-xs text-muted-foreground uppercase tracking-widest font-mono hover:text-primary transition-colors whitespace-nowrap"
                   >
@@ -272,6 +276,11 @@ export default function CharacterSheet() {
                   const isProf = character.savingThrowProficiencies.includes(stat.key);
                   const mod = getModifier(character[stat.key as keyof Character] as number);
                   const total = mod + (isProf ? profBonus : 0);
+                  const abbr = stat.label.substring(0, 3).toUpperCase();
+                  const saveParts = [
+                    { value: mod, label: abbr },
+                    ...(isProf ? [{ value: profBonus, label: 'Prof' }] : []),
+                  ];
                   return (
                     <div key={stat.key} className="flex items-center gap-2 py-1 hover:bg-primary/5 px-1.5 -mx-1 rounded group">
                       <div 
@@ -285,14 +294,14 @@ export default function CharacterSheet() {
                       />
                       <span 
                         className="w-7 font-bold text-primary cursor-pointer hover:text-secondary transition-colors text-right"
-                        onClick={() => rollDice(`${stat.label} Save`, total)}
+                        onClick={() => rollDice(`${stat.label} Save`, total, { parts: saveParts })}
                         title={isProf
-                          ? `${formatModifier(mod)} (${stat.label.substring(0,3).toUpperCase()}) + ${formatModifier(profBonus)} (Prof) = ${formatModifier(total)}\nClick to roll`
-                          : `${formatModifier(mod)} (${stat.label.substring(0,3).toUpperCase()}) — not proficient\nClick to roll`}
+                          ? `${formatModifier(mod)} (${abbr}) + ${formatModifier(profBonus)} (Prof) = ${formatModifier(total)}\nClick to roll`
+                          : `${formatModifier(mod)} (${abbr}) — not proficient\nClick to roll`}
                       >
                         {formatModifier(total)}
                       </span>
-                      <span className="text-muted-foreground uppercase group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(`${stat.label} Save`, total)}>
+                      <span className="text-muted-foreground uppercase group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(`${stat.label} Save`, total, { parts: saveParts })}>
                         {stat.label}
                       </span>
                     </div>
@@ -672,12 +681,16 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
       const bonus = abilityMod + profBonus;
       const rollName = `${atk.name} Attack (${formatModifier(abilityMod)} ${statLabel}, ${formatModifier(profBonus)} Prof)`;
       const tooltip = `1d20  ${formatModifier(abilityMod)} (${statLabel})  +  ${formatModifier(profBonus)} (Prof)  =  ${formatModifier(bonus)} to hit\nType: ${currentTypeEntry?.label} — click badge to cycle, right-click to clear`;
+      const attackParts = [
+        { value: abilityMod, label: statLabel },
+        { value: profBonus, label: 'Prof' },
+      ];
       return (
         <span className="flex items-center gap-1">
           <button
             className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
             title={tooltip}
-            onClick={() => rollDice(rollName, bonus)}
+            onClick={() => rollDice(rollName, bonus, { parts: attackParts })}
           >
             {formatModifier(bonus)}
           </button>
