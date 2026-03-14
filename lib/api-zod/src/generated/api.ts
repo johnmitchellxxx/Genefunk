@@ -127,7 +127,8 @@ export const GetCharacterResponse = zod.object({
       notes: zod.string().nullish(),
       weaponType: zod
         .union([zod.literal("melee"), zod.literal("ranged"), zod.literal(null)])
-        .nullish(),
+        .nullish()
+        .catch(null),
       isFinesse: zod.boolean().nullish(),
     }),
   ),
@@ -275,7 +276,8 @@ export const UpdateCharacterBody = zod.object({
             zod.literal("ranged"),
             zod.literal(null),
           ])
-          .nullish(),
+          .nullish()
+          .catch(null),
         isFinesse: zod.boolean().nullish(),
       }),
     )
@@ -424,7 +426,8 @@ export const UpdateCharacterResponse = zod.object({
       notes: zod.string().nullish(),
       weaponType: zod
         .union([zod.literal("melee"), zod.literal("ranged"), zod.literal(null)])
-        .nullish(),
+        .nullish()
+        .catch(null),
       isFinesse: zod.boolean().nullish(),
     }),
   ),
