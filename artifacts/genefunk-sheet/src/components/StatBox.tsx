@@ -19,10 +19,11 @@ export function StatBox({ label, score, onUpdate }: StatBoxProps) {
       <div 
         className="text-2xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors leading-tight mt-0.5"
         onClick={() => rollDice(`${label} Check`, modifier)}
+        title={`${label} modifier: ${formatModifier(modifier)} (score ${score})\nClick to roll 1d20 ${formatModifier(modifier)}`}
       >
         {formatModifier(modifier)}
       </div>
-      <div className="bg-background/50 border-t border-border px-2 mt-1">
+      <div className="bg-background/50 border-t border-border px-2 mt-1" title={`${label} score — click to edit`}>
         <EditableField 
           type="number"
           value={score} 

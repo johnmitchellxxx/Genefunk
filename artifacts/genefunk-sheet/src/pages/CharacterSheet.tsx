@@ -150,19 +150,19 @@ export default function CharacterSheet() {
 
         {/* Stats Strip */}
         <div className="flex gap-3 items-stretch flex-wrap">
-          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]">
+          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]" title={`Proficiency Bonus: +${profBonus}\nAdded to attacks, saves, and skills you're proficient in\nScales with level (currently Level ${character.level})`}>
             <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">Prof</div>
             <div className="text-lg font-bold text-primary">+{profBonus}</div>
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]">
+          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]" title="MOSAIC Score — your cyberware and bioware integration rating\nHigher MOSAIC unlocks more powerful gene mods and hacks">
             <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">MOSAIC</div>
             <EditableField value={character.mosaicScore} type="number" onSave={v => handleUpdate('mosaicScore', v)} className="text-lg font-bold text-accent text-center" />
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]">
+          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]" title={`Movement Speed: ${character.speed}m per turn\nClick to edit`}>
             <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">Speed</div>
             <EditableField value={character.speed} type="number" onSave={v => handleUpdate('speed', v)} className="text-lg font-bold text-foreground text-center" />
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]">
+          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex flex-col items-center justify-center min-w-[64px]" title={character.inspiration ? 'Inspired! You have advantage on one ability check, attack, or save' : 'Not inspired — click to toggle'}>
             <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">Insp</div>
             <div 
               className="text-lg font-bold text-accent cursor-pointer"
@@ -171,14 +171,14 @@ export default function CharacterSheet() {
               {character.inspiration ? '★' : '☆'}
             </div>
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2">
+          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2" title={`Armor Class: ${character.armorClass}\nAttackers must roll ${character.armorClass} or higher on their to-hit roll to damage you`}>
             <Shield className="text-primary w-5 h-5" />
             <div className="text-center">
               <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">AC</div>
               <EditableField value={character.armorClass} type="number" onSave={v => handleUpdate('armorClass', v)} className="text-lg font-bold text-primary text-center" />
             </div>
           </div>
-          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2">
+          <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2" title={`Damage Reduction: ${character.damageReduction}\nSubtract ${character.damageReduction} from each hit before it applies to your HP`}>
             <Shield className="text-secondary w-5 h-5" />
             <div className="text-center">
               <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">DR</div>
@@ -262,6 +262,9 @@ export default function CharacterSheet() {
                       <span 
                         className="w-7 font-bold text-primary cursor-pointer hover:text-secondary transition-colors text-right"
                         onClick={() => rollDice(`${stat.label} Save`, total)}
+                        title={isProf
+                          ? `${formatModifier(mod)} (${stat.label.substring(0,3).toUpperCase()}) + ${formatModifier(profBonus)} (Prof) = ${formatModifier(total)}\nClick to roll`
+                          : `${formatModifier(mod)} (${stat.label.substring(0,3).toUpperCase()}) — not proficient\nClick to roll`}
                       >
                         {formatModifier(total)}
                       </span>
@@ -314,7 +317,10 @@ export default function CharacterSheet() {
                   return (
                     <div key={p.skill} className="flex items-center justify-between py-1">
                       <span className="text-muted-foreground">{p.label}</span>
-                      <span className="text-primary font-bold text-base">{10 + bonus}</span>
+                      <span
+                        className="text-primary font-bold text-base"
+                        title={`10 (base) + ${formatModifier(abilityMod)} (${p.ability.substring(0,3).toUpperCase()})${isExpert ? ` + ${formatModifier(profBonus * 2)} (Expertise)` : isProf ? ` + ${formatModifier(profBonus)} (Prof)` : ''} = ${10 + bonus}`}
+                      >{10 + bonus}</span>
                     </div>
                   );
                 })}
