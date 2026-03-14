@@ -101,7 +101,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     sendRollToBeyond20(name, expr, { characterName });
 
     const t1 = setTimeout(() => setD20Phase('result'), 1200);
-    const t2 = setTimeout(() => dismissD20(), 5200);
+    const t2 = setTimeout(() => dismissD20(), 30000);
     timersRef.current = [t1, t2];
   }, [clearTimers, dismissD20, characterName]);
 
@@ -133,7 +133,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     setCustomRoll(roll);
     setCustomPhase('tumble');
     const t1 = setTimeout(() => setCustomPhase('result'), 1000);
-    const t2 = setTimeout(() => dismissCustom(), 5500);
+    const t2 = setTimeout(() => dismissCustom(), 30000);
     timersRef.current = [t1, t2];
   }, [clearTimers, dismissCustom, characterName]);
 
