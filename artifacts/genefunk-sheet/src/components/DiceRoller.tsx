@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDice, type DieType } from '@/hooks/use-dice';
-import { RotateCcw, Dices } from 'lucide-react';
+import { RotateCcw, Dices, ExternalLink } from 'lucide-react';
 
 const DIE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20, 100];
 
@@ -12,7 +12,7 @@ interface DiceRollerProps {
 }
 
 export function DiceRoller({ onClose }: DiceRollerProps) {
-  const { rollCustom } = useDice();
+  const { rollCustom, beyond20Active } = useDice();
   const [counts, setCounts] = useState<Record<DieType, number>>(emptyCount);
 
   const totalDice = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -88,6 +88,19 @@ export function DiceRoller({ onClose }: DiceRollerProps) {
             .join(' + ')}
         </div>
       )}
+
+      {/* Beyond20 status hint */}
+      <div className={`text-[10px] font-mono px-2 py-1.5 rounded flex items-center gap-1.5 ${
+        beyond20Active
+          ? 'text-green-400 bg-green-500/10 border border-green-500/30'
+          : 'text-muted-foreground/50 bg-white/3 border border-white/10'
+      }`}>
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${beyond20Active ? 'bg-green-400 animate-pulse' : 'bg-white/20'}`} />
+        {beyond20Active
+          ? 'Beyond20 connected — rolls go to Roll20'
+          : <span>Beyond20 not detected — <a href="https://beyond20.here-for-more.info" target="_blank" rel="noreferrer" className="underline hover:text-muted-foreground/80 inline-flex items-center gap-0.5">install & enable on this domain <ExternalLink className="w-2.5 h-2.5" /></a></span>
+        }
+      </div>
 
       {/* Actions */}
       <div className="flex gap-2 pt-1">

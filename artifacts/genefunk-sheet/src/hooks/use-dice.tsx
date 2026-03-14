@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatModifier } from '@/lib/rules';
 import { D20Die } from '@/components/D20Die';
 import { AnimatedDie } from '@/components/AnimatedDie';
+import { sendRollToBeyond20, isBeyond20Available, onBeyond20Change } from '@/lib/beyond20';
 
 export type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100;
 
@@ -34,6 +35,7 @@ type Phase = 'tumble' | 'result' | 'done';
 interface DiceContextType {
   rollDice: (name: string, modifier: number) => void;
   rollCustom: (dice: { sides: DieType; count: number }[], modifier: number, name: string) => void;
+  beyond20Active: boolean;
 }
 
 const DiceContext = createContext<DiceContextType | undefined>(undefined);
@@ -49,7 +51,10 @@ export function DiceProvider({ children }: { children: ReactNode }) {
   const [d20Phase, setD20Phase] = useState<Phase>('done');
   const [customRoll, setCustomRoll] = useState<CustomRoll | null>(null);
   const [customPhase, setCustomPhase] = useState<Phase>('done');
+  const [beyond20Active, setBeyond20Active] = useState(isBeyond20Available());
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => onBeyond20Change(setBeyond20Active), []);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach(clearTimeout);
@@ -87,6 +92,12 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     };
     setD20Roll(roll);
     setD20Phase('tumble');
+
+    const expr = modifier !== 0
+      ? `1d20${modifier >= 0 ? '+' : ''}${modifier}`
+      : '1d20';
+    sendRollToBeyond20(name, expr);
+
     const t1 = setTimeout(() => setD20Phase('result'), 1200);
     const t2 = setTimeout(() => dismissD20(), 5200);
     timersRef.current = [t1, t2];
@@ -111,6 +122,12 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       total: diceTotal + modifier,
     };
 
+    const expr = dice
+      .filter(d => d.count > 0)
+      .map(d => `${d.count}d${d.sides}`)
+      .join('+') + (modifier !== 0 ? `${modifier >= 0 ? '+' : ''}${modifier}` : '');
+    sendRollToBeyond20(name, expr);
+
     setCustomRoll(roll);
     setCustomPhase('tumble');
     const t1 = setTimeout(() => setCustomPhase('result'), 1000);
@@ -124,7 +141,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     : [];
 
   return (
-    <DiceContext.Provider value={{ rollDice, rollCustom }}>
+    <DiceContext.Provider value={{ rollDice, rollCustom, beyond20Active }}>
       {children}
 
       {/* ── D20 Roll Overlay ── */}

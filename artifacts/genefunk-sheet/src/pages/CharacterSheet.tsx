@@ -38,7 +38,7 @@ export default function CharacterSheet() {
   const { data: rawCharacter, isLoading } = useAppCharacter(id);
   const updateMutation = useAppUpdateCharacter();
   const deleteMutation = useAppDeleteCharacter();
-  const { rollDice } = useDice();
+  const { rollDice, beyond20Active } = useDice();
 
   const { data: rulebookBackgrounds } = useAppRulebookBackgrounds();
   const { data: rulebookGenomes } = useAppRulebookGenomes();
@@ -456,6 +456,12 @@ export default function CharacterSheet() {
           <div className="flex items-center gap-2">
             <Dices className="w-4 h-4 text-primary" />
             <span className="font-mono text-xs text-primary tracking-[0.2em] uppercase">Dice Roller</span>
+            {beyond20Active && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500/15 border border-green-500/40 rounded text-[10px] font-mono text-green-400 tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                B20
+              </span>
+            )}
           </div>
           <button
             onClick={() => setDiceOpen(false)}
