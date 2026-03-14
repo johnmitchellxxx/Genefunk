@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRoute } from 'wouter';
-import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookClasses, useAppRulebookBackgrounds, useAppRulebookGenomes } from '@/hooks/use-api';
+import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes } from '@/hooks/use-api';
 import { useDice, type DieType } from '@/hooks/use-dice';
 import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } from '@/components/CyberUI';
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
-import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
+import { CLASSES, UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Dices } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
@@ -39,11 +39,11 @@ export default function CharacterSheet() {
   const updateMutation = useAppUpdateCharacter();
   const deleteMutation = useAppDeleteCharacter();
   const { rollDice } = useDice();
-  const { data: rulebookClasses } = useAppRulebookClasses();
+
   const { data: rulebookBackgrounds } = useAppRulebookBackgrounds();
   const { data: rulebookGenomes } = useAppRulebookGenomes();
   
-  const classOptions = (rulebookClasses || []).map(c => ({ value: c.name, label: c.name }));
+  const classOptions = CLASSES.map(c => ({ value: c.name, label: c.name }));
   const backgroundOptions = (rulebookBackgrounds || []).map(b => ({ value: b.name, label: b.name }));
   const genomeOptions = (rulebookGenomes || []).map(g => ({ value: g.name, label: `${g.name} (${g.category})` }));
 
