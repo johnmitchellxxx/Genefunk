@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppAuth } from '@/hooks/use-api';
+import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppAuth } from '@/hooks/use-api';
 import { Link, useLocation } from 'wouter';
 import { CyberCard, CyberButton } from '@/components/CyberUI';
-import { Plus, User, Activity, Calendar, Shield, FileEdit, X } from 'lucide-react';
+import { Plus, User, Activity, Calendar, Shield, FileEdit, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { CharacterWizard } from '@/components/CharacterWizard';
 
@@ -12,11 +12,24 @@ export default function CharacterList() {
   const { data: characters, isLoading } = useAppCharacters();
   const createMutation = useAppCreateCharacter();
   const updateMutation = useAppUpdateCharacter();
+  const deleteMutation = useAppDeleteCharacter();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [blankOpen, setBlankOpen] = useState(false);
   const [blankName, setBlankName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const blankInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
+
+  const handleDelete = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirmDeleteId === id) {
+      deleteMutation.mutate({ id });
+      setConfirmDeleteId(null);
+    } else {
+      setConfirmDeleteId(id);
+    }
+  };
 
   const [wizardError, setWizardError] = useState<string | null>(null);
 
@@ -72,7 +85,7 @@ export default function CharacterList() {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-background scanlines">
+    <div className="min-h-screen p-8 bg-background scanlines" onClick={() => setConfirmDeleteId(null)}>
       <div className="max-w-6xl mx-auto relative z-10">
         
         <div className="flex justify-between items-center mb-12 border-b border-border pb-6">
@@ -132,9 +145,23 @@ export default function CharacterList() {
                     </div>
                   </div>
                   
-                  <div className="mt-6 pt-4 border-t border-border/50 flex items-center text-xs text-muted-foreground font-mono">
-                    <Calendar className="w-3 h-3 mr-2" />
-                    Last Updated: {format(new Date(char.updatedAt), 'MMM d, yyyy')}
+                  <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground font-mono">
+                    <span className="flex items-center">
+                      <Calendar className="w-3 h-3 mr-2" />
+                      {format(new Date(char.updatedAt), 'MMM d, yyyy')}
+                    </span>
+                    <button
+                      onClick={(e) => handleDelete(e, char.id)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded transition-all ${
+                        confirmDeleteId === char.id
+                          ? 'text-destructive border border-destructive bg-destructive/10 animate-pulse'
+                          : 'text-muted-foreground/50 hover:text-destructive'
+                      }`}
+                      title={confirmDeleteId === char.id ? 'Click again to confirm delete' : 'Delete character'}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {confirmDeleteId === char.id && <span className="text-[10px] uppercase tracking-wider">Confirm?</span>}
+                    </button>
                   </div>
                 </CyberCard>
               </Link>

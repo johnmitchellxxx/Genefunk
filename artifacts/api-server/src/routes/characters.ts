@@ -53,8 +53,6 @@ router.get("/characters", async (req, res) => {
   }
 
   try {
-    await ensureSeedCharacter(req.user.id);
-
     const isAdmin = req.user.id === ADMIN_USER_ID;
 
     const characters = await db
