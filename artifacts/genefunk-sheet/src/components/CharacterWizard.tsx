@@ -73,7 +73,12 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
   }
 
   function getAllowedSkills(): string[] {
-    return state.characterClass?.skillChoices ?? [];
+    const mandatory = state.characterClass?.mandatorySkills ?? [];
+    return (state.characterClass?.skillChoices ?? []).filter(s => !mandatory.includes(s));
+  }
+
+  function getMandatoryClassSkills(): string[] {
+    return state.characterClass?.mandatorySkills ?? [];
   }
 
   function getBackgroundSkills(): string[] {
@@ -103,7 +108,8 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
     const conMod = getModifier(finalScores.constitution);
     const hp = cls.hitDie + conMod;
 
-    const allSkillProfs = [...new Set([...bg.skillProficiencies, ...state.skillPicks])];
+    const mandatoryClassSkills = cls.mandatorySkills ?? [];
+    const allSkillProfs = [...new Set([...bg.skillProficiencies, ...mandatoryClassSkills, ...state.skillPicks])];
 
     const features = [
       ...genome.traits.map(t => ({ id: crypto.randomUUID(), name: t.name, source: genome.name, description: t.description })),
@@ -192,6 +198,7 @@ export function CharacterWizard({ onClose, onComplete, isPending }: CharacterWiz
               setState={setState}
               allowedSkills={getAllowedSkills()}
               backgroundSkills={getBackgroundSkills()}
+              mandatoryClassSkills={getMandatoryClassSkills()}
               requiredPicks={getRequiredSkillPicks()}
             />
           )}
@@ -545,14 +552,15 @@ function AbilityStep({ state, setState }: StepProps) {
 interface SkillStepProps extends StepProps {
   allowedSkills: string[];
   backgroundSkills: string[];
+  mandatoryClassSkills: string[];
   requiredPicks: number;
 }
 
-function SkillStep({ state, setState, allowedSkills, backgroundSkills, requiredPicks }: SkillStepProps) {
+function SkillStep({ state, setState, allowedSkills, backgroundSkills, mandatoryClassSkills, requiredPicks }: SkillStepProps) {
   const remaining = requiredPicks - state.skillPicks.length;
 
   function toggleSkill(key: string) {
-    if (backgroundSkills.includes(key)) return;
+    if (backgroundSkills.includes(key) || mandatoryClassSkills.includes(key)) return;
     setState(s => {
       const picks = s.skillPicks.includes(key)
         ? s.skillPicks.filter(k => k !== key)
@@ -563,12 +571,14 @@ function SkillStep({ state, setState, allowedSkills, backgroundSkills, requiredP
     });
   }
 
+  const autoSkills = [...new Set([...backgroundSkills, ...mandatoryClassSkills])];
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-primary tracking-widest uppercase font-mono mb-2">Skill Proficiencies</h2>
         <p className="text-muted-foreground text-sm">
-          Choose {requiredPicks} skill{requiredPicks !== 1 ? 's' : ''} from your class list. Background skills are pre-selected.
+          Choose {requiredPicks} skill{requiredPicks !== 1 ? 's' : ''} from your class list. Background and mandatory class skills are pre-selected.
         </p>
       </div>
 
@@ -579,9 +589,10 @@ function SkillStep({ state, setState, allowedSkills, backgroundSkills, requiredP
       </div>
 
       <div className="space-y-1">
-        <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-2">Background Skills (Automatic)</div>
-        {backgroundSkills.map(sk => {
+        <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-2">Automatic Skills</div>
+        {autoSkills.map(sk => {
           const skill = SKILLS.find(s => s.key === sk);
+          const isMandatoryClass = mandatoryClassSkills.includes(sk);
           return (
             <div key={sk} className="flex items-center gap-3 p-2 bg-accent/5 border border-accent/20 clip-edges">
               <div className="w-4 h-4 rounded bg-accent border-accent flex items-center justify-center">
@@ -589,7 +600,7 @@ function SkillStep({ state, setState, allowedSkills, backgroundSkills, requiredP
               </div>
               <span className="text-sm text-accent font-mono">{skill?.label || sk}</span>
               <span className="text-xs text-muted-foreground ml-auto">
-                {ABILITIES.find(a => a.key === skill?.ability)?.label}
+                {isMandatoryClass ? 'Class (mandatory)' : 'Background'} · {ABILITIES.find(a => a.key === skill?.ability)?.label}
               </span>
             </div>
           );
@@ -599,7 +610,7 @@ function SkillStep({ state, setState, allowedSkills, backgroundSkills, requiredP
       <div className="space-y-1">
         <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-2">Class Skills (Choose {requiredPicks})</div>
         {allowedSkills
-          .filter(sk => !backgroundSkills.includes(sk))
+          .filter(sk => !autoSkills.includes(sk))
           .map(sk => {
             const skill = SKILLS.find(s => s.key === sk);
             const isSelected = state.skillPicks.includes(sk);
@@ -644,7 +655,8 @@ function ReviewStep({ state, setState }: StepProps) {
 
   const conMod = getModifier(finalScores.constitution);
   const hp = Math.max(1, cls.hitDie + conMod);
-  const allSkills = [...new Set([...bg.skillProficiencies, ...state.skillPicks])];
+  const mandatoryClassSkills = cls.mandatorySkills ?? [];
+  const allSkills = [...new Set([...bg.skillProficiencies, ...mandatoryClassSkills, ...state.skillPicks])];
 
   return (
     <div className="space-y-6">
