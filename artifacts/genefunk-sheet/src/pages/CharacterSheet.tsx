@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRoute } from 'wouter';
 import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookClasses, useAppRulebookBackgrounds, useAppRulebookGenomes } from '@/hooks/use-api';
 import { useDice, type DieType } from '@/hooks/use-dice';
@@ -316,7 +317,12 @@ export default function CharacterSheet() {
           {/* Center Column: Skills */}
           <div className="lg:col-span-4">
             <CyberCard className="p-4">
-              <div className="text-sm text-primary uppercase tracking-widest font-mono font-bold mb-3 border-b border-border/50 pb-1.5">Skills</div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-sm text-primary uppercase tracking-widest font-mono font-bold mb-3 border-b border-border/50 pb-1.5 cursor-default">Skills</div>
+                </TooltipTrigger>
+                <TooltipContent>Proficiency</TooltipContent>
+              </Tooltip>
               <SkillList character={character} onUpdate={handleUpdate} />
             </CyberCard>
           </div>
