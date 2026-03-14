@@ -78,6 +78,7 @@ export const charactersTable = pgTable("characters", {
   conditions: json("conditions").$type<string[]>().notNull().default([]),
   exhaustionLevel: integer("exhaustion_level").notNull().default(0),
   passivePerception: integer("passive_perception"),
+  equippedArmor: text("equipped_armor"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

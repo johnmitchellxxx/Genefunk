@@ -235,6 +235,8 @@ export interface Character {
   exhaustionLevel: number;
   /** @nullable */
   passivePerception?: number | null;
+  /** @nullable */
+  equippedArmor?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -356,6 +358,8 @@ export interface UpdateCharacterBody {
   exhaustionLevel?: number;
   /** @nullable */
   passivePerception?: number | null;
+  /** @nullable */
+  equippedArmor?: string | null;
 }
 
 export interface RulebookClassFeature {

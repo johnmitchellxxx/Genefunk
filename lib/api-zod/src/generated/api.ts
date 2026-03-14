@@ -193,6 +193,7 @@ export const GetCharacterResponse = zod.object({
   conditions: zod.array(zod.string()),
   exhaustionLevel: zod.number(),
   passivePerception: zod.number().nullish(),
+  equippedArmor: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -356,6 +357,7 @@ export const UpdateCharacterBody = zod.object({
   conditions: zod.array(zod.string()).optional(),
   exhaustionLevel: zod.number().optional(),
   passivePerception: zod.number().nullish(),
+  equippedArmor: zod.string().nullish(),
 });
 
 export const UpdateCharacterResponse = zod.object({
@@ -490,6 +492,7 @@ export const UpdateCharacterResponse = zod.object({
   conditions: zod.array(zod.string()),
   exhaustionLevel: zod.number(),
   passivePerception: zod.number().nullish(),
+  equippedArmor: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
