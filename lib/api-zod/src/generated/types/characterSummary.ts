@@ -14,5 +14,8 @@ export interface CharacterSummary {
   /** @nullable */
   class?: string | null;
   level: number;
+  userId?: string;
   updatedAt: Date;
+  /** @nullable */
+  deletedAt?: Date | null;
 }

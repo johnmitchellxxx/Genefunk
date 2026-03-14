@@ -43,7 +43,9 @@ export const GetCharactersResponseItem = zod.object({
   genome: zod.string().nullish(),
   class: zod.string().nullish(),
   level: zod.number(),
+  userId: zod.string().optional(),
   updatedAt: zod.date(),
+  deletedAt: zod.date().nullish(),
 });
 export const GetCharactersResponse = zod.array(GetCharactersResponseItem);
 
@@ -127,8 +129,7 @@ export const GetCharacterResponse = zod.object({
       notes: zod.string().nullish(),
       weaponType: zod
         .union([zod.literal("melee"), zod.literal("ranged"), zod.literal(null)])
-        .nullish()
-        .catch(null),
+        .nullish(),
       isFinesse: zod.boolean().nullish(),
     }),
   ),
@@ -276,8 +277,7 @@ export const UpdateCharacterBody = zod.object({
             zod.literal("ranged"),
             zod.literal(null),
           ])
-          .nullish()
-          .catch(null),
+          .nullish(),
         isFinesse: zod.boolean().nullish(),
       }),
     )
@@ -426,8 +426,7 @@ export const UpdateCharacterResponse = zod.object({
       notes: zod.string().nullish(),
       weaponType: zod
         .union([zod.literal("melee"), zod.literal("ranged"), zod.literal(null)])
-        .nullish()
-        .catch(null),
+        .nullish(),
       isFinesse: zod.boolean().nullish(),
     }),
   ),
@@ -498,13 +497,52 @@ export const UpdateCharacterResponse = zod.object({
 });
 
 /**
- * @summary Delete a character
+ * @summary Soft-delete a character (moves to trash)
  */
 export const DeleteCharacterParams = zod.object({
   id: zod.coerce.number(),
 });
 
 export const DeleteCharacterResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List soft-deleted characters (admin only)
+ */
+export const GetTrashedCharactersResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  genome: zod.string().nullish(),
+  class: zod.string().nullish(),
+  level: zod.number(),
+  userId: zod.string().optional(),
+  updatedAt: zod.date(),
+  deletedAt: zod.date().nullish(),
+});
+export const GetTrashedCharactersResponse = zod.array(
+  GetTrashedCharactersResponseItem,
+);
+
+/**
+ * @summary Restore a soft-deleted character (admin only)
+ */
+export const RestoreCharacterParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RestoreCharacterResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Permanently delete a character (admin only, irreversible)
+ */
+export const PermanentlyDeleteCharacterParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const PermanentlyDeleteCharacterResponse = zod.object({
   success: zod.boolean(),
 });
 

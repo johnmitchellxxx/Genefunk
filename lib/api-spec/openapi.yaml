@@ -155,7 +155,90 @@ paths:
     delete:
       operationId: deleteCharacter
       tags: [characters]
-      summary: Delete a character
+      summary: Soft-delete a character (moves to trash)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /characters/trash:
+    get:
+      operationId: getTrashedCharacters
+      tags: [characters]
+      summary: List soft-deleted characters (admin only)
+      responses:
+        "200":
+          description: List of trashed characters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CharacterSummary"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /characters/{id}/restore:
+    post:
+      operationId: restoreCharacter
+      tags: [characters]
+      summary: Restore a soft-deleted character (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /characters/{id}/permanent:
+    delete:
+      operationId: permanentlyDeleteCharacter
+      tags: [characters]
+      summary: Permanently delete a character (admin only, irreversible)
       parameters:
         - name: id
           in: path
@@ -313,8 +396,13 @@ components:
           type: ["string", "null"]
         level:
           type: integer
+        userId:
+          type: string
         updatedAt:
           type: string
+          format: date-time
+        deletedAt:
+          type: ["string", "null"]
           format: date-time
       required:
         - id

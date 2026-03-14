@@ -42,7 +42,10 @@ export interface CharacterSummary {
   /** @nullable */
   class?: string | null;
   level: number;
+  userId?: string;
   updatedAt: string;
+  /** @nullable */
+  deletedAt?: string | null;
 }
 
 export interface CharacterSenses {

@@ -527,7 +527,7 @@ export const useUpdateCharacter = <
 };
 
 /**
- * @summary Delete a character
+ * @summary Soft-delete a character (moves to trash)
  */
 export const getDeleteCharacterUrl = (id: number) => {
   return `/api/characters/${id}`;
@@ -588,7 +588,7 @@ export type DeleteCharacterMutationResult = NonNullable<
 export type DeleteCharacterMutationError = ErrorType<ErrorResponse>;
 
 /**
- * @summary Delete a character
+ * @summary Soft-delete a character (moves to trash)
  */
 export const useDeleteCharacter = <
   TError = ErrorType<ErrorResponse>,
@@ -608,6 +608,249 @@ export const useDeleteCharacter = <
   TContext
 > => {
   return useMutation(getDeleteCharacterMutationOptions(options));
+};
+
+/**
+ * @summary List soft-deleted characters (admin only)
+ */
+export const getGetTrashedCharactersUrl = () => {
+  return `/api/characters/trash`;
+};
+
+export const getTrashedCharacters = async (
+  options?: RequestInit,
+): Promise<CharacterSummary[]> => {
+  return customFetch<CharacterSummary[]>(getGetTrashedCharactersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTrashedCharactersQueryKey = () => {
+  return [`/api/characters/trash`] as const;
+};
+
+export const getGetTrashedCharactersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTrashedCharacters>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrashedCharacters>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTrashedCharactersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTrashedCharacters>>
+  > = ({ signal }) => getTrashedCharacters({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTrashedCharacters>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTrashedCharactersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTrashedCharacters>>
+>;
+export type GetTrashedCharactersQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary List soft-deleted characters (admin only)
+ */
+
+export function useGetTrashedCharacters<
+  TData = Awaited<ReturnType<typeof getTrashedCharacters>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrashedCharacters>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTrashedCharactersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Restore a soft-deleted character (admin only)
+ */
+export const getRestoreCharacterUrl = (id: number) => {
+  return `/api/characters/${id}/restore`;
+};
+
+export const restoreCharacter = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getRestoreCharacterUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRestoreCharacterMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof restoreCharacter>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof restoreCharacter>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["restoreCharacter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof restoreCharacter>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return restoreCharacter(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RestoreCharacterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof restoreCharacter>>
+>;
+
+export type RestoreCharacterMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Restore a soft-deleted character (admin only)
+ */
+export const useRestoreCharacter = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof restoreCharacter>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof restoreCharacter>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getRestoreCharacterMutationOptions(options));
+};
+
+/**
+ * @summary Permanently delete a character (admin only, irreversible)
+ */
+export const getPermanentlyDeleteCharacterUrl = (id: number) => {
+  return `/api/characters/${id}/permanent`;
+};
+
+export const permanentlyDeleteCharacter = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getPermanentlyDeleteCharacterUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getPermanentlyDeleteCharacterMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof permanentlyDeleteCharacter>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof permanentlyDeleteCharacter>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["permanentlyDeleteCharacter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof permanentlyDeleteCharacter>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return permanentlyDeleteCharacter(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PermanentlyDeleteCharacterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof permanentlyDeleteCharacter>>
+>;
+
+export type PermanentlyDeleteCharacterMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Permanently delete a character (admin only, irreversible)
+ */
+export const usePermanentlyDeleteCharacter = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof permanentlyDeleteCharacter>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof permanentlyDeleteCharacter>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getPermanentlyDeleteCharacterMutationOptions(options));
 };
 
 /**

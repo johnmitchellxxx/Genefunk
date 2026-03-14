@@ -4,7 +4,11 @@ import {
   useGetCharacter, 
   useUpdateCharacter, 
   useDeleteCharacter,
+  useGetTrashedCharacters,
+  useRestoreCharacter,
+  usePermanentlyDeleteCharacter,
   getGetCharactersQueryKey,
+  getGetTrashedCharactersQueryKey,
   getGetCharacterQueryKey,
   useGetCurrentAuthUser,
   useGetRulebookClasses,
@@ -112,6 +116,49 @@ export function useAppDeleteCharacter() {
         ...options,
         onSuccess: (data, vars, context) => {
           queryClient.invalidateQueries({ queryKey: getGetCharactersQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetTrashedCharactersQueryKey() });
+          if (options?.onSuccess) options.onSuccess(data, vars, context);
+        }
+      });
+    }
+  };
+}
+
+export function useAppTrashedCharacters() {
+  return useGetTrashedCharacters({
+    request: { credentials: "include" },
+    query: { retry: false }
+  });
+}
+
+export function useAppRestoreCharacter() {
+  const queryClient = useQueryClient();
+  const mutation = useRestoreCharacter({ request: { credentials: "include" } });
+  return {
+    ...mutation,
+    mutate: (variables: { id: number }, options?: any) => {
+      mutation.mutate(variables, {
+        ...options,
+        onSuccess: (data: unknown, vars: unknown, context: unknown) => {
+          queryClient.invalidateQueries({ queryKey: getGetCharactersQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetTrashedCharactersQueryKey() });
+          if (options?.onSuccess) options.onSuccess(data, vars, context);
+        }
+      });
+    }
+  };
+}
+
+export function useAppPermanentlyDeleteCharacter() {
+  const queryClient = useQueryClient();
+  const mutation = usePermanentlyDeleteCharacter({ request: { credentials: "include" } });
+  return {
+    ...mutation,
+    mutate: (variables: { id: number }, options?: any) => {
+      mutation.mutate(variables, {
+        ...options,
+        onSuccess: (data: unknown, vars: unknown, context: unknown) => {
+          queryClient.invalidateQueries({ queryKey: getGetTrashedCharactersQueryKey() });
           if (options?.onSuccess) options.onSuccess(data, vars, context);
         }
       });
