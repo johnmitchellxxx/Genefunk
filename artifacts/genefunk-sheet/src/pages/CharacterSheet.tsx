@@ -214,9 +214,25 @@ export default function CharacterSheet() {
               <EditableField value={character.maxHitPoints} type="number" onSave={v => handleUpdate('maxHitPoints', v)} className="text-lg font-bold text-muted-foreground text-center" />
             </div>
             <div className="w-px h-6 bg-border" />
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">Temp</div>
-              <EditableField value={character.temporaryHitPoints} type="number" onSave={v => handleUpdate('temporaryHitPoints', v)} className="text-sm font-bold text-accent text-center w-8" />
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="text-[10px] text-yellow-400/70 uppercase tracking-widest font-mono leading-none">Temp HP</div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleUpdate('temporaryHitPoints', Math.max(0, (character.temporaryHitPoints ?? 0) - 1))}
+                  className="w-5 h-5 bg-yellow-500/20 text-yellow-400 rounded text-xs hover:bg-yellow-500 hover:text-black transition-colors flex items-center justify-center font-bold leading-none"
+                >−</button>
+                <EditableField
+                  value={character.temporaryHitPoints ?? 0}
+                  type="number"
+                  onSave={v => handleUpdate('temporaryHitPoints', v)}
+                  className="text-base font-bold text-yellow-400 text-center w-8"
+                />
+                <button
+                  onClick={() => handleUpdate('temporaryHitPoints', (character.temporaryHitPoints ?? 0) + 1)}
+                  className="w-5 h-5 bg-yellow-500/20 text-yellow-400 rounded text-xs hover:bg-yellow-500 hover:text-black transition-colors flex items-center justify-center font-bold leading-none"
+                >+</button>
+              </div>
+              <div className="text-[9px] text-yellow-400/40 font-mono leading-none">soaks first</div>
             </div>
           </div>
         </div>
