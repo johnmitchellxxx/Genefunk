@@ -7,7 +7,7 @@ import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } fro
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
-import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, type UpgradeData, type ArmorData } from '@/lib/rulebookData';
+import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Dices } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
@@ -652,15 +652,64 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
   );
 }
 
+const HACK_TYPE_COLORS: Record<string, string> = {
+  'Injection':       'text-green-400 border-green-400/40 bg-green-400/10',
+  'Gadget':          'text-cyan-400 border-cyan-400/40 bg-cyan-400/10',
+  'Mind':            'text-violet-400 border-violet-400/40 bg-violet-400/10',
+  'Software':        'text-blue-400 border-blue-400/40 bg-blue-400/10',
+  'Craft Tech':      'text-yellow-400 border-yellow-400/40 bg-yellow-400/10',
+  'Craft Explosive': 'text-orange-400 border-orange-400/40 bg-orange-400/10',
+  'Bot':             'text-pink-400 border-pink-400/40 bg-pink-400/10',
+  'Mind / Software': 'text-purple-400 border-purple-400/40 bg-purple-400/10',
+  'Mind / Bot':      'text-fuchsia-400 border-fuchsia-400/40 bg-fuchsia-400/10',
+  'Craft Tech / Bot':'text-amber-400 border-amber-400/40 bg-amber-400/10',
+  'Software / Mind': 'text-indigo-400 border-indigo-400/40 bg-indigo-400/10',
+};
+
+function hackTypeBadgeClass(type: string): string {
+  return HACK_TYPE_COLORS[type] ?? 'text-muted-foreground border-border/40 bg-background/30';
+}
+
 function HacksPanel({ character, onUpdate }: PanelProps) {
   const slots = character.hackSlots;
+  const [expandedHacks, setExpandedHacks] = useState<Set<string>>(new Set());
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [browserLevel, setBrowserLevel] = useState<number>(0); // 0 = all
+
+  const classHacks: HackData[] = HACKS_BY_CLASS[character.class ?? ''] ?? [];
+  const knownNames = new Set(character.hacks.map(h => h.name));
+
+  function toggleExpand(id: string) {
+    setExpandedHacks(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function learnHack(hack: HackData) {
+    const entry: HackEntry = {
+      id: Math.random().toString(36).slice(2),
+      name: hack.name,
+      level: hack.level,
+      type: hack.type,
+      launchTime: hack.launchTime,
+      effect: hack.description,
+    };
+    onUpdate('hacks', [...character.hacks, entry]);
+  }
+
+  function forgetHack(name: string) {
+    onUpdate('hacks', character.hacks.filter(h => h.name !== name));
+  }
+
+  const filteredBrowserHacks = classHacks.filter(h => browserLevel === 0 || h.level === browserLevel);
+  const levelGroups = [1,2,3,4,5] as const;
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-primary uppercase tracking-widest font-mono font-bold">Hacking</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-sm font-mono mb-2">
+      {/* ── Stats row ── */}
+      <div className="grid grid-cols-2 gap-2 text-sm font-mono">
         <div className="border border-border/50 p-2.5 bg-background/30 clip-edges">
           <div className="text-xs text-muted-foreground uppercase">Hack Attack Bonus</div>
           <EditableField value={character.hackAttackBonus ?? 0} type="number" onSave={v => onUpdate('hackAttackBonus', v)} className="text-sm font-bold text-primary" />
@@ -670,91 +719,171 @@ function HacksPanel({ character, onUpdate }: PanelProps) {
           <EditableField value={character.hackSaveDC ?? 0} type="number" onSave={v => onUpdate('hackSaveDC', v)} className="text-sm font-bold text-primary" />
         </div>
       </div>
+
+      {/* ── Hack slot tracker ── */}
       <div className="grid grid-cols-5 gap-1 text-center font-mono text-xs">
         {[1,2,3,4,5].map(lvl => {
           const key = `level${lvl}`;
           const slot = slots[key] || { total: 0, used: 0 };
+          const pips = slot.total;
           return (
             <div key={lvl} className="border border-border/50 p-1.5 clip-edges bg-background/30">
-              <div className="text-xs text-muted-foreground">Lvl {lvl}</div>
-              <div className="text-sm font-bold text-primary">{slot.used}/{slot.total}</div>
-              <div className="flex gap-0.5 justify-center mt-0.5">
-                <button
-                  className="text-xs text-muted-foreground hover:text-primary px-0.5"
-                  onClick={() => {
-                    const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, total: Math.max(0, slot.total + 1) } };
-                    onUpdate('hackSlots', newSlots);
-                  }}
-                  title="Increase total slots"
-                >T+</button>
-                <button
-                  className="text-xs text-muted-foreground hover:text-accent px-0.5"
-                  onClick={() => {
-                    const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, used: Math.min(slot.total, slot.used + 1) } };
-                    onUpdate('hackSlots', newSlots);
-                  }}
-                  title="Use a slot"
-                >U+</button>
-                <button
-                  className="text-xs text-muted-foreground hover:text-secondary px-0.5"
-                  onClick={() => {
-                    const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, used: 0 } };
-                    onUpdate('hackSlots', newSlots);
-                  }}
-                  title="Reset used slots"
-                >R</button>
+              <div className="text-xs text-muted-foreground mb-0.5">Lvl {lvl}</div>
+              <div className="flex flex-wrap gap-0.5 justify-center mb-1">
+                {Array.from({ length: Math.max(pips, 0) }).map((_, i) => (
+                  <button
+                    key={i}
+                    title={i < slot.used ? "Click to restore" : "Click to use"}
+                    className={`w-3 h-3 rounded-sm border transition-colors ${i < slot.used ? 'bg-primary border-primary' : 'bg-background/50 border-border/60 hover:border-primary/60'}`}
+                    onClick={() => {
+                      const newUsed = i < slot.used ? i : i + 1;
+                      const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, used: newUsed } };
+                      onUpdate('hackSlots', newSlots);
+                    }}
+                  />
+                ))}
+                {pips === 0 && <span className="text-muted-foreground/40 text-xs">—</span>}
+              </div>
+              <div className="flex gap-0.5 justify-center">
+                <button className="text-[10px] text-muted-foreground hover:text-primary px-0.5" title="Add slot"
+                  onClick={() => { const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, total: slot.total + 1 } }; onUpdate('hackSlots', newSlots); }}>+</button>
+                <button className="text-[10px] text-muted-foreground hover:text-destructive px-0.5" title="Remove slot"
+                  onClick={() => { const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, total: Math.max(0, slot.total - 1), used: Math.min(slot.used, Math.max(0, slot.total - 1)) } }; onUpdate('hackSlots', newSlots); }}>−</button>
+                <button className="text-[10px] text-muted-foreground hover:text-secondary px-0.5" title="Reset used"
+                  onClick={() => { const newSlots: CharacterHackSlots = { ...slots, [key]: { ...slot, used: 0 } }; onUpdate('hackSlots', newSlots); }}>↺</button>
               </div>
             </div>
           );
         })}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground font-mono">
-              <th className="p-2">Name</th>
-              <th className="p-2">Level</th>
-              <th className="p-2">Type</th>
-              <th className="p-2">Launch Time</th>
-              <th className="p-2">Effect</th>
-              <th className="p-2"></th>
-            </tr>
-          </thead>
-          <tbody className="text-sm font-sans">
-            {character.hacks.length === 0 ? (
-              <tr><td colSpan={6} className="p-3 text-center text-muted-foreground italic">No hacks installed</td></tr>
-            ) : character.hacks.map((hack) => (
-              <tr key={hack.id} className="border-b border-border/30 hover:bg-white/5 transition-colors">
-                <td className="p-2">
-                  <EditableField value={hack.name} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { name: String(v) }))} className="text-foreground font-semibold text-sm" />
-                </td>
-                <td className="p-2">
-                  <EditableField value={hack.level} type="number" onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { level: Number(v) }))} className="text-foreground/80 text-sm font-mono w-6" />
-                </td>
-                <td className="p-2">
-                  <EditableField value={hack.type || ''} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { type: String(v) }))} className="text-primary text-sm" />
-                </td>
-                <td className="p-2">
-                  <EditableField value={hack.launchTime || ''} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { launchTime: String(v) }))} className="text-foreground/70 text-sm" />
-                </td>
-                <td className="p-2">
-                  <EditableField value={hack.effect || ''} onSave={v => onUpdate('hacks', updateArrayEntry(character.hacks, hack.id, { effect: String(v) }))} className="text-secondary text-sm" />
-                </td>
-                <td className="p-2 text-right">
-                  <button onClick={() => onUpdate('hacks', character.hacks.filter(h => h.id !== hack.id))} className="text-destructive hover:underline text-xs font-mono">DEL</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      {/* ── Known hacks ── */}
+      <div>
+        <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-1.5">Known Hacks ({character.hacks.length})</div>
+        {character.hacks.length === 0 ? (
+          <div className="text-xs text-muted-foreground italic p-3 text-center border border-border/30 bg-background/20">
+            No hacks learned yet. Use the class hack browser below.
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {character.hacks.map(hack => {
+              const key = `known-${hack.id}`;
+              const expanded = expandedHacks.has(key);
+              return (
+                <div key={hack.id} className="border border-border/40 bg-background/20 clip-edges">
+                  <div className="flex items-center gap-2 p-2 cursor-pointer hover:bg-white/5" onClick={() => toggleExpand(key)}>
+                    <span className="text-primary font-mono text-xs w-5 text-center border border-primary/30 bg-primary/10">{hack.level}</span>
+                    <span className="flex-1 text-sm font-semibold text-foreground truncate">{hack.name}</span>
+                    {hack.type && (
+                      <span className={`text-[10px] font-mono px-1 border rounded-sm ${hackTypeBadgeClass(hack.type)}`}>{hack.type}</span>
+                    )}
+                    {hack.launchTime && (
+                      <span className="text-xs text-muted-foreground hidden sm:block">{hack.launchTime}</span>
+                    )}
+                    <button
+                      onClick={e => { e.stopPropagation(); forgetHack(hack.name); }}
+                      className="text-destructive/60 hover:text-destructive text-xs font-mono ml-1"
+                      title="Forget hack"
+                    >✕</button>
+                    <span className="text-muted-foreground text-xs">{expanded ? '▲' : '▼'}</span>
+                  </div>
+                  {expanded && (
+                    <div className="px-3 pb-2 pt-0 border-t border-border/20">
+                      {hack.launchTime && <div className="text-xs text-muted-foreground mt-1"><span className="text-foreground/60 font-mono">Launch:</span> {hack.launchTime}</div>}
+                      {hack.effect && <div className="text-xs text-foreground/80 mt-1 leading-relaxed">{hack.effect}</div>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-      <CyberButton variant="ghost" className="w-full text-xs mt-2 py-1" onClick={() => {
-        const name = prompt("Hack Name:");
-        if (name) {
-          const entry: HackEntry = { id: Math.random().toString(), name, level: 1 };
-          onUpdate('hacks', [...character.hacks, entry]);
-        }
-      }}>+ Add Hack</CyberButton>
+
+      {/* ── Class hack browser ── */}
+      {classHacks.length > 0 ? (
+        <div>
+          <button
+            className="w-full flex items-center justify-between text-xs text-muted-foreground uppercase tracking-widest font-mono p-1.5 border border-border/30 bg-background/20 hover:bg-white/5 transition-colors"
+            onClick={() => setShowBrowser(b => !b)}
+          >
+            <span>{character.class} Hack Library ({classHacks.length} hacks)</span>
+            <span>{showBrowser ? '▲ Hide' : '▼ Browse'}</span>
+          </button>
+          {showBrowser && (
+            <div className="mt-1 border border-border/30 bg-background/10">
+              {/* Level filter */}
+              <div className="flex gap-1 p-2 border-b border-border/20">
+                <span className="text-xs text-muted-foreground font-mono mr-1 self-center">Filter:</span>
+                {[0,1,2,3,4,5].map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={() => setBrowserLevel(lvl)}
+                    className={`text-xs font-mono px-2 py-0.5 border transition-colors ${browserLevel === lvl ? 'border-primary bg-primary/20 text-primary' : 'border-border/40 text-muted-foreground hover:border-primary/40'}`}
+                  >
+                    {lvl === 0 ? 'All' : `L${lvl}`}
+                  </button>
+                ))}
+              </div>
+              {/* Hack list grouped by level */}
+              <div className="max-h-96 overflow-y-auto">
+                {levelGroups.filter(lvl => browserLevel === 0 || browserLevel === lvl).map(lvl => {
+                  const hacks = filteredBrowserHacks.filter(h => h.level === lvl);
+                  if (hacks.length === 0) return null;
+                  return (
+                    <div key={lvl}>
+                      <div className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground/60 px-2 py-1 border-b border-border/20 bg-background/30 sticky top-0">
+                        Level {lvl} Hacks
+                      </div>
+                      {hacks.map(hack => {
+                        const browseKey = `browse-${hack.name}`;
+                        const expanded = expandedHacks.has(browseKey);
+                        const known = knownNames.has(hack.name);
+                        return (
+                          <div key={hack.name} className={`border-b border-border/10 ${known ? 'opacity-60' : ''}`}>
+                            <div
+                              className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 cursor-pointer"
+                              onClick={() => toggleExpand(browseKey)}
+                            >
+                              <span className={`text-[10px] font-mono px-1 border rounded-sm flex-shrink-0 ${hackTypeBadgeClass(hack.type)}`}>{hack.type}</span>
+                              <span className="flex-1 text-xs text-foreground truncate">{hack.name}</span>
+                              <span className="text-[10px] text-muted-foreground flex-shrink-0">{hack.launchTime}</span>
+                              {known ? (
+                                <span className="text-xs text-green-400 font-mono flex-shrink-0">✓</span>
+                              ) : (
+                                <button
+                                  onClick={e => { e.stopPropagation(); learnHack(hack); }}
+                                  className="text-[10px] font-mono text-primary hover:text-primary/80 border border-primary/40 px-1.5 py-0.5 hover:bg-primary/10 transition-colors flex-shrink-0"
+                                  title="Learn this hack"
+                                >Learn</button>
+                              )}
+                              <span className="text-muted-foreground text-[10px] flex-shrink-0">{expanded ? '▲' : '▼'}</span>
+                            </div>
+                            {expanded && (
+                              <div className="px-3 pb-2 border-t border-border/10 bg-background/20">
+                                <div className="text-[10px] text-muted-foreground mt-1 font-mono">Duration: {hack.duration}</div>
+                                <div className="text-xs text-foreground/75 mt-1 leading-relaxed">{hack.description}</div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <CyberButton variant="ghost" className="w-full text-xs py-1" onClick={() => {
+          const name = prompt("Hack Name:");
+          if (name) {
+            const entry: HackEntry = { id: Math.random().toString(), name, level: 1 };
+            onUpdate('hacks', [...character.hacks, entry]);
+          }
+        }}>+ Add Hack Manually</CyberButton>
+      )}
     </div>
   );
 }
