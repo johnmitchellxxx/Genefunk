@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&family=Chakra+Petch:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Chakra+Petch:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'Share Tech Mono', monospace;
+  --font-sans: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
   --font-display: 'Chakra Petch', sans-serif;
 
   --color-background: hsl(var(--background));
@@ -27,8 +27,8 @@
 
 :root {
   /* Dark Cyberpunk Theme */
-  --background: 240 10% 4%;
-  --foreground: 210 20% 98%;
+  --background: 240 12% 2%;
+  --foreground: 0 0% 100%;
   
   /* Electric Cyan */
   --primary: 190 100% 52%;
@@ -46,14 +46,14 @@
   --destructive: 350 100% 60%;
   --destructive-foreground: 0 0% 100%;
   
-  --muted: 240 10% 16%;
-  --muted-foreground: 210 15% 82%;
+  --muted: 240 10% 14%;
+  --muted-foreground: 210 15% 94%;
   
-  --card: 240 10% 6%;
-  --card-foreground: 210 20% 98%;
+  --card: 240 12% 4%;
+  --card-foreground: 0 0% 100%;
   
-  --border: 190 100% 25%;
-  --input: 190 50% 15%;
+  --border: 190 100% 30%;
+  --input: 190 50% 18%;
   --ring: 190 100% 50%;
 }
 
@@ -76,10 +76,9 @@
     text-shadow: 0 0 10px hsl(var(--primary) / 0.3);
   }
 
-  /* Keep Chakra Petch on monospace display labels */
   .font-mono {
-    font-family: 'Share Tech Mono', monospace;
-    letter-spacing: 0.03em;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
   }
 }
 

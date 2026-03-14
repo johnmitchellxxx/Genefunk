@@ -6,7 +6,7 @@ export function CyberCard({ className, children, ...props }: React.HTMLAttribute
   return (
     <div 
       className={cn(
-        "bg-card/80 backdrop-blur-md border border-border clip-edges p-7 relative overflow-hidden", 
+        "bg-card/95 backdrop-blur-md border border-border clip-edges p-7 relative overflow-hidden", 
         "before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:pointer-events-none",
         className
       )} 
