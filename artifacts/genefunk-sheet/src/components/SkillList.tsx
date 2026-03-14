@@ -77,12 +77,12 @@ export function SkillList({ character, onUpdate }: SkillListProps) {
 
             <div 
               className="w-8 font-bold text-right mr-3 cursor-pointer text-primary hover:text-secondary transition-colors"
-              onClick={() => rollDice(skill.label, totalMod)}
+              onClick={() => rollDice(`${skill.label} (${skill.ability.substring(0,3).toUpperCase()})`, totalMod)}
             >
               {formatModifier(totalMod)}
             </div>
 
-            <div className="flex-1 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(skill.label, totalMod)}>
+            <div className="flex-1 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(`${skill.label} (${skill.ability.substring(0,3).toUpperCase()})`, totalMod)}>
               {skill.label} <span className="text-xs uppercase opacity-60 ml-1">({skill.ability.substring(0,3)})</span>
             </div>
           </div>
