@@ -263,7 +263,7 @@ export default function CharacterList() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider border border-primary/50 text-primary hover:bg-primary/10 transition-all clip-edges flex-shrink-0 disabled:opacity-40"
                 title="Snapshot all active operatives to trash now"
               >
-                <DatabaseBackup className="w-3.5 h-3.5" />
+                <Download className="w-3.5 h-3.5" />
                 {backupMutation.isPending ? 'Saving...' : 'Backup Now'}
               </button>
             </div>
