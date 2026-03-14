@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, createEstebanSeedData } from "@workspace/db";
 import { charactersTable } from "@workspace/db/schema";
 import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { runWeeklyBackup } from "../services/backup";
 import {
   CreateCharacterBody,
   UpdateCharacterBody,
@@ -107,6 +108,27 @@ router.post("/characters", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Manual backup trigger — admin only, must come BEFORE /characters/:id
+router.post("/characters/backup", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  if (req.user.id !== ADMIN_USER_ID) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  try {
+    const result = await runWeeklyBackup();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Backup failed" });
   }
 });
 
