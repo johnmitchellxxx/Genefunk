@@ -32,8 +32,14 @@ type CustomRoll = {
 
 type Phase = 'tumble' | 'result' | 'done';
 
+interface RollDiceOptions {
+  onResult?: (total: number) => void;
+  /** Pass 'initiative' to route the roll into Roll20's initiative tracker via Beyond20 */
+  rollKind?: 'custom' | 'initiative' | 'ability-check' | 'saving-throw' | 'attack' | 'damage';
+}
+
 interface DiceContextType {
-  rollDice: (name: string, modifier: number, onResult?: (total: number) => void) => void;
+  rollDice: (name: string, modifier: number, onResultOrOptions?: ((total: number) => void) | RollDiceOptions) => void;
   rollCustom: (dice: { sides: DieType; count: number }[], modifier: number, name: string) => void;
   beyond20Active: boolean;
   setCharacterName: (name: string) => void;
@@ -79,7 +85,13 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     timersRef.current = [t];
   }, [clearTimers]);
 
-  const rollDice = useCallback((name: string, modifier: number, onResult?: (total: number) => void) => {
+  const rollDice = useCallback((name: string, modifier: number, onResultOrOptions?: ((total: number) => void) | RollDiceOptions) => {
+    // Support both legacy callback and new options object
+    const options: RollDiceOptions = typeof onResultOrOptions === 'function'
+      ? { onResult: onResultOrOptions }
+      : (onResultOrOptions ?? {});
+    const { onResult, rollKind = 'custom' } = options;
+
     clearTimers();
     setCustomPhase('done');
     setCustomRoll(null);
@@ -98,7 +110,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     const expr = modifier !== 0
       ? `1d20${modifier >= 0 ? '+' : ''}${modifier}`
       : '1d20';
-    sendRollToBeyond20(name, expr, { characterName });
+    sendRollToBeyond20(name, expr, { characterName, rollKind, numericModifier: modifier });
 
     const t1 = setTimeout(() => {
       setD20Phase('result');

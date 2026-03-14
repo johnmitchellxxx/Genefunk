@@ -54,6 +54,10 @@ interface B20RollOptions {
   rollType?: number;    // RollType enum
   whisper?: number;     // WhisperType enum
   description?: string;
+  /** Override the Beyond20 request `type` field. Use 'initiative' to add to Roll20's tracker. */
+  rollKind?: 'custom' | 'initiative' | 'ability-check' | 'saving-throw' | 'attack' | 'damage' | 'spell-card';
+  /** Numeric modifier for initiative / ability rolls (Beyond20 expects a number, not the full expr) */
+  numericModifier?: number;
 }
 
 /**
@@ -72,14 +76,17 @@ export function sendRollToBeyond20(
     rollType = RollType.Normal,
     whisper = WhisperType.Public,
     description,
+    rollKind = 'custom',
+    numericModifier,
   } = options;
 
   const request: Record<string, unknown> = {
     action: 'roll',
-    type: 'custom',
+    type: rollKind,
     name,
     roll: rollExpr,
-    modifier: rollExpr,
+    // Beyond20 uses 'modifier' as the numeric bonus for initiative/ability checks
+    modifier: numericModifier !== undefined ? String(numericModifier) : rollExpr,
     advantage: rollType,
     whisper,
     character: {

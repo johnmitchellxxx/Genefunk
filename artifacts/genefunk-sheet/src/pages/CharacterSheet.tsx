@@ -199,7 +199,7 @@ export default function CharacterSheet() {
                 <Zap className="text-accent w-5 h-5 shrink-0" />
                 <div className="text-center">
                   <button
-                    onClick={() => rollDice(rollName, totalInit)}
+                    onClick={() => rollDice(rollName, totalInit, { rollKind: 'initiative' })}
                     title={tooltip}
                     className="text-xs text-muted-foreground uppercase tracking-widest font-mono hover:text-primary transition-colors whitespace-nowrap"
                   >
