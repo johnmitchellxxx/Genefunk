@@ -27,6 +27,7 @@ export * from "./hackEntry";
 export * from "./healthStatus";
 export * from "./logoutMobileSessionResponse";
 export * from "./rulebookBackground";
+export * from "./rulebookCadre";
 export * from "./rulebookClass";
 export * from "./rulebookClassFeature";
 export * from "./rulebookClassFeaturesByLevel";

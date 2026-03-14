@@ -102,8 +102,6 @@ export interface Character {
   exhaustionLevel: number;
   /** @nullable */
   passivePerception?: number | null;
-  /** @nullable */
-  equippedArmor?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

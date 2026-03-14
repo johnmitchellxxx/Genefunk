@@ -38,6 +38,14 @@ export const rulebookGenomesTable = pgTable("rulebook_genomes", {
   speed: integer("speed").notNull().default(9),
 });
 
+export const rulebookCadresTable = pgTable("rulebook_cadres", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  affiliation: text("affiliation").notNull(),
+});
+
 export type RulebookClass = typeof rulebookClassesTable.$inferSelect;
 export type RulebookBackground = typeof rulebookBackgroundsTable.$inferSelect;
 export type RulebookGenome = typeof rulebookGenomesTable.$inferSelect;
+export type RulebookCadre = typeof rulebookCadresTable.$inferSelect;

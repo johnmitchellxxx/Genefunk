@@ -24,6 +24,7 @@ import type {
   GetCurrentAuthUserResponse,
   HealthStatus,
   RulebookBackground,
+  RulebookCadre,
   RulebookClass,
   RulebookGenome,
   SuccessResponse,
@@ -830,6 +831,82 @@ export function useGetRulebookGenomes<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetRulebookGenomesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns all GeneFunk 2090 cadre affiliation types
+ * @summary Get all rulebook cadre types
+ */
+export const getGetRulebookCadresUrl = () => {
+  return `/api/rulebook/cadres`;
+};
+
+export const getRulebookCadres = async (
+  options?: RequestInit,
+): Promise<RulebookCadre[]> => {
+  return customFetch<RulebookCadre[]>(getGetRulebookCadresUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetRulebookCadresQueryKey = () => {
+  return [`/api/rulebook/cadres`] as const;
+};
+
+export const getGetRulebookCadresQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRulebookCadres>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookCadres>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetRulebookCadresQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRulebookCadres>>
+  > = ({ signal }) => getRulebookCadres({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookCadres>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRulebookCadresQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRulebookCadres>>
+>;
+export type GetRulebookCadresQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all rulebook cadre types
+ */
+
+export function useGetRulebookCadres<
+  TData = Awaited<ReturnType<typeof getRulebookCadres>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRulebookCadres>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRulebookCadresQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

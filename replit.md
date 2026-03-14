@@ -4,6 +4,19 @@
 
 A dynamic, interactive character sheet for the GeneFunk TTRPG (D&D 5e-based sci-fi/cyberpunk RPG). Features a cyberpunk aesthetic with neon accents, rollable dice, auto-calculated stats, and per-user character storage.
 
+## Rulebook DB Tables
+
+| Table | Rows | Notes |
+|---|---|---|
+| `rulebook_classes` | 8 | Biohacker, Codehacker, Crook, Engineer, Gunfighter, Hardcase, Samurai, Suit |
+| `rulebook_backgrounds` | 11 | Full skill profs + features |
+| `rulebook_genomes` | 18 | Ability bonuses, traits, senses, categories |
+| `rulebook_cadres` | 9 | Mercenary / Corporate / Underground / Military / Scientific / Espionage / Medical / Resistance / Freelance |
+
+Seed script: `node_modules/.pnpm/node_modules/.bin/tsx lib/db/src/seed-rulebook.ts`
+
+API routes: `/api/rulebook/classes`, `/api/rulebook/backgrounds`, `/api/rulebook/genomes`, `/api/rulebook/cadres`
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

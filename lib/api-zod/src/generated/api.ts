@@ -193,7 +193,6 @@ export const GetCharacterResponse = zod.object({
   conditions: zod.array(zod.string()),
   exhaustionLevel: zod.number(),
   passivePerception: zod.number().nullish(),
-  equippedArmor: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -357,7 +356,6 @@ export const UpdateCharacterBody = zod.object({
   conditions: zod.array(zod.string()).optional(),
   exhaustionLevel: zod.number().optional(),
   passivePerception: zod.number().nullish(),
-  equippedArmor: zod.string().nullish(),
 });
 
 export const UpdateCharacterResponse = zod.object({
@@ -492,7 +490,6 @@ export const UpdateCharacterResponse = zod.object({
   conditions: zod.array(zod.string()),
   exhaustionLevel: zod.number(),
   passivePerception: zod.number().nullish(),
-  equippedArmor: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -583,4 +580,18 @@ export const GetRulebookGenomesResponseItem = zod.object({
 });
 export const GetRulebookGenomesResponse = zod.array(
   GetRulebookGenomesResponseItem,
+);
+
+/**
+ * Returns all GeneFunk 2090 cadre affiliation types
+ * @summary Get all rulebook cadre types
+ */
+export const GetRulebookCadresResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  affiliation: zod.string(),
+});
+export const GetRulebookCadresResponse = zod.array(
+  GetRulebookCadresResponseItem,
 );

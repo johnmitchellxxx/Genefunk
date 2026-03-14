@@ -100,6 +100,4 @@ export interface UpdateCharacterBody {
   exhaustionLevel?: number;
   /** @nullable */
   passivePerception?: number | null;
-  /** @nullable */
-  equippedArmor?: string | null;
 }

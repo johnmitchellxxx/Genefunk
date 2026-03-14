@@ -3,7 +3,56 @@ import {
   rulebookClassesTable,
   rulebookBackgroundsTable,
   rulebookGenomesTable,
+  rulebookCadresTable,
 } from "./schema/rulebook";
+
+const cadres = [
+  {
+    name: "Mercenary",
+    affiliation: "Independent",
+    description: "A for-hire cadre that takes contracts from whoever pays — corporations, governments, or underground factions. No loyalty except to the mission and each other.",
+  },
+  {
+    name: "Corporate Black Ops",
+    affiliation: "Corporate",
+    description: "A covert unit operating under a megacorp's banner, running deniable operations: espionage, asset recovery, wetwork, and competitive sabotage.",
+  },
+  {
+    name: "Underground Crew",
+    affiliation: "Criminal",
+    description: "Operating in the cracks of society — smugglers, hackers, thieves, and fixers who work the black market and owe allegiance to no government or corp.",
+  },
+  {
+    name: "Special Forces",
+    affiliation: "Military",
+    description: "Government or military-backed operatives conducting high-risk missions behind enemy lines, enforcing order, or eliminating high-value targets.",
+  },
+  {
+    name: "Research Collective",
+    affiliation: "Scientific",
+    description: "A team of scientists and field operatives pursuing cutting-edge research — often in dangerous territory. Gene labs, ancient ruins, and active war zones are all just fieldwork.",
+  },
+  {
+    name: "Intelligence Cell",
+    affiliation: "Espionage",
+    description: "Spies, analysts, and field agents working for a clandestine agency. Information is the currency; loyalty and cover identities are the tools.",
+  },
+  {
+    name: "Medical Rescue",
+    affiliation: "Medical",
+    description: "A rapid-response cadre specializing in crisis medicine, organ recovery, trauma surgery in the field, and navigating the brutal economics of healthcare in 2090.",
+  },
+  {
+    name: "Anarchist Collective",
+    affiliation: "Resistance",
+    description: "Anti-corporate, anti-government operatives striking at systems of control — saboteurs, liberators, and propagandists fighting for a world the megacorps haven't bought yet.",
+  },
+  {
+    name: "Freelance",
+    affiliation: "Independent",
+    description: "No single affiliation. This cadre takes work where they find it, builds their own reputation, and answers to no organization. Pure free agents in a corporate world.",
+  },
+];
 
 const classes = [
   {
@@ -1513,6 +1562,11 @@ export async function seedRulebookData() {
     .insert(rulebookGenomesTable)
     .values(genomes)
     .onConflictDoNothing({ target: rulebookGenomesTable.name });
+
+  await db
+    .insert(rulebookCadresTable)
+    .values(cadres)
+    .onConflictDoNothing({ target: rulebookCadresTable.name });
 
   console.log("Rulebook data seeded successfully.");
 }

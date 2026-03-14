@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRoute } from 'wouter';
-import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes } from '@/hooks/use-api';
+import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes, useAppRulebookClasses, useAppRulebookCadres } from '@/hooks/use-api';
 import { useDice, type DieType } from '@/hooks/use-dice';
 import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } from '@/components/CyberUI';
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
-import { CLASSES, UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
+import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Dices } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
@@ -42,10 +42,13 @@ export default function CharacterSheet() {
 
   const { data: rulebookBackgrounds } = useAppRulebookBackgrounds();
   const { data: rulebookGenomes } = useAppRulebookGenomes();
+  const { data: rulebookClasses } = useAppRulebookClasses();
+  const { data: rulebookCadres } = useAppRulebookCadres();
   
-  const classOptions = CLASSES.map(c => ({ value: c.name, label: c.name }));
+  const classOptions = (rulebookClasses || []).map(c => ({ value: c.name, label: c.name }));
   const backgroundOptions = (rulebookBackgrounds || []).map(b => ({ value: b.name, label: b.name }));
   const genomeOptions = (rulebookGenomes || []).map(g => ({ value: g.name, label: `${g.name} (${g.category})` }));
+  const cadreOptions = (rulebookCadres || []).map(c => ({ value: c.name, label: `${c.name} (${c.affiliation})` }));
 
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
   const [levelUpOpen, setLevelUpOpen] = useState(false);
@@ -119,7 +122,7 @@ export default function CharacterSheet() {
                 <EditableSelect value={character.genome || ''} onSave={(v) => handleUpdate('genome', v)} options={genomeOptions} className="inline-block text-muted-foreground min-w-[60px]" placeholder="Genome" />
                 <span className="text-muted-foreground">|</span>
                 <span className="text-xs text-muted-foreground uppercase">Cadre:</span>
-                <EditableField value={character.cadre || ''} onSave={(v) => handleUpdate('cadre', v)} className="inline-block text-muted-foreground min-w-[60px]" />
+                <EditableSelect value={character.cadre || ''} onSave={(v) => handleUpdate('cadre', v)} options={cadreOptions} className="inline-block text-muted-foreground min-w-[60px]" placeholder="Cadre" />
                 <span className="text-muted-foreground">|</span>
                 <span className="text-xs text-muted-foreground/60 font-mono">by {character.userId}</span>
               </div>

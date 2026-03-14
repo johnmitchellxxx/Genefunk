@@ -10,6 +10,7 @@ import {
   useGetRulebookClasses,
   useGetRulebookBackgrounds,
   useGetRulebookGenomes,
+  useGetRulebookCadres,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -94,6 +95,10 @@ export function useAppRulebookBackgrounds() {
 
 export function useAppRulebookGenomes() {
   return useGetRulebookGenomes(rulebookQueryOptions);
+}
+
+export function useAppRulebookCadres() {
+  return useGetRulebookCadres(rulebookQueryOptions);
 }
 
 export function useAppDeleteCharacter() {

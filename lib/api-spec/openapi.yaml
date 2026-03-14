@@ -230,6 +230,22 @@ paths:
                 items:
                   $ref: "#/components/schemas/RulebookGenome"
 
+  /rulebook/cadres:
+    get:
+      operationId: getRulebookCadres
+      tags: [rulebook]
+      summary: Get all rulebook cadre types
+      description: Returns all GeneFunk 2090 cadre affiliation types
+      responses:
+        "200":
+          description: List of cadre types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RulebookCadre"
+
 components:
   schemas:
     HealthStatus:
@@ -1006,3 +1022,20 @@ components:
         - senses
         - traits
         - speed
+
+    RulebookCadre:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        affiliation:
+          type: string
+      required:
+        - id
+        - name
+        - description
+        - affiliation
