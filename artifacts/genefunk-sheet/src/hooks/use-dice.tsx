@@ -154,8 +154,9 @@ export function DiceProvider({ children }: { children: ReactNode }) {
 
     setCustomRoll(roll);
     setCustomPhase('tumble');
+    // 1 s tumble → result appears → 15 s on table → auto-fade
     const t1 = setTimeout(() => setCustomPhase('result'), 1000);
-    const t2 = setTimeout(() => dismissCustom(), 30000);
+    const t2 = setTimeout(() => dismissCustom(), 1000 + 15000);
     timersRef.current = [t1, t2];
   }, [clearTimers, dismissCustom, characterName]);
 
@@ -231,13 +232,12 @@ export function DiceProvider({ children }: { children: ReactNode }) {
             key={customRoll.id}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[60] flex flex-col items-center justify-center cursor-pointer gap-6"
-            onClick={dismissCustom}
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 pointer-events-none"
           >
-            <div className="absolute inset-0 bg-background/40 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-background/30 backdrop-blur-sm" />
 
             {/* Dice shapes — one per individual die rolled */}
-            <div className="relative z-10 flex flex-wrap justify-center gap-4 max-w-sm">
+            <div className="relative z-10 flex flex-wrap justify-center gap-4 max-w-sm pointer-events-none">
               {flatDice.map((die, i) => (
                 <AnimatedDie
                   key={i}
@@ -249,8 +249,8 @@ export function DiceProvider({ children }: { children: ReactNode }) {
               ))}
             </div>
 
-            {/* Result card — appears after tumble */}
-            <div className="relative z-10">
+            {/* Result card — appears after tumble, stays 15 s then auto-fades */}
+            <div className="relative z-10 pointer-events-auto">
               <AnimatePresence>
                 {customPhase === 'result' && (
                   <motion.div
@@ -259,7 +259,15 @@ export function DiceProvider({ children }: { children: ReactNode }) {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3, delay: 0.05 }}
                   >
-                    <div className="bg-card border-2 border-primary p-5 clip-edges shadow-2xl flex flex-col items-center min-w-[180px]">
+                    <div className="bg-card border-2 border-primary p-5 clip-edges shadow-2xl flex flex-col items-center min-w-[180px] relative">
+                      {/* Dismiss button */}
+                      <button
+                        onClick={dismissCustom}
+                        className="absolute top-1.5 right-2 text-muted-foreground/40 hover:text-muted-foreground transition-colors text-xs font-mono"
+                        title="Dismiss"
+                      >
+                        ✕
+                      </button>
                       <div className="text-primary text-xs font-mono tracking-widest uppercase mb-3">{customRoll.name}</div>
                       {customRoll.modifier !== 0 && (
                         <div className="text-muted-foreground text-sm font-mono mb-1">{formatModifier(customRoll.modifier)}</div>
