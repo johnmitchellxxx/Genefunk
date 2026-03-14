@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, useEff
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatModifier } from '@/lib/rules';
 import { D20Die } from '@/components/D20Die';
+import { AnimatedDie } from '@/components/AnimatedDie';
 
 export type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100;
 
@@ -41,22 +42,6 @@ export function useDice() {
   const context = useContext(DiceContext);
   if (!context) throw new Error("useDice must be used within a DiceProvider");
   return context;
-}
-
-function SpinningDie({ sides }: { sides: DieType }) {
-  const [display, setDisplay] = useState(1);
-  useEffect(() => {
-    const iv = setInterval(() => setDisplay(Math.floor(Math.random() * sides) + 1), 55);
-    return () => clearInterval(iv);
-  }, [sides]);
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="text-[10px] text-primary font-mono uppercase tracking-widest">D{sides}</div>
-      <div className="w-12 h-12 border-2 border-primary bg-primary/10 flex items-center justify-center font-mono text-xl font-black text-primary clip-edges">
-        {display}
-      </div>
-    </div>
-  );
 }
 
 export function DiceProvider({ children }: { children: ReactNode }) {
@@ -100,7 +85,6 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       isCritSuccess: d20 === 20,
       isCritFail: d20 === 1,
     };
-
     setD20Roll(roll);
     setD20Phase('tumble');
     const t1 = setTimeout(() => setD20Phase('result'), 1200);
@@ -121,7 +105,6 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       }));
 
     const diceTotal = rolledDice.reduce((sum, d) => sum + d.values.reduce((s, v) => s + v, 0), 0);
-
     const roll: CustomRoll = {
       id: Math.random().toString(36).substr(2, 9),
       name, dice: rolledDice, modifier,
@@ -135,11 +118,16 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     timersRef.current = [t1, t2];
   }, [clearTimers, dismissCustom]);
 
+  // Flatten the rolled dice into individual entries with an index for direction variance
+  const flatDice = customRoll
+    ? customRoll.dice.flatMap(group => group.values.map(val => ({ sides: group.sides, value: val })))
+    : [];
+
   return (
     <DiceContext.Provider value={{ rollDice, rollCustom }}>
       {children}
 
-      {/* D20 Roll Overlay */}
+      {/* ── D20 Roll Overlay ── */}
       <AnimatePresence>
         {d20Roll && d20Phase !== 'done' && (
           <motion.div
@@ -176,8 +164,16 @@ export function DiceProvider({ children }: { children: ReactNode }) {
                       </div>
                       <div className="w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent my-2" />
                       <div className="text-3xl font-bold text-primary">{d20Roll.total}</div>
-                      {d20Roll.isCritSuccess && <div className="absolute -top-3 bg-secondary text-secondary-foreground px-3 py-0.5 text-xs font-bold tracking-widest uppercase clip-edges">Critical Success</div>}
-                      {d20Roll.isCritFail && <div className="absolute -top-3 bg-destructive text-destructive-foreground px-3 py-0.5 text-xs font-bold tracking-widest uppercase clip-edges">Critical Failure</div>}
+                      {d20Roll.isCritSuccess && (
+                        <div className="absolute -top-3 bg-secondary text-secondary-foreground px-3 py-0.5 text-xs font-bold tracking-widest uppercase clip-edges">
+                          Critical Success
+                        </div>
+                      )}
+                      {d20Roll.isCritFail && (
+                        <div className="absolute -top-3 bg-destructive text-destructive-foreground px-3 py-0.5 text-xs font-bold tracking-widest uppercase clip-edges">
+                          Critical Failure
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -187,72 +183,48 @@ export function DiceProvider({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Custom Dice Roll Overlay */}
+      {/* ── Custom Dice Roll Overlay ── */}
       <AnimatePresence>
         {customRoll && customPhase !== 'done' && (
           <motion.div
             key={customRoll.id}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center cursor-pointer"
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center cursor-pointer gap-6"
             onClick={dismissCustom}
           >
             <div className="absolute inset-0 bg-background/40 backdrop-blur-sm" />
-            <div className="relative z-10 flex flex-col items-center gap-6">
-              {/* Tumble phase: spinning dice */}
-              <AnimatePresence mode="wait">
-                {customPhase === 'tumble' && (
-                  <motion.div
-                    key="tumble"
-                    initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                    className="flex flex-wrap justify-center gap-4 max-w-xs"
-                  >
-                    {customRoll.dice.flatMap(d =>
-                      d.values.map((_, i) => <SpinningDie key={`${d.sides}-${i}`} sides={d.sides} />)
-                    )}
-                  </motion.div>
-                )}
 
-                {/* Result phase: final values */}
+            {/* Dice shapes — one per individual die rolled */}
+            <div className="relative z-10 flex flex-wrap justify-center gap-4 max-w-sm">
+              {flatDice.map((die, i) => (
+                <AnimatedDie
+                  key={i}
+                  sides={die.sides}
+                  value={die.value}
+                  phase={customPhase === 'tumble' ? 'tumble' : 'result'}
+                  index={i}
+                />
+              ))}
+            </div>
+
+            {/* Result card — appears after tumble */}
+            <div className="relative z-10">
+              <AnimatePresence>
                 {customPhase === 'result' && (
                   <motion.div
-                    key="result"
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    initial={{ opacity: 0, y: 16, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.3, delay: 0.05 }}
                   >
-                    <div className="bg-card border-2 border-primary p-6 clip-edges shadow-2xl flex flex-col items-center min-w-[220px] relative">
-                      <div className="text-primary text-sm font-mono tracking-widest uppercase mb-4">{customRoll.name}</div>
-
-                      <div className="flex flex-wrap justify-center gap-3 mb-4">
-                        {customRoll.dice.map(group => (
-                          <div key={group.sides} className="flex flex-col items-center gap-1">
-                            <div className="text-[9px] text-primary font-mono uppercase tracking-widest">D{group.sides}</div>
-                            <div className="flex gap-1.5 flex-wrap justify-center">
-                              {group.values.map((val, i) => (
-                                <div
-                                  key={i}
-                                  className={`w-10 h-10 border-2 flex items-center justify-center font-mono font-black text-sm clip-edges ${
-                                    val === group.sides ? 'border-secondary bg-secondary/20 text-secondary' :
-                                    val === 1 ? 'border-destructive bg-destructive/20 text-destructive' :
-                                    'border-border bg-card/80 text-foreground'
-                                  }`}
-                                >
-                                  {val}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
+                    <div className="bg-card border-2 border-primary p-5 clip-edges shadow-2xl flex flex-col items-center min-w-[180px]">
+                      <div className="text-primary text-xs font-mono tracking-widest uppercase mb-3">{customRoll.name}</div>
                       {customRoll.modifier !== 0 && (
-                        <div className="text-muted-foreground text-sm font-mono mb-2">{formatModifier(customRoll.modifier)}</div>
+                        <div className="text-muted-foreground text-sm font-mono mb-1">{formatModifier(customRoll.modifier)}</div>
                       )}
-
-                      <div className="w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent my-2" />
-                      <div className="text-3xl font-bold text-primary">{customRoll.total}</div>
+                      <div className="w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent mb-3" />
+                      <div className="text-4xl font-bold text-primary font-mono">{customRoll.total}</div>
                     </div>
                   </motion.div>
                 )}
