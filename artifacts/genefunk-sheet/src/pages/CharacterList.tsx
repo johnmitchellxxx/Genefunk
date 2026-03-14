@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter } from '@/hooks/use-api';
+import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppAuth } from '@/hooks/use-api';
 import { Link, useLocation } from 'wouter';
 import { CyberCard, CyberButton } from '@/components/CyberUI';
-import { Plus, User, Activity, Calendar } from 'lucide-react';
+import { Plus, User, Activity, Calendar, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { CharacterWizard } from '@/components/CharacterWizard';
 
 export default function CharacterList() {
+  const { data: auth } = useAppAuth();
+  const isAdmin = auth?.user?.id === 'john';
   const { data: characters, isLoading } = useAppCharacters();
   const createMutation = useAppCreateCharacter();
   const updateMutation = useAppUpdateCharacter();
@@ -55,7 +57,13 @@ export default function CharacterList() {
         <div className="flex justify-between items-center mb-12 border-b border-border pb-6">
           <div>
             <h1 className="text-4xl font-bold text-foreground tracking-widest uppercase">Operative Roster</h1>
-            <p className="text-primary font-mono mt-2">Active database connection established.</p>
+            {isAdmin ? (
+              <p className="text-yellow-400 font-mono mt-2 flex items-center gap-2">
+                <Shield className="w-4 h-4" /> Admin view — all operatives across all users
+              </p>
+            ) : (
+              <p className="text-primary font-mono mt-2">Active database connection established.</p>
+            )}
           </div>
           <CyberButton onClick={() => setWizardOpen(true)} disabled={createMutation.isPending}>
             {createMutation.isPending ? "Constructing..." : <><Plus className="inline mr-2 w-4 h-4"/> New Operative</>}
@@ -83,6 +91,12 @@ export default function CharacterList() {
                     <div>
                       <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{char.name}</h2>
                       <p className="text-muted-foreground text-sm font-mono mt-1">Level {char.level} {char.class || 'Unknown Class'}</p>
+                      {isAdmin && (char as { userId?: string }).userId && (
+                        <p className="text-yellow-400/80 text-xs font-mono mt-1 flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          {(char as { userId?: string }).userId}
+                        </p>
+                      )}
                     </div>
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/50 group-hover:bg-primary/20">
                       <User className="text-primary" />

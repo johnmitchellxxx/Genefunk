@@ -12,6 +12,8 @@ import {
 
 const router: IRouter = Router();
 
+const ADMIN_USER_ID = "john";
+
 const seededUsers = new Set<string>();
 
 async function ensureSeedCharacter(userId: string) {
@@ -53,6 +55,8 @@ router.get("/characters", async (req, res) => {
   try {
     await ensureSeedCharacter(req.user.id);
 
+    const isAdmin = req.user.id === ADMIN_USER_ID;
+
     const characters = await db
       .select({
         id: charactersTable.id,
@@ -61,9 +65,10 @@ router.get("/characters", async (req, res) => {
         class: charactersTable.class,
         level: charactersTable.level,
         updatedAt: charactersTable.updatedAt,
+        userId: charactersTable.userId,
       })
       .from(charactersTable)
-      .where(eq(charactersTable.userId, req.user.id));
+      .where(isAdmin ? undefined : eq(charactersTable.userId, req.user.id));
 
     res.json(characters);
   } catch (err) {
@@ -112,15 +117,19 @@ router.get("/characters/:id", async (req, res) => {
     return;
   }
 
+  const isAdmin = req.user.id === ADMIN_USER_ID;
+
   try {
     const [character] = await db
       .select()
       .from(charactersTable)
       .where(
-        and(
-          eq(charactersTable.id, parsed.data.id),
-          eq(charactersTable.userId, req.user.id)
-        )
+        isAdmin
+          ? eq(charactersTable.id, parsed.data.id)
+          : and(
+              eq(charactersTable.id, parsed.data.id),
+              eq(charactersTable.userId, req.user.id)
+            )
       );
 
     if (!character) {
@@ -153,15 +162,19 @@ router.put("/characters/:id", async (req, res) => {
     return;
   }
 
+  const isAdmin = req.user.id === ADMIN_USER_ID;
+
   try {
     const existing = await db
       .select({ id: charactersTable.id })
       .from(charactersTable)
       .where(
-        and(
-          eq(charactersTable.id, paramsParsed.data.id),
-          eq(charactersTable.userId, req.user.id)
-        )
+        isAdmin
+          ? eq(charactersTable.id, paramsParsed.data.id)
+          : and(
+              eq(charactersTable.id, paramsParsed.data.id),
+              eq(charactersTable.userId, req.user.id)
+            )
       );
 
     if (!existing.length) {
@@ -176,12 +189,7 @@ router.put("/characters/:id", async (req, res) => {
         ...data,
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(charactersTable.id, paramsParsed.data.id),
-          eq(charactersTable.userId, req.user.id)
-        )
-      )
+      .where(eq(charactersTable.id, paramsParsed.data.id))
       .returning();
 
     res.json(updated);
@@ -203,14 +211,18 @@ router.delete("/characters/:id", async (req, res) => {
     return;
   }
 
+  const isAdmin = req.user.id === ADMIN_USER_ID;
+
   try {
     const [deleted] = await db
       .delete(charactersTable)
       .where(
-        and(
-          eq(charactersTable.id, parsed.data.id),
-          eq(charactersTable.userId, req.user.id)
-        )
+        isAdmin
+          ? eq(charactersTable.id, parsed.data.id)
+          : and(
+              eq(charactersTable.id, parsed.data.id),
+              eq(charactersTable.userId, req.user.id)
+            )
       )
       .returning({ id: charactersTable.id });
 
