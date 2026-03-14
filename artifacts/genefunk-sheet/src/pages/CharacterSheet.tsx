@@ -182,7 +182,7 @@ export default function CharacterSheet() {
           <div className="bg-card border border-border clip-edges px-4 py-2.5 flex items-center gap-2" title={`Damage Reduction: ${character.damageReduction}\nSubtract ${character.damageReduction} from each hit before it applies to your HP`}>
             <Shield className="text-secondary w-5 h-5" />
             <div className="text-center">
-              <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">DR</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono">Damage Reduction</div>
               <EditableField value={character.damageReduction} type="number" onSave={v => handleUpdate('damageReduction', v)} className="text-lg font-bold text-secondary text-center" />
             </div>
           </div>
