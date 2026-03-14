@@ -36,6 +36,7 @@ interface DiceContextType {
   rollDice: (name: string, modifier: number) => void;
   rollCustom: (dice: { sides: DieType; count: number }[], modifier: number, name: string) => void;
   beyond20Active: boolean;
+  setCharacterName: (name: string) => void;
 }
 
 const DiceContext = createContext<DiceContextType | undefined>(undefined);
@@ -52,6 +53,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
   const [customRoll, setCustomRoll] = useState<CustomRoll | null>(null);
   const [customPhase, setCustomPhase] = useState<Phase>('done');
   const [beyond20Active, setBeyond20Active] = useState(isBeyond20Available());
+  const [characterName, setCharacterName] = useState('GeneFunk Character');
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => onBeyond20Change(setBeyond20Active), []);
@@ -96,12 +98,12 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     const expr = modifier !== 0
       ? `1d20${modifier >= 0 ? '+' : ''}${modifier}`
       : '1d20';
-    sendRollToBeyond20(name, expr);
+    sendRollToBeyond20(name, expr, { characterName });
 
     const t1 = setTimeout(() => setD20Phase('result'), 1200);
     const t2 = setTimeout(() => dismissD20(), 5200);
     timersRef.current = [t1, t2];
-  }, [clearTimers, dismissD20]);
+  }, [clearTimers, dismissD20, characterName]);
 
   const rollCustom = useCallback((dice: { sides: DieType; count: number }[], modifier: number, name: string) => {
     clearTimers();
@@ -126,14 +128,14 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       .filter(d => d.count > 0)
       .map(d => `${d.count}d${d.sides}`)
       .join('+') + (modifier !== 0 ? `${modifier >= 0 ? '+' : ''}${modifier}` : '');
-    sendRollToBeyond20(name, expr);
+    sendRollToBeyond20(name, expr, { characterName });
 
     setCustomRoll(roll);
     setCustomPhase('tumble');
     const t1 = setTimeout(() => setCustomPhase('result'), 1000);
     const t2 = setTimeout(() => dismissCustom(), 5500);
     timersRef.current = [t1, t2];
-  }, [clearTimers, dismissCustom]);
+  }, [clearTimers, dismissCustom, characterName]);
 
   // Flatten the rolled dice into individual entries with an index for direction variance
   const flatDice = customRoll
@@ -141,7 +143,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     : [];
 
   return (
-    <DiceContext.Provider value={{ rollDice, rollCustom, beyond20Active }}>
+    <DiceContext.Provider value={{ rollDice, rollCustom, beyond20Active, setCharacterName }}>
       {children}
 
       {/* ── D20 Roll Overlay ── */}

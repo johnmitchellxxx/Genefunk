@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRoute } from 'wouter';
 import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes } from '@/hooks/use-api';
@@ -38,7 +38,7 @@ export default function CharacterSheet() {
   const { data: rawCharacter, isLoading } = useAppCharacter(id);
   const updateMutation = useAppUpdateCharacter();
   const deleteMutation = useAppDeleteCharacter();
-  const { rollDice, beyond20Active } = useDice();
+  const { rollDice, beyond20Active, setCharacterName } = useDice();
 
   const { data: rulebookBackgrounds } = useAppRulebookBackgrounds();
   const { data: rulebookGenomes } = useAppRulebookGenomes();
@@ -50,6 +50,10 @@ export default function CharacterSheet() {
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
+
+  useEffect(() => {
+    if (rawCharacter?.name) setCharacterName(rawCharacter.name);
+  }, [rawCharacter?.name, setCharacterName]);
 
   const handleUpdate = (field: string, value: unknown) => {
     if (!rawCharacter) return;
