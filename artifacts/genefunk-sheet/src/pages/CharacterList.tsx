@@ -1,12 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAppCharacters, useAppCreateCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppAuth, useAppTrashedCharacters, useAppRestoreCharacter, useAppPermanentlyDeleteCharacter, useAppBackupNow, useAppAllUsers, useAppDeleteUser } from '@/hooks/use-api';
 import { Link, useLocation } from 'wouter';
 import { CyberCard, CyberButton } from '@/components/CyberUI';
-import { Plus, User, Activity, Calendar, Shield, FileEdit, X, Trash2, RotateCcw, AlertTriangle, Inbox, Download } from 'lucide-react';
+import { Plus, User, Activity, Calendar, Shield, FileEdit, X, Trash2, RotateCcw, AlertTriangle, Inbox, Download, Fingerprint, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { CharacterWizard } from '@/components/CharacterWizard';
 
 export default function CharacterList() {
+  const queryClient = useQueryClient();
   const { data: auth } = useAppAuth();
   const isAdmin = auth?.user?.id === 'john';
   const { data: characters, isLoading } = useAppCharacters();
@@ -30,6 +32,64 @@ export default function CharacterList() {
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
   const blankInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
+
+  // "Who are you?" identify flow — shown once per device before first character creation
+  const [identifyOpen, setIdentifyOpen] = useState(false);
+  const [identifyName, setIdentifyName] = useState('');
+  const [identifyLoading, setIdentifyLoading] = useState(false);
+  const [pendingCreate, setPendingCreate] = useState<null | 'blank' | 'wizard'>(null);
+  const identifyInputRef = useRef<HTMLInputElement>(null);
+
+  // After identifying, trigger the pending create action
+  useEffect(() => {
+    if (auth?.isAuthenticated && pendingCreate) {
+      const type = pendingCreate;
+      setPendingCreate(null);
+      if (type === 'blank') {
+        setBlankOpen(true);
+        setTimeout(() => blankInputRef.current?.focus(), 50);
+      } else {
+        setWizardOpen(true);
+      }
+    }
+  }, [auth?.isAuthenticated, pendingCreate]);
+
+  const openCreate = (type: 'blank' | 'wizard') => {
+    if (auth?.isAuthenticated) {
+      if (type === 'blank') {
+        setBlankOpen(true);
+        setTimeout(() => blankInputRef.current?.focus(), 50);
+      } else {
+        setWizardOpen(true);
+      }
+    } else {
+      setPendingCreate(type);
+      setIdentifyOpen(true);
+      setTimeout(() => identifyInputRef.current?.focus(), 50);
+    }
+  };
+
+  const handleIdentify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = identifyName.trim();
+    if (!name) return;
+    setIdentifyLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        await queryClient.invalidateQueries();
+        setIdentifyOpen(false);
+        setIdentifyName('');
+      }
+    } finally {
+      setIdentifyLoading(false);
+    }
+  };
 
   const handleDelete = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
@@ -122,19 +182,23 @@ export default function CharacterList() {
           <div>
             <h1 className="text-4xl font-bold text-foreground tracking-widest uppercase">Operative Roster</h1>
             <p className="text-primary font-mono mt-2">
-              {isAdmin ? <><Shield className="inline w-4 h-4 mr-2 text-yellow-400" /><span className="text-yellow-400">Admin</span> — </> : null}
-              All operatives visible. You can only edit or delete your own.
+              {isAdmin
+                ? <><Shield className="inline w-4 h-4 mr-2 text-yellow-400" /><span className="text-yellow-400">Admin</span></>
+                : auth?.isAuthenticated
+                  ? <>Logged in as <span className="text-foreground">{auth.user?.id}</span></>
+                  : <span className="text-muted-foreground">Viewing all operatives — create one to claim your identity</span>
+              }
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { setBlankOpen(true); setTimeout(() => blankInputRef.current?.focus(), 50); }}
+              onClick={() => openCreate('blank')}
               disabled={createMutation.isPending}
               className="flex items-center gap-2 px-4 py-2 text-sm font-mono uppercase tracking-wider border border-border text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-all clip-edges"
             >
               <FileEdit className="w-4 h-4" /> Blank Sheet
             </button>
-            <CyberButton onClick={() => setWizardOpen(true)} disabled={createMutation.isPending}>
+            <CyberButton onClick={() => openCreate('wizard')} disabled={createMutation.isPending}>
               {createMutation.isPending ? "Constructing..." : <><Plus className="inline mr-2 w-4 h-4"/> New Operative</>}
             </CyberButton>
           </div>
@@ -424,6 +488,42 @@ export default function CharacterList() {
           </div>
         )}
       </div>
+
+      {/* Identity prompt — shown once per device when creating the first character */}
+      {identifyOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-card border border-primary/50 clip-edges p-8 w-full max-w-sm shadow-2xl">
+            <div className="flex flex-col items-center text-center mb-6">
+              <Fingerprint className="w-12 h-12 text-primary mb-3 drop-shadow-[0_0_10px_rgba(0,255,255,0.4)]" />
+              <h2 className="text-lg font-bold font-mono uppercase tracking-widest text-foreground">Who are you?</h2>
+              <p className="text-muted-foreground text-sm mt-2">Enter your name so you're the only one who can delete your characters.</p>
+            </div>
+            <form onSubmit={handleIdentify} className="flex flex-col gap-3">
+              <input
+                ref={identifyInputRef}
+                type="text"
+                value={identifyName}
+                onChange={e => setIdentifyName(e.target.value)}
+                placeholder="Your name..."
+                maxLength={50}
+                className="w-full bg-background border border-primary/40 text-foreground font-mono text-sm px-3 py-3 focus:outline-none focus:border-primary clip-edges placeholder:text-muted-foreground/40"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setIdentifyOpen(false); setIdentifyName(''); setPendingCreate(null); }}
+                  className="flex-1 px-4 py-2 font-mono text-sm uppercase tracking-wider border border-border text-muted-foreground hover:text-foreground transition-all clip-edges"
+                >
+                  Cancel
+                </button>
+                <CyberButton type="submit" disabled={!identifyName.trim() || identifyLoading} className="flex-1">
+                  {identifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue'}
+                </CyberButton>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {wizardOpen && (
         <CharacterWizard

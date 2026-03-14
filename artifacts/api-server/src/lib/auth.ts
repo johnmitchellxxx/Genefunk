@@ -4,7 +4,7 @@ import { db, sessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 export const SESSION_COOKIE = "sid";
-export const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+export const SESSION_TTL = 365 * 24 * 60 * 60 * 1000; // 1 year
 
 export interface SessionData {
   user: {

@@ -15,13 +15,8 @@ const router: IRouter = Router();
 
 const ADMIN_USER_ID = "john";
 
-// List all active characters — visible to every authenticated user
-router.get("/characters", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+// List all active characters — public, no login needed
+router.get("/characters", async (_req, res) => {
   try {
     const characters = await db
       .select({
@@ -44,9 +39,10 @@ router.get("/characters", async (req, res) => {
   }
 });
 
+// Create a character — requires a session (sets ownership)
 router.post("/characters", async (req, res) => {
   if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Identify yourself first — enter your name when creating a character." });
     return;
   }
 
@@ -74,12 +70,7 @@ router.post("/characters", async (req, res) => {
 
 // Manual backup trigger — admin only, must come BEFORE /characters/:id
 router.post("/characters/backup", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (req.user.id !== ADMIN_USER_ID) {
+  if (!req.isAuthenticated() || req.user.id !== ADMIN_USER_ID) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -93,14 +84,9 @@ router.post("/characters/backup", async (req, res) => {
   }
 });
 
-// Must come BEFORE /characters/:id so Express doesn't treat "trash" as an id
+// Trash list — admin only, must come BEFORE /characters/:id
 router.get("/characters/trash", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (req.user.id !== ADMIN_USER_ID) {
+  if (!req.isAuthenticated() || req.user.id !== ADMIN_USER_ID) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -127,13 +113,8 @@ router.get("/characters/trash", async (req, res) => {
   }
 });
 
-// Any authenticated user can read any active character
+// Read a character — public
 router.get("/characters/:id", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
   const parsed = GetCharacterParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid character id" });
@@ -163,10 +144,10 @@ router.get("/characters/:id", async (req, res) => {
   }
 });
 
-// Only the owner (or admin) can edit a character
+// Edit a character — any identified user can edit (friends trust each other)
 router.put("/characters/:id", async (req, res) => {
   if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Identify yourself first." });
     return;
   }
 
@@ -182,34 +163,25 @@ router.put("/characters/:id", async (req, res) => {
     return;
   }
 
-  const isAdmin = req.user.id === ADMIN_USER_ID;
-
   try {
-    const existing = await db
+    const [existing] = await db
       .select({ id: charactersTable.id })
       .from(charactersTable)
       .where(
-        isAdmin
-          ? and(eq(charactersTable.id, paramsParsed.data.id), isNull(charactersTable.deletedAt))
-          : and(
-              eq(charactersTable.id, paramsParsed.data.id),
-              eq(charactersTable.userId, req.user.id),
-              isNull(charactersTable.deletedAt)
-            )
+        and(
+          eq(charactersTable.id, paramsParsed.data.id),
+          isNull(charactersTable.deletedAt)
+        )
       );
 
-    if (!existing.length) {
-      res.status(403).json({ error: "You can only edit your own characters" });
+    if (!existing) {
+      res.status(404).json({ error: "Character not found" });
       return;
     }
 
-    const data = bodyParsed.data;
     const [updated] = await db
       .update(charactersTable)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
+      .set({ ...bodyParsed.data, updatedAt: new Date() })
       .where(eq(charactersTable.id, paramsParsed.data.id))
       .returning();
 
@@ -223,7 +195,7 @@ router.put("/characters/:id", async (req, res) => {
 // Soft delete — only the owner (or admin) can delete
 router.delete("/characters/:id", async (req, res) => {
   if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Identify yourself first." });
     return;
   }
 
@@ -264,12 +236,7 @@ router.delete("/characters/:id", async (req, res) => {
 
 // Restore from trash (admin only)
 router.post("/characters/:id/restore", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (req.user.id !== ADMIN_USER_ID) {
+  if (!req.isAuthenticated() || req.user.id !== ADMIN_USER_ID) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -285,10 +252,7 @@ router.post("/characters/:id/restore", async (req, res) => {
       .update(charactersTable)
       .set({ deletedAt: null })
       .where(
-        and(
-          eq(charactersTable.id, parsed.data.id),
-          isNotNull(charactersTable.deletedAt)
-        )
+        and(eq(charactersTable.id, parsed.data.id), isNotNull(charactersTable.deletedAt))
       )
       .returning({ id: charactersTable.id });
 
@@ -304,14 +268,9 @@ router.post("/characters/:id/restore", async (req, res) => {
   }
 });
 
-// Permanently delete (admin only, irreversible)
+// Permanently delete (admin only)
 router.delete("/characters/:id/permanent", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (req.user.id !== ADMIN_USER_ID) {
+  if (!req.isAuthenticated() || req.user.id !== ADMIN_USER_ID) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
