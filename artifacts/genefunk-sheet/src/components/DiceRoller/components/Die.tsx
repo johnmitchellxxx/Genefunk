@@ -127,7 +127,6 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     return emoji ? makeEmojiTexture(emoji) : null;
   }, [config.interiorObject]);
 
-  const dieColor = useMemo(() => new THREE.Color(config.color), [config.color]);
   const dieScale = config.scale ?? 1;
 
   const spawnPos = useMemo((): [number, number, number] => {
@@ -250,14 +249,11 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       map: tex,
       transparent: config.opacity < 1,
       opacity: config.opacity,
-      roughness: 0.2,
-      metalness: 0.3,
-      emissive: dieColor,
-      emissiveIntensity: 0.35,
-      emissiveMap: tex,
+      roughness: 0.4,
+      metalness: 0.15,
       side: THREE.FrontSide,
     }));
-  }, [numberTextures, dieColor, config.opacity]);
+  }, [numberTextures, config.opacity]);
 
   return (
     <RigidBody
@@ -279,7 +275,6 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
           castShadow
           receiveShadow
         />
-        <pointLight color={dieColor} intensity={0.6} distance={1.5} decay={2} />
         {interiorTexture && (
           <mesh scale={[0.35, 0.35, 0.35]}>
             <planeGeometry args={[1, 1]} />
