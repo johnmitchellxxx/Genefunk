@@ -31,6 +31,9 @@ function makeNumberTexture(
   bold: boolean,
   italic: boolean,
   dieColor: string,
+  /** Body opacity 0–1.  Background pixels use this alpha; number pixels are always alpha=1
+   *  so the numeral is never washed out regardless of die transparency. */
+  bodyOpacity: number,
 ): THREE.CanvasTexture {
   const size = 256;
   const canvas = document.createElement('canvas');
@@ -38,12 +41,20 @@ function makeNumberTexture(
   canvas.height = size;
   const ctx2d = canvas.getContext('2d')!;
 
-  // Dark body: 10% of die color for tinted-black face
+  // Clear to fully transparent first so we start with a known alpha channel
+  ctx2d.clearRect(0, 0, size, size);
+
+  // Background: tinted-dark die color, alpha = bodyOpacity.
+  // At opacity=1 this looks like before; at opacity=0.3 the face is glassy but
+  // still tinted, and surface lighting (roughness/reflections) remains sharp.
   const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
-  const darkBg = `rgb(${Math.round(r * 0.1)}, ${Math.round(g * 0.08)}, ${Math.round(b * 0.12)})`;
+  const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
+  ctx2d.globalAlpha = bodyOpacity;
   ctx2d.fillStyle = darkBg;
   ctx2d.fillRect(0, 0, size, size);
 
+  // Number is always fully opaque so it reads clearly on any body opacity
+  ctx2d.globalAlpha = 1.0;
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
   const numStr = String(value);
@@ -52,8 +63,6 @@ function makeNumberTexture(
   ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
-
-  // Crisp number — no glow, no halo
   ctx2d.shadowBlur = 0;
   ctx2d.fillStyle = fontColor;
   ctx2d.fillText(String(value), size / 2, size / 2);
@@ -69,7 +78,10 @@ function makeNumberTexture(
     ctx2d.stroke();
   }
 
-  return new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(canvas);
+  // Premultiplied alpha ensures correct blending when texture alpha < 1
+  tex.premultiplyAlpha = true;
+  return tex;
 }
 
 function makeEmojiTexture(emoji: string): THREE.CanvasTexture {
@@ -106,9 +118,9 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
 
   const numberTextures = useMemo(() => {
     return Array.from({ length: faceCount }, (_, i) =>
-      makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color)
+      makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity)
     );
-  }, [faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color]);
+  }, [faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity]);
 
   const interiorTexture = useMemo(() => {
     if (!config.interiorObject) return null;
@@ -255,12 +267,21 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   });
 
   const faceMaterials = useMemo(() => {
-    return numberTextures.map(tex => new THREE.MeshStandardMaterial({
+    const translucent = config.opacity < 1;
+    return numberTextures.map(tex => new THREE.MeshPhysicalMaterial({
       map: tex,
-      transparent: config.opacity < 1,
-      opacity: config.opacity,
-      roughness: 0.4,
-      metalness: 0.15,
+      // opacity is baked into the texture alpha channel (background=partial, number=1.0)
+      // so we leave material opacity at 1 — surface shading (reflections, roughness)
+      // then works independently from how see-through the body is.
+      transparent: translucent,
+      opacity: 1.0,
+      alphaTest: 0,
+      depthWrite: !translucent,
+      roughness: translucent ? 0.08 : 0.35,   // glassy surface when translucent
+      metalness: 0,
+      // clearcoat gives the "lacquered resin" look real dice have
+      clearcoat: translucent ? 0.8 : 0.2,
+      clearcoatRoughness: 0.1,
       side: THREE.FrontSide,
     }));
   }, [numberTextures, config.opacity]);
