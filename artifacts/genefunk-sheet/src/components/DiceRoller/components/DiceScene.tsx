@@ -128,11 +128,10 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
             <CuboidCollider args={[ARENA_X + 2, 4, ARENA_Z + 2]} position={[0, -4, 0]} />
           </RigidBody>
           <RigidBody type="fixed" restitution={0.4}>
-            <CuboidCollider args={[0.5, 8, ARENA_Z + 2]} position={[-(ARENA_X + 0.5), 0, 0]} />
-            <CuboidCollider args={[0.5, 8, ARENA_Z + 2]} position={[ARENA_X + 0.5, 0, 0]} />
-            <CuboidCollider args={[ARENA_X + 2, 8, 0.5]} position={[0, 0, -(ARENA_Z + 0.5)]} />
-            <CuboidCollider args={[ARENA_X + 2, 8, 0.5]} position={[0, 0, ARENA_Z + 0.5]} />
-            <CuboidCollider args={[ARENA_X + 2, 0.5, ARENA_Z + 2]} position={[0, 8, 0]} />
+            <CuboidCollider args={[0.5, 12, ARENA_Z + 2]} position={[-(ARENA_X + 0.5), 0, 0]} />
+            <CuboidCollider args={[0.5, 12, ARENA_Z + 2]} position={[ARENA_X + 0.5, 0, 0]} />
+            <CuboidCollider args={[ARENA_X + 2, 12, 0.5]} position={[0, 0, -(ARENA_Z + 0.5)]} />
+            <CuboidCollider args={[ARENA_X + 2, 12, 0.5]} position={[0, 0, ARENA_Z + 0.5]} />
           </RigidBody>
 
           {dieEntries.map(({ id, dieType, spawnSide }) => (

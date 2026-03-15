@@ -132,7 +132,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const spawnPos = useMemo((): [number, number, number] => {
     const rz = (Math.random() - 0.5) * arenaZ;
     const rx = (Math.random() - 0.5) * arenaX;
-    const y = 7 + Math.random() * 3;
+    const y = 3 + Math.random() * 2;
     switch (spawnSide) {
       case 'left':   return [-arenaX * 0.75, y, rz];
       case 'right':  return [arenaX * 0.75, y, rz];
@@ -155,7 +155,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
               : spawnSide === 'bottom' ? -(5 + Math.random() * 5)
               : (Math.random() - 0.5) * 8;
     launchRef.current = {
-      vx, vy: 5 + Math.random() * 4, vz,
+      vx, vy: 3 + Math.random() * 4, vz,
       ax: (Math.random() - 0.5) * 50,
       ay: (Math.random() - 0.5) * 50,
       az: (Math.random() - 0.5) * 50,
