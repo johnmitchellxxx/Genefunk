@@ -93,10 +93,10 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
       >
         <CameraSetup />
 
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.8} />
         <directionalLight
           position={[5, 10, 10]}
-          intensity={2.2}
+          intensity={2.5}
           castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-camera-far={50}
@@ -105,14 +105,15 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
           shadow-camera-top={10}
           shadow-camera-bottom={-10}
         />
-        <directionalLight position={[-5, 8, 6]} intensity={1.0} />
-        <pointLight position={[0, 6, 8]} intensity={1.0} color="#ffffff" />
-        <pointLight position={[-5, 4, 4]} intensity={0.6} color="#ffffff" />
+        <directionalLight position={[-5, 6, 8]} intensity={1.5} />
+        <directionalLight position={[0, 4, 12]} intensity={1.2} />
+        <pointLight position={[0, 5, 9]} intensity={1.5} color="#ffffff" />
+        <pointLight position={[-5, 4, 4]} intensity={0.8} color="#ffffff" />
 
-        <Environment preset="city" />
+        <Environment preset="studio" />
 
         <EffectComposer>
-          <Bloom intensity={0.8} luminanceThreshold={0.4} luminanceSmoothing={0.9} mipmapBlur />
+          <Bloom intensity={0.3} luminanceThreshold={0.7} luminanceSmoothing={0.9} mipmapBlur />
         </EffectComposer>
 
         <ContactShadows position={[0, -0.01, 0]} opacity={0.6} scale={30} blur={3} far={8} />

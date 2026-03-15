@@ -60,7 +60,7 @@ function addFaceGroups(geo: THREE.BufferGeometry, trianglesPerFace: number): THR
 }
 
 function buildTetrahedron(): DieGeometryInfo {
-  const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.45), 1);
+  const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.85), 1);
   const faceNormals = [
     new THREE.Vector3(0, 1, 0),
     new THREE.Vector3(0, -1 / 3, 2 * Math.sqrt(2) / 3),
@@ -84,7 +84,7 @@ function buildCube(): DieGeometryInfo {
 }
 
 function buildOctahedron(): DieGeometryInfo {
-  const geo = addFaceGroups(new THREE.OctahedronGeometry(0.7), 1);
+  const geo = addFaceGroups(new THREE.OctahedronGeometry(1.1), 1);
   const s = 1 / Math.sqrt(3);
   const faceNormals = [
     new THREE.Vector3(s, s, s),
@@ -100,8 +100,8 @@ function buildOctahedron(): DieGeometryInfo {
 }
 
 function buildD10(): DieGeometryInfo {
-  const r = 0.6;
-  const h = 0.5;
+  const r = 1.0;
+  const h = 0.8;
   const top = new THREE.Vector3(0, h, 0);
   const bot = new THREE.Vector3(0, -h, 0);
   const eq: THREE.Vector3[] = [];
@@ -150,7 +150,7 @@ function buildD10(): DieGeometryInfo {
 }
 
 function buildDodecahedron(): DieGeometryInfo {
-  const geo = addFaceGroups(new THREE.DodecahedronGeometry(0.7), 3);
+  const geo = addFaceGroups(new THREE.DodecahedronGeometry(1.1), 3);
   const phi = (1 + Math.sqrt(5)) / 2;
   const faceNormals = [
     new THREE.Vector3(0, 1, phi), new THREE.Vector3(0, -1, phi),
@@ -164,7 +164,7 @@ function buildDodecahedron(): DieGeometryInfo {
 }
 
 function buildIcosahedron(): DieGeometryInfo {
-  const geo = addFaceGroups(new THREE.IcosahedronGeometry(0.7), 1);
+  const geo = addFaceGroups(new THREE.IcosahedronGeometry(1.1), 1);
   const phi = (1 + Math.sqrt(5)) / 2;
   const faceNormals: THREE.Vector3[] = [
     new THREE.Vector3(0, 1, phi), new THREE.Vector3(0, -1, phi),
