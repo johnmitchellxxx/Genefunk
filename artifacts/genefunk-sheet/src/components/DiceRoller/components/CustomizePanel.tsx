@@ -111,30 +111,31 @@ export function CustomizePanel({
 
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-5">
           <section>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 font-mono">Appearance</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 font-mono">Die Appearance</h3>
             <div className="flex flex-col gap-3">
-              <ColorInput label="Die Color" value={config.color} onChange={v => update('color', v)} />
+              <ColorInput label="Color" value={config.color} onChange={v => update('color', v)} />
+              <Slider label="Die Size" value={config.scale ?? 1} min={0.5} max={2} step={0.05} onChange={v => update('scale', v)} />
               <Slider label="Transparency" value={config.opacity} min={0.2} max={1} step={0.01} onChange={v => update('opacity', v)} />
-              <ColorInput label="Font Color" value={config.fontColor} onChange={v => update('fontColor', v)} />
             </div>
           </section>
 
           <section>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 font-mono">Font</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 font-mono">Face Text</h3>
             <div className="flex flex-col gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground font-mono">Family</span>
+                <span className="text-xs text-muted-foreground font-mono">Font Family</span>
                 <select
                   value={config.fontFamily}
                   onChange={e => update('fontFamily', e.target.value)}
                   className="bg-background text-foreground text-xs font-mono px-2 py-1.5 border border-border focus:border-primary outline-none"
                 >
                   {FONT_OPTIONS.map(f => (
-                    <option key={f.value} value={f.value}>{f.label}</option>
+                    <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
                   ))}
                 </select>
               </label>
-              <Slider label="Size" value={config.fontSize} min={0.5} max={2} step={0.05} onChange={v => update('fontSize', v)} />
+              <Slider label="Font Size" value={config.fontSize} min={0.5} max={2} step={0.05} onChange={v => update('fontSize', v)} />
+              <ColorInput label="Font Color" value={config.fontColor} onChange={v => update('fontColor', v)} />
               <div className="flex gap-2">
                 <button
                   onClick={() => update('bold', !config.bold)}

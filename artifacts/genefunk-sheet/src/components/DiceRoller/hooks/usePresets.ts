@@ -70,8 +70,8 @@ export function usePresets(userId?: string): UsePresetsReturn {
         prefs = loadFromLocalStorage();
       }
       if (prefs) {
-        setConfigState(prefs.config);
-        setPresets(prefs.presets);
+        setConfigState({ ...DEFAULT_CONFIG, ...prefs.config });
+        setPresets(prefs.presets.map(p => ({ ...p, config: { ...DEFAULT_CONFIG, ...p.config } })));
       }
     }
     load();

@@ -15,6 +15,7 @@ export type InteriorObject =
 export interface DieConfig {
   color: string;
   opacity: number;
+  scale: number;
   fontFamily: string;
   fontColor: string;
   fontSize: number;
@@ -47,6 +48,7 @@ export interface DicePoolEntry {
 export const DEFAULT_CONFIG: DieConfig = {
   color: '#8b5cf6',
   opacity: 1.0,
+  scale: 1.0,
   fontFamily: 'serif',
   fontColor: '#ffffff',
   fontSize: 1,

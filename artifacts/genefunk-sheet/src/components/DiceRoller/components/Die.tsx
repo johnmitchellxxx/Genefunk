@@ -96,6 +96,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   }, [config.interiorObject]);
 
   const dieColor = useMemo(() => new THREE.Color(config.color), [config.color]);
+  const dieScale = config.scale ?? 1;
 
   const spawnPos = useMemo((): [number, number, number] => {
     const rz = (Math.random() - 0.5) * arenaZ;
@@ -166,6 +167,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
 
   return (
     <RigidBody
+      key={`rb-${dieScale}`}
       ref={rigidBodyRef}
       position={spawnPos}
       restitution={0.3}
@@ -175,26 +177,28 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       colliders="hull"
       ccd={true}
     >
-      <mesh
-        ref={meshRef}
-        geometry={geometry}
-        material={faceMaterials}
-        castShadow
-        receiveShadow
-      />
-      <pointLight color={dieColor} intensity={0.6} distance={1.5} decay={2} />
-      {interiorTexture && (
-        <mesh scale={[0.35, 0.35, 0.35]}>
-          <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial
-            map={interiorTexture}
-            transparent
-            opacity={0.9}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
+      <group scale={dieScale}>
+        <mesh
+          ref={meshRef}
+          geometry={geometry}
+          material={faceMaterials}
+          castShadow
+          receiveShadow
+        />
+        <pointLight color={dieColor} intensity={0.6} distance={1.5} decay={2} />
+        {interiorTexture && (
+          <mesh scale={[0.35, 0.35, 0.35]}>
+            <planeGeometry args={[1, 1]} />
+            <meshBasicMaterial
+              map={interiorTexture}
+              transparent
+              opacity={0.9}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        )}
+      </group>
     </RigidBody>
   );
 }
