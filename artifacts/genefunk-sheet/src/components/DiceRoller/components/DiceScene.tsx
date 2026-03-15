@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
-import { Environment, ContactShadows } from '@react-three/drei';
+import { ContactShadows } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
@@ -110,7 +110,7 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
         <pointLight position={[0, 5, 9]} intensity={1.5} color="#ffffff" />
         <pointLight position={[-5, 4, 4]} intensity={0.8} color="#ffffff" />
 
-        <Environment preset="studio" />
+        <hemisphereLight args={[0xffffff, 0x444444, 1.2]} />
 
         <EffectComposer>
           <Bloom intensity={0.3} luminanceThreshold={0.7} luminanceSmoothing={0.9} mipmapBlur />

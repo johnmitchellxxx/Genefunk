@@ -156,18 +156,14 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   });
 
   const faceMaterials = useMemo(() => {
-    return numberTextures.map(tex => new THREE.MeshPhysicalMaterial({
+    return numberTextures.map(tex => new THREE.MeshStandardMaterial({
       map: tex,
-      color: dieColor,
       transparent: config.opacity < 1,
       opacity: config.opacity,
-      roughness: 0.25,
-      metalness: 0.2,
-      envMapIntensity: 1.2,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.2,
+      roughness: 0.35,
+      metalness: 0.15,
       emissive: dieColor,
-      emissiveIntensity: 0.25,
+      emissiveIntensity: 0.4,
       side: THREE.FrontSide,
     }));
   }, [numberTextures, dieColor, config.opacity]);
