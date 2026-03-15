@@ -133,12 +133,12 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const spawnPos = useMemo((): [number, number, number] => {
     const rz = (Math.random() - 0.5) * arenaZ;
     const rx = (Math.random() - 0.5) * arenaX;
-    const y = 5 + Math.random() * 2;
+    const y = 7 + Math.random() * 3;
     switch (spawnSide) {
-      case 'left':   return [-arenaX * 0.7, y, rz];
-      case 'right':  return [arenaX * 0.7, y, rz];
-      case 'top':    return [rx, y, -arenaZ * 0.7];
-      case 'bottom': return [rx, y, arenaZ * 0.7];
+      case 'left':   return [-arenaX * 0.75, y, rz];
+      case 'right':  return [arenaX * 0.75, y, rz];
+      case 'top':    return [rx, y, -arenaZ * 0.75];
+      case 'bottom': return [rx, y, arenaZ * 0.75];
     }
   }, [spawnSide, arenaX, arenaZ]);
 
@@ -149,17 +149,17 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     applied: boolean;
   } | null>(null);
   if (launchRef.current === null) {
-    const vx = spawnSide === 'left'   ?  3 + Math.random() * 4
-              : spawnSide === 'right'  ? -(3 + Math.random() * 4)
-              : (Math.random() - 0.5) * 6;
-    const vz = spawnSide === 'top'    ?  3 + Math.random() * 4
-              : spawnSide === 'bottom' ? -(3 + Math.random() * 4)
-              : (Math.random() - 0.5) * 6;
+    const vx = spawnSide === 'left'   ?  5 + Math.random() * 5
+              : spawnSide === 'right'  ? -(5 + Math.random() * 5)
+              : (Math.random() - 0.5) * 8;
+    const vz = spawnSide === 'top'    ?  5 + Math.random() * 5
+              : spawnSide === 'bottom' ? -(5 + Math.random() * 5)
+              : (Math.random() - 0.5) * 8;
     launchRef.current = {
-      vx, vy: 3 + Math.random() * 3, vz,
-      ax: (Math.random() - 0.5) * 40,
-      ay: (Math.random() - 0.5) * 40,
-      az: (Math.random() - 0.5) * 40,
+      vx, vy: 5 + Math.random() * 4, vz,
+      ax: (Math.random() - 0.5) * 50,
+      ay: (Math.random() - 0.5) * 50,
+      az: (Math.random() - 0.5) * 50,
       applied: false,
     };
   }
