@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRoute } from 'wouter';
 import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes, useAppRulebookClasses, useAppRulebookCadres, useAppAuth } from '@/hooks/use-api';
@@ -12,6 +12,7 @@ import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, A
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
+import type { AutoRoll } from '@/components/DiceRoller';
 import { LevelUpPanel } from '@/components/LevelUpPanel';
 import type { WeaponRef } from '@/lib/weaponData';
 import type {
@@ -38,7 +39,7 @@ export default function CharacterSheet() {
   const { data: rawCharacter, isLoading } = useAppCharacter(id);
   const updateMutation = useAppUpdateCharacter();
   const deleteMutation = useAppDeleteCharacter();
-  const { rollDice, beyond20Active, setCharacterName } = useDice();
+  const { beyond20Active, setCharacterName } = useDice();
   const { data: authData } = useAppAuth();
   const authUserId = authData?.userId as string | undefined;
 
@@ -55,6 +56,17 @@ export default function CharacterSheet() {
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
+  const [pendingRoll, setPendingRoll] = useState<AutoRoll | null>(null);
+
+  const openRoll = useCallback((label: string, modifier: number, onComplete?: AutoRoll['onComplete']) => {
+    setPendingRoll({ dice: [{ sides: 20 as const, count: 1 }], modifier, label, onComplete });
+    setDiceOpen(true);
+  }, []);
+
+  const openCustomRoll = useCallback((dice: { sides: DieType; count: number }[], modifier: number, label: string) => {
+    setPendingRoll({ dice, modifier, label });
+    setDiceOpen(true);
+  }, []);
 
   useEffect(() => {
     if (rawCharacter?.name) setCharacterName(rawCharacter.name);
@@ -205,7 +217,7 @@ export default function CharacterSheet() {
                 <Zap className="text-accent w-5 h-5 shrink-0" />
                 <div className="text-center">
                   <button
-                    onClick={() => rollDice(rollName, totalInit, { rollKind: 'initiative', parts: initParts })}
+                    onClick={() => openRoll(rollName, totalInit)}
                     title={tooltip}
                     className="text-xs text-muted-foreground uppercase tracking-widest font-mono hover:text-primary transition-colors whitespace-nowrap"
                   >
@@ -296,14 +308,14 @@ export default function CharacterSheet() {
                       />
                       <span 
                         className="w-7 font-bold text-primary cursor-pointer hover:text-secondary transition-colors text-right"
-                        onClick={() => rollDice(`${stat.label} Save`, total, { parts: saveParts })}
+                        onClick={() => openRoll(`${stat.label} Save`, total)}
                         title={isProf
                           ? `${formatModifier(mod)} (${abbr}) + ${formatModifier(profBonus)} (Prof) = ${formatModifier(total)}\nClick to roll`
                           : `${formatModifier(mod)} (${abbr}) — not proficient\nClick to roll`}
                       >
                         {formatModifier(total)}
                       </span>
-                      <span className="text-muted-foreground uppercase group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(`${stat.label} Save`, total, { parts: saveParts })}>
+                      <span className="text-muted-foreground uppercase group-hover:text-foreground transition-colors cursor-pointer" onClick={() => openRoll(`${stat.label} Save`, total)}>
                         {stat.label}
                       </span>
                     </div>
@@ -404,7 +416,7 @@ export default function CharacterSheet() {
                 <button
                   className="w-full text-left text-sm text-primary uppercase tracking-widest font-mono font-bold mb-3 border-b border-border/50 pb-1.5 hover:text-secondary transition-colors flex items-center gap-2 group"
                   title="Roll a Death Save (d20) — 11+ success, 10 or below failure, nat 20 stabilise"
-                  onClick={() => rollDice('Death Save', 0, (total) => {
+                  onClick={() => openRoll('Death Save', 0, (total) => {
                     if (total === 20) {
                       handleUpdate('currentHitPoints', 1);
                       handleUpdate('deathSaveSuccesses', 0);
@@ -508,7 +520,7 @@ export default function CharacterSheet() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">
-                {miniTab === 'actions' && <ActionsPanel character={character} onUpdate={handleUpdate} />}
+                {miniTab === 'actions' && <ActionsPanel character={character} onUpdate={handleUpdate} onRoll={openRoll} onCustomRoll={openCustomRoll} />}
                 {miniTab === 'hacks' && <HacksPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'inventory' && <InventoryPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'genemods' && <GeneModsPanel character={character} onUpdate={handleUpdate} />}
@@ -540,17 +552,19 @@ export default function CharacterSheet() {
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
           <DiceRoller
             userId={authUserId}
-            onClose={() => setDiceOpen(false)}
-            onResult={(results) => {
-              const total = results.reduce((s, r) => s + r.result, 0);
+            autoRoll={pendingRoll}
+            onClose={() => { setDiceOpen(false); setPendingRoll(null); }}
+            onResult={(results, label, modifier) => {
+              const rawTotal = results.reduce((s, r) => s + r.result, 0);
+              const finalTotal = rawTotal + modifier;
               const dice = results.map(r => `d${r.dieType}`).join('+');
               document.dispatchEvent(
                 new CustomEvent('Beyond20_SendMessage', {
                   detail: [{
                     type: 'roll',
-                    title: `Dice: ${dice}`,
+                    title: label || `Dice: ${dice}`,
                     character: rawCharacter?.name ?? 'Character',
-                    total,
+                    total: finalTotal,
                     rolls: results.map(r => ({ dice: r.dieType, value: r.result })),
                   }],
                 })
@@ -594,6 +608,8 @@ export default function CharacterSheet() {
 interface PanelProps {
   character: Character;
   onUpdate: (field: string, value: unknown) => void;
+  onRoll?: (label: string, modifier: number) => void;
+  onCustomRoll?: (dice: { sides: DieType; count: number }[], modifier: number, label: string) => void;
 }
 
 function updateArrayEntry<T extends { id: string }>(arr: T[], id: string, patch: Partial<T>): T[] {
@@ -610,9 +626,8 @@ function parseDiceExpression(expr: string): { sides: number; count: number; modi
   };
 }
 
-function ActionsPanel({ character, onUpdate }: PanelProps) {
+function ActionsPanel({ character, onUpdate, onRoll, onCustomRoll }: PanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const { rollDice, rollCustom } = useDice();
 
   const handleWeaponSelect = (weapon: WeaponRef | null) => {
     setPickerOpen(false);
@@ -666,7 +681,7 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
         <button
           className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
           title={tooltip}
-          onClick={() => rollDice(rollName, bonus, { parts: attackParts })}
+          onClick={() => onRoll?.(rollName, bonus)}
         >
           {formatModifier(bonus)}
         </button>
@@ -679,7 +694,7 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
       <button
         className="text-primary text-sm font-mono hover:text-primary/80 hover:underline cursor-pointer"
         title={`Click to roll 1d20 ${formatModifier(manualBonus)}`}
-        onClick={() => rollDice(`${atk.name} Attack`, manualBonus)}
+        onClick={() => onRoll?.(`${atk.name} Attack`, manualBonus)}
       >
         {atk.attackBonus}
       </button>
@@ -732,7 +747,7 @@ function ActionsPanel({ character, onUpdate }: PanelProps) {
                         <button
                           className="text-secondary text-sm font-mono hover:text-secondary/80 hover:underline cursor-pointer"
                           title={`Click to roll ${atk.damage}`}
-                          onClick={() => rollCustom([{ sides: parsed.sides as DieType, count: parsed.count }], parsed.modifier, `${atk.name} Damage`)}
+                          onClick={() => onCustomRoll?.([{ sides: parsed.sides as DieType, count: parsed.count }], parsed.modifier, `${atk.name} Damage`)}
                         >
                           {atk.damage}
                         </button>

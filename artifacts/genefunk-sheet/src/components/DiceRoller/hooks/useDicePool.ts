@@ -6,6 +6,7 @@ export interface DicePool {
   increment: (dieType: DieType) => void;
   decrement: (dieType: DieType) => void;
   clear: () => void;
+  loadDice: (dice: { sides: DieType; count: number }[]) => void;
   totalDice: number;
   expanded: DieType[];
 }
@@ -31,10 +32,18 @@ export function useDicePool(): DicePool {
     setCounts(makeEmptyCounts());
   }, []);
 
+  const loadDice = useCallback((dice: { sides: DieType; count: number }[]) => {
+    const next = makeEmptyCounts();
+    for (const { sides, count } of dice) {
+      next[sides] = Math.min((next[sides] ?? 0) + count, 9);
+    }
+    setCounts(next);
+  }, []);
+
   const expanded: DieType[] = DIE_TYPES.flatMap(d => Array(counts[d]).fill(d) as DieType[]);
   const totalDice = expanded.length;
 
-  return { counts, increment, decrement, clear, totalDice, expanded };
+  return { counts, increment, decrement, clear, loadDice, totalDice, expanded };
 }
 
 export { DIE_TYPES };

@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import type { DiceRollerProps, RollResult, DieType } from './types';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import type { DiceRollerProps, RollResult, DieType, AutoRoll } from './types';
 import { useDicePool } from './hooks/useDicePool';
 import { usePresets } from './hooks/usePresets';
 import { useSound } from './hooks/useSound';
@@ -8,7 +8,7 @@ import { ControlPanel } from './components/ControlPanel';
 import { CustomizePanel } from './components/CustomizePanel';
 import { ResultsDisplay } from './components/ResultsDisplay';
 
-export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
+export function DiceRoller({ onResult, onClose, userId, autoRoll }: DiceRollerProps) {
   const pool = useDicePool();
   const { config, setConfig, presets, savePreset, loadPreset, isSaving } = usePresets(userId);
   const sound = useSound();
@@ -19,16 +19,40 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
   const [settledResults, setSettledResults] = useState<RollResult[]>([]);
   const [showScene, setShowScene] = useState(false);
   const [rollKey, setRollKey] = useState(0);
+  const [rollLabel, setRollLabel] = useState('');
+  const [rollModifier, setRollModifier] = useState(0);
+  const pendingAutoRollRef = useRef<AutoRoll | null>(null);
 
-  const handleRoll = useCallback(() => {
-    if (pool.totalDice === 0 || rolling) return;
+  const fireRoll = useCallback(() => {
     setSettledResults([]);
     setSettled(false);
     setShowScene(true);
     setRolling(true);
     setRollKey(k => k + 1);
     sound.startRolling();
-  }, [pool.totalDice, rolling, sound]);
+  }, [sound]);
+
+  const handleRoll = useCallback(() => {
+    if (pool.totalDice === 0 || rolling) return;
+    setRollLabel('');
+    setRollModifier(0);
+    pendingAutoRollRef.current = null;
+    fireRoll();
+  }, [pool.totalDice, rolling, fireRoll]);
+
+  useEffect(() => {
+    if (!autoRoll) return;
+    pendingAutoRollRef.current = autoRoll;
+    setRollLabel(autoRoll.label);
+    setRollModifier(autoRoll.modifier);
+    pool.loadDice(autoRoll.dice);
+  }, [autoRoll]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!pendingAutoRollRef.current) return;
+    if (pool.totalDice === 0 || rolling) return;
+    fireRoll();
+  }, [pool.totalDice, rolling, fireRoll]);
 
   const handleAllSettled = useCallback((newResults: RollResult[]) => {
     setRolling(false);
@@ -39,13 +63,22 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
     sound.playSettle(isAnyMax);
 
     setSettledResults(newResults);
-    onResult?.(newResults);
-  }, [sound, onResult]);
+
+    const rawTotal = newResults.reduce((s, r) => s + r.result, 0);
+    const pending = pendingAutoRollRef.current;
+    if (pending?.onComplete) {
+      const finalTotal = rawTotal + pending.modifier;
+      pending.onComplete(finalTotal, newResults);
+    }
+
+    onResult?.(newResults, rollLabel, rollModifier);
+  }, [sound, onResult, rollLabel, rollModifier]);
 
   const handleDismissAll = useCallback(() => {
     setShowScene(false);
     setSettled(false);
     setSettledResults([]);
+    pendingAutoRollRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -80,7 +113,12 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
       )}
 
       {showScene && settled && settledResults.length > 0 && (
-        <ResultsDisplay results={settledResults} onDismiss={handleDismissAll} />
+        <ResultsDisplay
+          results={settledResults}
+          label={rollLabel}
+          modifier={rollModifier}
+          onDismiss={handleDismissAll}
+        />
       )}
 
       <ControlPanel

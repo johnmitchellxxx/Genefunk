@@ -34,10 +34,18 @@ export interface RollResult {
   result: number;
 }
 
+export interface AutoRoll {
+  dice: { sides: DieType; count: number }[];
+  modifier: number;
+  label: string;
+  onComplete?: (total: number, rawResults: RollResult[]) => void;
+}
+
 export interface DiceRollerProps {
-  onResult?: (rolls: RollResult[]) => void;
+  onResult?: (rolls: RollResult[], label: string, modifier: number) => void;
   onClose?: () => void;
   userId?: string;
+  autoRoll?: AutoRoll | null;
 }
 
 export interface DicePoolEntry {
