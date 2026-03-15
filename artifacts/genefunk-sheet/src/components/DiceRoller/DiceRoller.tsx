@@ -8,7 +8,7 @@ import { ControlPanel } from './components/ControlPanel';
 import { CustomizePanel } from './components/CustomizePanel';
 import { ResultsDisplay } from './components/ResultsDisplay';
 
-export function DiceRoller({ onResult, onClose, userId, autoRoll }: DiceRollerProps) {
+export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: DiceRollerProps) {
   const pool = useDicePool();
   const { config, setConfig, presets, savePreset, loadPreset, isSaving } = usePresets(userId);
   const sound = useSound();
@@ -79,7 +79,8 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll }: DiceRollerPr
     setSettled(false);
     setSettledResults([]);
     pendingAutoRollRef.current = null;
-  }, []);
+    if (quickMode) onClose?.();
+  }, [quickMode, onClose]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -121,38 +122,42 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll }: DiceRollerPr
         />
       )}
 
-      <ControlPanel
-        counts={pool.counts}
-        onIncrement={pool.increment}
-        onDecrement={pool.decrement}
-        onRoll={handleRoll}
-        onClear={pool.clear}
-        onCustomize={() => setShowCustomize(v => !v)}
-        totalDice={pool.totalDice}
-        rolling={rolling}
-      />
+      {!quickMode && (
+        <>
+          <ControlPanel
+            counts={pool.counts}
+            onIncrement={pool.increment}
+            onDecrement={pool.decrement}
+            onRoll={handleRoll}
+            onClear={pool.clear}
+            onCustomize={() => setShowCustomize(v => !v)}
+            totalDice={pool.totalDice}
+            rolling={rolling}
+          />
 
-      {showCustomize && (
-        <CustomizePanel
-          config={config}
-          onChange={setConfig}
-          presets={presets}
-          onSavePreset={savePreset}
-          onLoadPreset={loadPreset}
-          isSaving={isSaving}
-          onClose={() => setShowCustomize(false)}
-        />
-      )}
+          {showCustomize && (
+            <CustomizePanel
+              config={config}
+              onChange={setConfig}
+              presets={presets}
+              onSavePreset={savePreset}
+              onLoadPreset={loadPreset}
+              isSaving={isSaving}
+              onClose={() => setShowCustomize(false)}
+            />
+          )}
 
-      {onClose && (
-        <button
-          onClick={onClose}
-          style={{ pointerEvents: 'auto', clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
-          className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-card/80 hover:bg-card border border-border text-muted-foreground hover:text-foreground text-xs font-mono px-4 py-1.5 backdrop-blur-sm transition-all tracking-widest uppercase"
-          aria-label="Close dice roller"
-        >
-          Close Dice Tray ×
-        </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              style={{ pointerEvents: 'auto', clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-card/80 hover:bg-card border border-border text-muted-foreground hover:text-foreground text-xs font-mono px-4 py-1.5 backdrop-blur-sm transition-all tracking-widest uppercase"
+              aria-label="Close dice roller"
+            >
+              Close Dice Tray ×
+            </button>
+          )}
+        </>
       )}
     </div>
   );

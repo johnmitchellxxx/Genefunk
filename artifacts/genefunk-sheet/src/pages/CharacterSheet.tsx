@@ -57,15 +57,20 @@ export default function CharacterSheet() {
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
   const [pendingRoll, setPendingRoll] = useState<AutoRoll | null>(null);
+  const [quickRollOpen, setQuickRollOpen] = useState(false);
+  const [quickRollData, setQuickRollData] = useState<AutoRoll | null>(null);
+  const [quickRollKey, setQuickRollKey] = useState(0);
 
   const openRoll = useCallback((label: string, modifier: number, onComplete?: AutoRoll['onComplete']) => {
-    setPendingRoll({ dice: [{ sides: 20 as const, count: 1 }], modifier, label, onComplete });
-    setDiceOpen(true);
+    setQuickRollData({ dice: [{ sides: 20 as const, count: 1 }], modifier, label, onComplete });
+    setQuickRollKey(k => k + 1);
+    setQuickRollOpen(true);
   }, []);
 
   const openCustomRoll = useCallback((dice: { sides: DieType; count: number }[], modifier: number, label: string) => {
-    setPendingRoll({ dice, modifier, label });
-    setDiceOpen(true);
+    setQuickRollData({ dice, modifier, label });
+    setQuickRollKey(k => k + 1);
+    setQuickRollOpen(true);
   }, []);
 
   useEffect(() => {
@@ -554,6 +559,35 @@ export default function CharacterSheet() {
             userId={authUserId}
             autoRoll={pendingRoll}
             onClose={() => { setDiceOpen(false); setPendingRoll(null); }}
+            onResult={(results, label, modifier) => {
+              const rawTotal = results.reduce((s, r) => s + r.result, 0);
+              const finalTotal = rawTotal + modifier;
+              const dice = results.map(r => `d${r.dieType}`).join('+');
+              document.dispatchEvent(
+                new CustomEvent('Beyond20_SendMessage', {
+                  detail: [{
+                    type: 'roll',
+                    title: label || `Dice: ${dice}`,
+                    character: rawCharacter?.name ?? 'Character',
+                    total: finalTotal,
+                    rolls: results.map(r => ({ dice: r.dieType, value: r.result })),
+                  }],
+                })
+              );
+            }}
+          />
+        </div>
+      )}
+
+      {/* Quick Roll Overlay — no tray UI, just dice + result */}
+      {quickRollOpen && quickRollData && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
+          <DiceRoller
+            key={quickRollKey}
+            userId={authUserId}
+            autoRoll={quickRollData}
+            quickMode
+            onClose={() => { setQuickRollOpen(false); setQuickRollData(null); }}
             onResult={(results, label, modifier) => {
               const rawTotal = results.reduce((s, r) => s + r.result, 0);
               const finalTotal = rawTotal + modifier;

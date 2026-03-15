@@ -46,6 +46,7 @@ export interface DiceRollerProps {
   onClose?: () => void;
   userId?: string;
   autoRoll?: AutoRoll | null;
+  quickMode?: boolean;
 }
 
 export interface DicePoolEntry {
