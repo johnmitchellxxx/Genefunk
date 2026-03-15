@@ -14,6 +14,35 @@ const TRI_UV: Array<[number, number]> = [
 ];
 
 
+/**
+ * Compute per-face outward normals directly from a non-indexed BufferGeometry
+ * that has already had groups added by addFaceGroups.  Because the normals are
+ * read from the same buffer that the material groups refer to, index N in the
+ * returned array always corresponds to material group N — fixing the previous
+ * mismatch where hardcoded theoretical normals were in a different order than
+ * Three.js's buffer order.
+ */
+function computeFaceNormals(geo: THREE.BufferGeometry, trianglesPerFace: number): THREE.Vector3[] {
+  const pos = geo.attributes.position;
+  const totalVerts = pos.count;
+  const faceCount = Math.round(totalVerts / 3 / trianglesPerFace);
+  const normals: THREE.Vector3[] = [];
+  for (let f = 0; f < faceCount; f++) {
+    const base = f * trianglesPerFace * 3;
+    const v0 = new THREE.Vector3(pos.getX(base),   pos.getY(base),   pos.getZ(base));
+    const v1 = new THREE.Vector3(pos.getX(base+1), pos.getY(base+1), pos.getZ(base+1));
+    const v2 = new THREE.Vector3(pos.getX(base+2), pos.getY(base+2), pos.getZ(base+2));
+    const n = new THREE.Vector3()
+      .crossVectors(v1.clone().sub(v0), v2.clone().sub(v0))
+      .normalize();
+    // Ensure outward direction: normal should point away from the origin / centroid
+    const centroid = v0.clone().add(v1).add(v2).divideScalar(3);
+    if (n.dot(centroid) < 0) n.negate();
+    normals.push(n);
+  }
+  return normals;
+}
+
 function addFaceGroups(geo: THREE.BufferGeometry, trianglesPerFace: number): THREE.BufferGeometry {
   const nonIndexed = geo.toNonIndexed();
   const posAttr = nonIndexed.attributes.position;
@@ -79,12 +108,7 @@ function addFaceGroups(geo: THREE.BufferGeometry, trianglesPerFace: number): THR
 
 function buildTetrahedron(): DieGeometryInfo {
   const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.85), 1);
-  const faceNormals = [
-    new THREE.Vector3(0, 1, 0),
-    new THREE.Vector3(0, -1 / 3, 2 * Math.sqrt(2) / 3),
-    new THREE.Vector3(-Math.sqrt(6) / 3, -1 / 3, -Math.sqrt(2) / 3),
-    new THREE.Vector3(Math.sqrt(6) / 3, -1 / 3, -Math.sqrt(2) / 3),
-  ];
+  const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 4, faceNormals };
 }
 
@@ -103,17 +127,7 @@ function buildCube(): DieGeometryInfo {
 
 function buildOctahedron(): DieGeometryInfo {
   const geo = addFaceGroups(new THREE.OctahedronGeometry(1.1), 1);
-  const s = 1 / Math.sqrt(3);
-  const faceNormals = [
-    new THREE.Vector3(s, s, s),
-    new THREE.Vector3(-s, s, s),
-    new THREE.Vector3(s, -s, s),
-    new THREE.Vector3(-s, -s, s),
-    new THREE.Vector3(s, s, -s),
-    new THREE.Vector3(-s, s, -s),
-    new THREE.Vector3(s, -s, -s),
-    new THREE.Vector3(-s, -s, -s),
-  ];
+  const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 8, faceNormals };
 }
 
@@ -169,33 +183,13 @@ function buildD10(): DieGeometryInfo {
 
 function buildDodecahedron(): DieGeometryInfo {
   const geo = addFaceGroups(new THREE.DodecahedronGeometry(1.1), 3);
-  const phi = (1 + Math.sqrt(5)) / 2;
-  const faceNormals = [
-    new THREE.Vector3(0, 1, phi), new THREE.Vector3(0, -1, phi),
-    new THREE.Vector3(0, 1, -phi), new THREE.Vector3(0, -1, -phi),
-    new THREE.Vector3(phi, 0, 1), new THREE.Vector3(phi, 0, -1),
-    new THREE.Vector3(-phi, 0, 1), new THREE.Vector3(-phi, 0, -1),
-    new THREE.Vector3(1, phi, 0), new THREE.Vector3(-1, phi, 0),
-    new THREE.Vector3(1, -phi, 0), new THREE.Vector3(-1, -phi, 0),
-  ].map(v => v.normalize());
+  const faceNormals = computeFaceNormals(geo, 3);
   return { geometry: geo, faceCount: 12, faceNormals };
 }
 
 function buildIcosahedron(): DieGeometryInfo {
   const geo = addFaceGroups(new THREE.IcosahedronGeometry(1.1), 1);
-  const phi = (1 + Math.sqrt(5)) / 2;
-  const faceNormals: THREE.Vector3[] = [
-    new THREE.Vector3(0, 1, phi), new THREE.Vector3(0, -1, phi),
-    new THREE.Vector3(0, 1, -phi), new THREE.Vector3(0, -1, -phi),
-    new THREE.Vector3(phi, 0, 1), new THREE.Vector3(phi, 0, -1),
-    new THREE.Vector3(-phi, 0, 1), new THREE.Vector3(-phi, 0, -1),
-    new THREE.Vector3(1, phi, 0), new THREE.Vector3(-1, phi, 0),
-    new THREE.Vector3(1, -phi, 0), new THREE.Vector3(-1, -phi, 0),
-    new THREE.Vector3(1, 1, 1), new THREE.Vector3(-1, 1, 1),
-    new THREE.Vector3(1, -1, 1), new THREE.Vector3(-1, -1, 1),
-    new THREE.Vector3(1, 1, -1), new THREE.Vector3(-1, 1, -1),
-    new THREE.Vector3(1, -1, -1), new THREE.Vector3(-1, -1, -1),
-  ].map(v => v.normalize());
+  const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 20, faceNormals };
 }
 
