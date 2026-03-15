@@ -51,13 +51,19 @@ function makeNumberTexture(
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // Glow halo in die color behind the number
+  // White contrast halo — ensures readability regardless of die color or font color
+  ctx2d.shadowColor = '#ffffff';
+  ctx2d.shadowBlur = 26;
+  ctx2d.fillStyle = '#ffffff';
+  ctx2d.fillText(String(value), size / 2, size / 2);
+
+  // Die-color tint ring inside the white halo
   ctx2d.shadowColor = dieColor;
-  ctx2d.shadowBlur = 18;
+  ctx2d.shadowBlur = 12;
   ctx2d.fillStyle = dieColor;
   ctx2d.fillText(String(value), size / 2, size / 2);
 
-  // Crisp white number on top
+  // Final crisp number in chosen font color
   ctx2d.shadowBlur = 0;
   ctx2d.fillStyle = fontColor;
   ctx2d.fillText(String(value), size / 2, size / 2);
