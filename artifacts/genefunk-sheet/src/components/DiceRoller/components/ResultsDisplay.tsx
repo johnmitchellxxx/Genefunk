@@ -12,8 +12,7 @@ export function ResultsDisplay({ results, onDismiss }: ResultsDisplayProps) {
   useEffect(() => {
     if (results.length === 0) { setVisible(false); return; }
     const t = setTimeout(() => setVisible(true), 200);
-    const dismiss = setTimeout(() => { setVisible(false); setTimeout(onDismiss, 400); }, 6200);
-    return () => { clearTimeout(t); clearTimeout(dismiss); };
+    return () => { clearTimeout(t); };
   }, [results, onDismiss]);
 
   if (results.length === 0) return null;
@@ -32,7 +31,7 @@ export function ResultsDisplay({ results, onDismiss }: ResultsDisplayProps) {
       style={{ pointerEvents: visible ? 'auto' : 'none' }}
     >
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={() => { setVisible(false); setTimeout(onDismiss, 400); }}
         className={`
           relative bg-card/95 backdrop-blur-md border px-8 py-6 shadow-2xl
           transition-all duration-400

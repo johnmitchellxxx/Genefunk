@@ -116,15 +116,15 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     settleCountRef.current = 0;
 
     const rb = rigidBodyRef.current;
-    const vx = spawnSide === 'left' ? 1.5 + Math.random() * 2 : spawnSide === 'right' ? -(1.5 + Math.random() * 2) : (Math.random() - 0.5) * 3;
-    const vz = spawnSide === 'top' ? 1.5 + Math.random() * 2 : spawnSide === 'bottom' ? -(1.5 + Math.random() * 2) : (Math.random() - 0.5) * 3;
-    const vy = 1.5 + Math.random();
+    const vx = spawnSide === 'left' ? 3 + Math.random() * 4 : spawnSide === 'right' ? -(3 + Math.random() * 4) : (Math.random() - 0.5) * 5;
+    const vz = spawnSide === 'top' ? 3 + Math.random() * 4 : spawnSide === 'bottom' ? -(3 + Math.random() * 4) : (Math.random() - 0.5) * 5;
+    const vy = 2 + Math.random() * 2;
 
     rb.setLinvel({ x: vx, y: vy, z: vz }, true);
     rb.setAngvel({
-      x: (Math.random() - 0.5) * 20,
-      y: (Math.random() - 0.5) * 20,
-      z: (Math.random() - 0.5) * 20,
+      x: (Math.random() - 0.5) * 35,
+      y: (Math.random() - 0.5) * 35,
+      z: (Math.random() - 0.5) * 35,
     }, true);
   }, [rolling, spawnSide]);
 
@@ -141,6 +141,9 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       settleCountRef.current += 1;
       if (settleCountRef.current >= SETTLE_FRAMES) {
         hasSettledRef.current = true;
+        rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        rb.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        rb.sleep();
         const q = rb.rotation();
         const quaternion = new THREE.Quaternion(q.x, q.y, q.z, q.w);
         const faceIndex = getFaceUp(quaternion, { geometry, faceCount, faceNormals });
@@ -158,9 +161,12 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       color: dieColor,
       transparent: config.opacity < 1,
       opacity: config.opacity,
-      roughness: 0.15,
-      metalness: 0.1,
-      envMapIntensity: 1.2,
+      roughness: 0.25,
+      metalness: 0.4,
+      envMapIntensity: 1.8,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.15,
+      reflectivity: 0.8,
       side: THREE.DoubleSide,
     }));
   }, [numberTextures, dieColor, config.opacity]);
@@ -170,10 +176,10 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       key={`rb-${dieScale}`}
       ref={rigidBodyRef}
       position={spawnPos}
-      restitution={0.3}
-      friction={0.8}
-      linearDamping={0.8}
-      angularDamping={0.8}
+      restitution={0.45}
+      friction={0.6}
+      linearDamping={0.5}
+      angularDamping={0.5}
       colliders="hull"
       ccd={true}
     >

@@ -10,8 +10,10 @@ import { Die } from './Die';
 function CameraSetup() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, 8, 0);
-    camera.up.set(0, 0, -1);
+    const tiltAngle = (20 * Math.PI) / 180;
+    const dist = 10;
+    camera.position.set(0, dist * Math.cos(tiltAngle), dist * Math.sin(tiltAngle));
+    camera.up.set(0, 1, 0);
     camera.lookAt(0, 0, 0);
   }, [camera]);
   return null;
@@ -21,16 +23,18 @@ interface DiceSceneProps {
   pool: DieType[];
   config: DieConfig;
   rolling: boolean;
+  settled: boolean;
   onAllSettled: (results: RollResult[]) => void;
+  onCanvasClick?: () => void;
 }
 
 const SPAWN_SIDES = ['left', 'right', 'top', 'bottom'] as const;
 type SpawnSide = typeof SPAWN_SIDES[number];
 
-const ARENA_X = 6;
-const ARENA_Z = 3.5;
+const ARENA_X = 8;
+const ARENA_Z = 5;
 
-export function DiceScene({ pool, config, rolling, onAllSettled }: DiceSceneProps) {
+export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanvasClick }: DiceSceneProps) {
   const settledResultsRef = useRef<Map<string, number>>(new Map());
   const expectedCountRef = useRef(0);
   const hasReportedRef = useRef(false);
@@ -72,15 +76,16 @@ export function DiceScene({ pool, config, rolling, onAllSettled }: DiceSceneProp
     <Canvas
       shadows
       camera={{ fov: 55, near: 0.1, far: 200 }}
-      style={{ position: 'absolute', inset: 0, pointerEvents: rolling ? 'auto' : 'none' }}
+      onClick={settled ? onCanvasClick : undefined}
+      style={{ position: 'absolute', inset: 0, pointerEvents: (rolling || settled) ? 'auto' : 'none', cursor: settled ? 'pointer' : 'default' }}
       gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
     >
       <CameraSetup />
 
-      <ambientLight intensity={0.3} />
+      <ambientLight intensity={0.5} />
       <directionalLight
         position={[5, 14, 8]}
-        intensity={1.5}
+        intensity={2.0}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-far={40}
@@ -89,8 +94,9 @@ export function DiceScene({ pool, config, rolling, onAllSettled }: DiceSceneProp
         shadow-camera-top={8}
         shadow-camera-bottom={-8}
       />
-      <pointLight position={[-4, 6, -4]} intensity={0.6} color="#ffffff" />
-      <pointLight position={[4, 4, 4]} intensity={0.4} color="#ffffff" />
+      <directionalLight position={[-3, 8, -5]} intensity={0.8} />
+      <pointLight position={[-4, 6, -4]} intensity={0.8} color="#ffffff" />
+      <pointLight position={[4, 4, 4]} intensity={0.6} color="#ffffff" />
 
       <Environment preset="city" />
 

@@ -14,13 +14,19 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
   const sound = useSound();
 
   const [rolling, setRolling] = useState(false);
+  const [settled, setSettled] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [pendingResults, setPendingResults] = useState<RollResult[]>([]);
   const [results, setResults] = useState<RollResult[]>([]);
+  const [showScene, setShowScene] = useState(false);
   const [rollKey, setRollKey] = useState(0);
 
   const handleRoll = useCallback(() => {
     if (pool.totalDice === 0 || rolling) return;
     setResults([]);
+    setPendingResults([]);
+    setSettled(false);
+    setShowScene(true);
     setRolling(true);
     setRollKey(k => k + 1);
     sound.startRolling();
@@ -28,14 +34,22 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
 
   const handleAllSettled = useCallback((newResults: RollResult[]) => {
     setRolling(false);
+    setSettled(true);
     sound.stopRolling();
 
     const isAnyMax = newResults.some(r => r.result === r.dieType);
     sound.playSettle(isAnyMax);
 
-    setResults(newResults);
+    setPendingResults(newResults);
     onResult?.(newResults);
   }, [sound, onResult]);
+
+  const handleDismissScene = useCallback(() => {
+    setShowScene(false);
+    setSettled(false);
+    setResults(pendingResults);
+    setPendingResults([]);
+  }, [pendingResults]);
 
   const handleDismissResults = useCallback(() => {
     setResults([]);
@@ -59,13 +73,15 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
       style={{ pointerEvents: 'none', overflow: 'visible' }}
       aria-label="Dice Roller"
     >
-      {(rolling || rollKey > 0) && (
+      {showScene && (
         <DiceScene
           key={rollKey}
           pool={pool.expanded as DieType[]}
           config={config}
           rolling={rolling}
+          settled={settled}
           onAllSettled={handleAllSettled}
+          onCanvasClick={settled ? handleDismissScene : undefined}
         />
       )}
 
