@@ -30,7 +30,6 @@ interface DiceSceneProps {
   rolling: boolean;
   settled: boolean;
   onAllSettled: (results: RollResult[]) => void;
-  onCanvasClick?: () => void;
 }
 
 const SPAWN_SIDES = ['left', 'right', 'top', 'bottom'] as const;
@@ -42,7 +41,7 @@ type SpawnSide = typeof SPAWN_SIDES[number];
 const ARENA_X = 5;
 const ARENA_Z = 10;
 
-export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanvasClick }: DiceSceneProps) {
+export function DiceScene({ pool, config, rolling, settled, onAllSettled }: DiceSceneProps) {
   const settledResultsRef = useRef<Map<string, number>>(new Map());
   const expectedCountRef = useRef(0);
   const hasReportedRef = useRef(false);
@@ -85,10 +84,8 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
       style={{
         position: 'absolute',
         inset: 0,
-        cursor: settled ? 'pointer' : 'default',
-        pointerEvents: (rolling || settled) ? 'auto' : 'none',
+        pointerEvents: 'none',
       }}
-      onClick={settled ? onCanvasClick : undefined}
     >
       <Canvas
         camera={{ fov: CAMERA_FOV, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}

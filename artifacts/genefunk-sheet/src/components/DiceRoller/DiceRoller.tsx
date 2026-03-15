@@ -82,6 +82,14 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
     if (quickMode) onClose?.();
   }, [quickMode, onClose]);
 
+  // In quickMode, auto-dismiss 4 s after dice settle so the result is seen but
+  // the user never has to tap anything to get back to the sheet.
+  useEffect(() => {
+    if (!quickMode || !settled) return;
+    const t = setTimeout(() => handleDismissAll(), 4000);
+    return () => clearTimeout(t);
+  }, [quickMode, settled, handleDismissAll]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Enter' && !e.repeat) handleRoll();
@@ -109,7 +117,6 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
           rolling={rolling}
           settled={settled}
           onAllSettled={handleAllSettled}
-          onCanvasClick={settled ? handleDismissAll : undefined}
         />
       )}
 
