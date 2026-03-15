@@ -33,7 +33,9 @@ export function ResultsDisplay({ results, label, modifier = 0, onDismiss }: Resu
   const poolStr = buildPoolString(results);
 
   const parts = results.map(r => String(r.result));
-  if (modifier !== 0) parts.push(modifier > 0 ? `+${modifier}` : String(modifier));
+  // Don't prefix positive modifiers with '+' — join('+') already adds the separator.
+  // Negative modifiers carry their own '-' sign; replace '+-' with '−' for readability.
+  if (modifier !== 0) parts.push(String(modifier));
   const formula = parts.join('+').replace('+-', '−');
 
   return (

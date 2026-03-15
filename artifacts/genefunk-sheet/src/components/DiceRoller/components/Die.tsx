@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
-import { getDieGeometry, getFaceUp, INTERIOR_OBJECT_EMOJI } from '../utils/diceGeometry';
+import { getDieGeometry, getFaceUp } from '../utils/diceGeometry';
 
 interface DieProps {
   dieType: DieType;
@@ -84,17 +84,89 @@ function makeNumberTexture(
   return tex;
 }
 
-function makeEmojiTexture(emoji: string): THREE.CanvasTexture {
-  const size = 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx2d = canvas.getContext('2d')!;
-  ctx2d.font = `${size * 0.7}px serif`;
-  ctx2d.textAlign = 'center';
-  ctx2d.textBaseline = 'middle';
-  ctx2d.fillText(emoji, size / 2, size / 2);
-  return new THREE.CanvasTexture(canvas);
+/** 3-D figurine imprisoned inside the die.
+ *  Uses unlit MeshBasicMaterial so it is always 100 % opaque regardless of
+ *  the die body's transparency — you only see it when the die is clear. */
+function InteriorFigurine({ type }: { type: string }) {
+  const mat = (color: string) => <meshBasicMaterial color={color} />;
+  switch (type) {
+    case 'skull':
+      return (
+        <group>
+          <mesh><sphereGeometry args={[0.18, 8, 8]} />{mat('#f5f0dc')}</mesh>
+          <mesh position={[0, -0.14, 0.04]}><sphereGeometry args={[0.1, 6, 6]} />{mat('#f5f0dc')}</mesh>
+          <mesh position={[0.06, -0.08, 0.16]}><sphereGeometry args={[0.04, 5, 5]} />{mat('#1a1a1a')}</mesh>
+          <mesh position={[-0.06, -0.08, 0.16]}><sphereGeometry args={[0.04, 5, 5]} />{mat('#1a1a1a')}</mesh>
+        </group>
+      );
+    case 'unicorn':
+      return (
+        <group>
+          <mesh><sphereGeometry args={[0.17, 8, 8]} />{mat('#ffffff')}</mesh>
+          <mesh position={[0, 0.26, 0]}><coneGeometry args={[0.04, 0.22, 6]} />{mat('#e040fb')}</mesh>
+        </group>
+      );
+    case 'star':
+      return (
+        <mesh rotation={[0, Math.PI / 8, 0]}>
+          <octahedronGeometry args={[0.22, 0]} />
+          {mat('#ffd700')}
+        </mesh>
+      );
+    case 'gem':
+      return (
+        <mesh rotation={[0, 0.4, 0]}>
+          <octahedronGeometry args={[0.21, 0]} />
+          {mat('#00e5ff')}
+        </mesh>
+      );
+    case 'flame':
+      return (
+        <group>
+          <mesh rotation={[Math.PI, 0, 0]}><coneGeometry args={[0.1, 0.32, 8]} />{mat('#ff6400')}</mesh>
+          <mesh rotation={[Math.PI, 0, 0]} position={[0, -0.06, 0]}><coneGeometry args={[0.06, 0.2, 6]} />{mat('#ffea00')}</mesh>
+        </group>
+      );
+    case 'dragon':
+      return (
+        <mesh rotation={[0.4, 0.5, 0.2]}>
+          <icosahedronGeometry args={[0.18, 0]} />
+          {mat('#00c853')}
+        </mesh>
+      );
+    case 'moon':
+      return (
+        <group>
+          <mesh><sphereGeometry args={[0.2, 8, 8]} />{mat('#c8c8ff')}</mesh>
+          {/* crescent cutout: smaller dark sphere offset to carve the moon shape */}
+          <mesh position={[0.12, 0.06, 0.1]}><sphereGeometry args={[0.15, 8, 8]} />{mat('#0d0d1a')}</mesh>
+        </group>
+      );
+    case 'lightning':
+      return (
+        <group>
+          <mesh rotation={[Math.PI, 0, 0.3]}><coneGeometry args={[0.08, 0.28, 4]} />{mat('#ffea00')}</mesh>
+          <mesh position={[0.04, -0.14, 0]} rotation={[Math.PI, 0, -0.3]}><coneGeometry args={[0.06, 0.22, 4]} />{mat('#ffea00')}</mesh>
+        </group>
+      );
+    case 'rose':
+      return (
+        <group>
+          <mesh><sphereGeometry args={[0.16, 8, 8]} />{mat('#e91e63')}</mesh>
+          <mesh position={[0, -0.2, 0]}><coneGeometry args={[0.05, 0.18, 6]} />{mat('#2e7d32')}</mesh>
+        </group>
+      );
+    case 'eye':
+      return (
+        <group>
+          <mesh><sphereGeometry args={[0.2, 8, 8]} />{mat('#e8f5e9')}</mesh>
+          <mesh position={[0, 0, 0.17]}><sphereGeometry args={[0.1, 6, 6]} />{mat('#2e7d32')}</mesh>
+          <mesh position={[0, 0, 0.23]}><sphereGeometry args={[0.06, 6, 6]} />{mat('#111111')}</mesh>
+        </group>
+      );
+    default:
+      return null;
+  }
 }
 
 const SETTLE_FRAMES = 45;
@@ -122,11 +194,6 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     );
   }, [faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity]);
 
-  const interiorTexture = useMemo(() => {
-    if (!config.interiorObject) return null;
-    const emoji = INTERIOR_OBJECT_EMOJI[config.interiorObject];
-    return emoji ? makeEmojiTexture(emoji) : null;
-  }, [config.interiorObject]);
 
   const dieScale = config.scale ?? 1;
 
@@ -306,17 +373,8 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
           castShadow
           receiveShadow
         />
-        {interiorTexture && (
-          <mesh scale={[0.35, 0.35, 0.35]}>
-            <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial
-              map={interiorTexture}
-              transparent
-              opacity={0.9}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
+        {config.interiorObject && (
+          <InteriorFigurine type={config.interiorObject} />
         )}
       </group>
     </RigidBody>
