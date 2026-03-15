@@ -110,26 +110,52 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     }
   }, [spawnSide, arenaX, arenaZ]);
 
+  // Pre-compute launch vectors once per mount so they stay stable across frames
+  const launchRef = useRef<{
+    vx: number; vy: number; vz: number;
+    ax: number; ay: number; az: number;
+    applied: boolean;
+  } | null>(null);
+  if (launchRef.current === null) {
+    const vx = spawnSide === 'left'   ?  3 + Math.random() * 4
+              : spawnSide === 'right'  ? -(3 + Math.random() * 4)
+              : (Math.random() - 0.5) * 6;
+    const vz = spawnSide === 'top'    ?  3 + Math.random() * 4
+              : spawnSide === 'bottom' ? -(3 + Math.random() * 4)
+              : (Math.random() - 0.5) * 6;
+    launchRef.current = {
+      vx, vy: 3 + Math.random() * 3, vz,
+      ax: (Math.random() - 0.5) * 40,
+      ay: (Math.random() - 0.5) * 40,
+      az: (Math.random() - 0.5) * 40,
+      applied: false,
+    };
+  }
+
+  // Reset launch state when a new roll starts
   useEffect(() => {
-    if (!rolling || !rigidBodyRef.current) return;
-    hasSettledRef.current = false;
-    settleCountRef.current = 0;
-
-    const rb = rigidBodyRef.current;
-    const vx = spawnSide === 'left' ? 3 + Math.random() * 4 : spawnSide === 'right' ? -(3 + Math.random() * 4) : (Math.random() - 0.5) * 5;
-    const vz = spawnSide === 'top' ? 3 + Math.random() * 4 : spawnSide === 'bottom' ? -(3 + Math.random() * 4) : (Math.random() - 0.5) * 5;
-    const vy = 2 + Math.random() * 2;
-
-    rb.setLinvel({ x: vx, y: vy, z: vz }, true);
-    rb.setAngvel({
-      x: (Math.random() - 0.5) * 35,
-      y: (Math.random() - 0.5) * 35,
-      z: (Math.random() - 0.5) * 35,
-    }, true);
-  }, [rolling, spawnSide]);
+    if (rolling && launchRef.current) {
+      launchRef.current.applied = false;
+      hasSettledRef.current = false;
+      settleCountRef.current = 0;
+    }
+  }, [rolling]);
 
   useFrame(() => {
-    if (!rigidBodyRef.current || hasSettledRef.current || !rolling) return;
+    if (!rigidBodyRef.current || !rolling || !launchRef.current) return;
+
+    // Apply launch impulse on the first frame Rapier body is ready
+    if (!launchRef.current.applied && !hasSettledRef.current) {
+      launchRef.current.applied = true;
+      const rb = rigidBodyRef.current;
+      const { vx, vy, vz, ax, ay, az } = launchRef.current;
+      rb.wakeUp();
+      rb.setLinvel({ x: vx, y: vy, z: vz }, true);
+      rb.setAngvel({ x: ax, y: ay, z: az }, true);
+      return;
+    }
+
+    if (hasSettledRef.current) return;
 
     const rb = rigidBodyRef.current;
     const linvel = rb.linvel();
@@ -175,8 +201,8 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       position={spawnPos}
       restitution={0.45}
       friction={0.6}
-      linearDamping={0.5}
-      angularDamping={0.5}
+      linearDamping={0.3}
+      angularDamping={0.15}
       colliders="hull"
       ccd={true}
     >
