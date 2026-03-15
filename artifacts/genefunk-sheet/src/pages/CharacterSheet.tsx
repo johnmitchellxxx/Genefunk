@@ -537,7 +537,7 @@ export default function CharacterSheet() {
 
       {/* Dice Roller Full Overlay */}
       {diceOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
           <DiceRoller
             userId={authUserId}
             onClose={() => setDiceOpen(false)}

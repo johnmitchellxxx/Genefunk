@@ -45,8 +45,8 @@ export interface DicePoolEntry {
 }
 
 export const DEFAULT_CONFIG: DieConfig = {
-  color: '#00e5ff',
-  opacity: 0.85,
+  color: '#8b5cf6',
+  opacity: 1.0,
   fontFamily: 'serif',
   fontColor: '#ffffff',
   fontSize: 1,

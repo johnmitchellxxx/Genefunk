@@ -151,21 +151,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     }
   });
 
-  const primaryMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: dieColor,
-    transparent: config.opacity < 1,
-    opacity: config.opacity,
-    roughness: 0.15,
-    metalness: 0.1,
-    envMapIntensity: 1.2,
-    emissive: dieColor,
-    emissiveIntensity: 0.4,
-    side: THREE.DoubleSide,
-  }), [dieColor, config.opacity]);
-
-  const isD6 = dieType === 6;
   const faceMaterials = useMemo(() => {
-    if (!isD6) return null;
     return numberTextures.map(tex => new THREE.MeshPhysicalMaterial({
       map: tex,
       color: dieColor,
@@ -174,10 +160,9 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       roughness: 0.15,
       metalness: 0.1,
       envMapIntensity: 1.2,
-      emissive: dieColor,
-      emissiveIntensity: 0.3,
+      side: THREE.DoubleSide,
     }));
-  }, [isD6, numberTextures, dieColor, config.opacity]);
+  }, [numberTextures, dieColor, config.opacity]);
 
   return (
     <RigidBody
@@ -193,7 +178,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       <mesh
         ref={meshRef}
         geometry={geometry}
-        material={isD6 && faceMaterials ? faceMaterials : primaryMaterial}
+        material={faceMaterials}
         castShadow
         receiveShadow
       />

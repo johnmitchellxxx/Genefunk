@@ -89,8 +89,8 @@ export function DiceScene({ pool, config, rolling, onAllSettled }: DiceSceneProp
         shadow-camera-top={8}
         shadow-camera-bottom={-8}
       />
-      <pointLight position={[-4, 6, -4]} intensity={0.8} color="#00e5ff" />
-      <pointLight position={[4, 4, 4]} intensity={0.6} color="#ff00cc" />
+      <pointLight position={[-4, 6, -4]} intensity={0.6} color="#ffffff" />
+      <pointLight position={[4, 4, 4]} intensity={0.4} color="#ffffff" />
 
       <Environment preset="city" />
 
