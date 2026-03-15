@@ -1,15 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { useDice } from '@/hooks/use-dice';
 import { getModifier, formatModifier } from '@/lib/rules';
 
 interface StatBoxProps {
   label: string;
   score: number;
   onUpdate: (score: number) => void;
+  onRoll?: (label: string, modifier: number) => void;
 }
 
-export function StatBox({ label, score, onUpdate }: StatBoxProps) {
-  const { rollDice } = useDice();
+export function StatBox({ label, score, onUpdate, onRoll }: StatBoxProps) {
   const modifier = getModifier(score);
 
   const [editing, setEditing] = useState(false);
@@ -36,7 +35,7 @@ export function StatBox({ label, score, onUpdate }: StatBoxProps) {
 
       <div
         className="text-2xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors leading-tight mt-0.5"
-        onClick={() => rollDice(`${label} Check`, modifier)}
+        onClick={() => onRoll?.(`${label} Check`, modifier)}
         title={`${label} modifier: ${formatModifier(modifier)} (score ${score})\nClick to roll 1d20 ${formatModifier(modifier)}`}
       >
         {formatModifier(modifier)}

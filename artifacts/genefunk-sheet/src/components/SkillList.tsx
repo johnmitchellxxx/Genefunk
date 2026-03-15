@@ -1,6 +1,5 @@
 import React from 'react';
 import { SKILLS, getModifier, getProficiencyBonus } from '@/lib/rules';
-import { useDice } from '@/hooks/use-dice';
 import { formatModifier } from '@/lib/rules';
 import { Check, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -9,10 +8,10 @@ import type { Character } from '@workspace/api-client-react';
 interface SkillListProps {
   character: Character;
   onUpdate: (field: keyof Character, value: any) => void;
+  onRoll?: (label: string, modifier: number) => void;
 }
 
-export function SkillList({ character, onUpdate }: SkillListProps) {
-  const { rollDice } = useDice();
+export function SkillList({ character, onUpdate, onRoll }: SkillListProps) {
   const profBonus = getProficiencyBonus(character.level);
 
   const toggleProficiency = (skillKey: string, isExpertise: boolean = false) => {
@@ -88,12 +87,12 @@ export function SkillList({ character, onUpdate }: SkillListProps) {
 
             <div 
               className="w-8 font-bold text-right mr-3 cursor-pointer text-primary hover:text-secondary transition-colors"
-              onClick={() => rollDice(skillName, totalMod, { parts: skillParts })}
+              onClick={() => onRoll?.(skillName, totalMod)}
             >
               {formatModifier(totalMod)}
             </div>
 
-            <div className="flex-1 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" onClick={() => rollDice(skillName, totalMod, { parts: skillParts })}>
+            <div className="flex-1 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" onClick={() => onRoll?.(skillName, totalMod)}>
               {skill.label} <span className="text-xs uppercase opacity-60 ml-1">({skill.ability.substring(0,3)})</span>
             </div>
           </div>

@@ -164,6 +164,7 @@ export default function CharacterSheet() {
               label={stat.label} 
               score={character[stat.key as keyof Character] as number}
               onUpdate={(val) => handleUpdate(stat.key, val)}
+              onRoll={openRoll}
             />
           ))}
         </div>
@@ -410,7 +411,7 @@ export default function CharacterSheet() {
                 </TooltipTrigger>
                 <TooltipContent>Proficiency</TooltipContent>
               </Tooltip>
-              <SkillList character={character} onUpdate={handleUpdate} />
+              <SkillList character={character} onUpdate={handleUpdate} onRoll={openRoll} />
             </CyberCard>
           </div>
 
@@ -526,6 +527,7 @@ export default function CharacterSheet() {
 
               <div className="flex-1 overflow-y-auto p-4">
                 {miniTab === 'actions' && <ActionsPanel character={character} onUpdate={handleUpdate} onRoll={openRoll} onCustomRoll={openCustomRoll} />}
+
                 {miniTab === 'hacks' && <HacksPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'inventory' && <InventoryPanel character={character} onUpdate={handleUpdate} />}
                 {miniTab === 'genemods' && <GeneModsPanel character={character} onUpdate={handleUpdate} />}
