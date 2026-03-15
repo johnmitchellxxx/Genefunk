@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import charactersRouter from "./characters";
 import rulebookRouter from "./rulebook";
 import usersRouter from "./users";
+import dicePrefsRouter from "./dicePrefs";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(authRouter);
 router.use(charactersRouter);
 router.use(rulebookRouter);
 router.use(usersRouter);
+router.use(dicePrefsRouter);
 
 export default router;

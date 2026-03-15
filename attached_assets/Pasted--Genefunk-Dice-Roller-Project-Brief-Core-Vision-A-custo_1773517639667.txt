@@ -1,0 +1,80 @@
+# Genefunk Dice Roller - Project Brief
+
+## Core Vision
+A customizable 3D dice roller component that renders over the character sheet (not full-screen modal). Players build roll pools, dice tumble in from the side, bounce with physics off edges and each other, and settle with shadows cast on the underlying sheet.
+
+## Tech Stack
+- React + TypeScript + Vite
+- Three.js via @react-three/fiber and @react-three/drei
+- @react-three/rapier for physics
+- Tailwind CSS for UI chrome
+- Web Audio API for sounds only
+
+## Functionality
+
+### Dice Rolling
+- Roll pool: d4, d6, d8, d10, d12, d20, d100
+- Click die icon to increment count (shows number in icon)
+- Roll button triggers all dice at once
+- Clear button resets pool
+- Dice tumble in from side of screen
+- Physics: bounce off window edges and each other
+- Shadows cast on underlying content
+- Settle and display results
+
+### Customization Options (Saved to Server)
+Each player's dice config persists on the Genefunk server:
+- Color: hex color picker
+- Transparency: opacity slider (opaque to translucent)
+- Font: select font family
+- Font Color: hex color picker
+- Font Size: slider
+- Font Style: bold, italic toggles
+- Interior Object: pick from 10 objects (skull, unicorn, star, gem, flame, etc.)
+- Preset Slots: save up to 3 named presets (e.g., "Death Dice", "Happiness Dice", "War Dice")
+
+### UI Flow
+1. Control panel pops out from side (always visible or toggleable)
+2. Build roll pool by clicking die icons
+3. Click Customize button to open preferences palette
+4. Customize dialog shows all options
+5. Save as preset or apply to active dice
+6. Click Roll to trigger dice tumble
+7. Dice settle, show results
+8. Results callback fires to trigger Beyond Twenty integration
+
+### Visual Style
+- Semi-transparent glowing dice (not opaque)
+- Inner neon glow aesthetic
+- Physics-based tumble and bounce
+- Shadows on underlying content
+- Smooth 60 FPS animation
+
+### Sound
+- Tumble noise while rolling
+- Thud on settle
+- Special chime on max value (natural 20 on d20, max on any die)
+
+### Props Interface
+interface DiceRollerProps {
+  onResult?: (rolls: Array<{dieType: number, result: number}>) => void;
+  onClose?: () => void;
+}
+
+## Scope - 80% Solution
+Build visual component with:
+- Multi-die rolling mechanics
+- Physics and animation
+- Customization UI
+- Sound effects
+- Result display
+- Callbacks for integration
+- (Replet handles server persistence and Beyond Twenty integration)
+
+## Key Differences from Original Replet Brief
+1. Multi-die rolling (not single die)
+2. Renders over sheet, not full-screen overlay
+3. Dice tumble in from side (entry animation)
+4. 10 interior object options for personalization
+5. 3 preset slots for different dice configurations
+6. Server-side preference storage (Replet backend)

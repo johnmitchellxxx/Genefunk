@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRoute } from 'wouter';
-import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes, useAppRulebookClasses, useAppRulebookCadres } from '@/hooks/use-api';
+import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes, useAppRulebookClasses, useAppRulebookCadres, useAppAuth } from '@/hooks/use-api';
 import { useDice, type DieType } from '@/hooks/use-dice';
 import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } from '@/components/CyberUI';
 import { StatBox } from '@/components/StatBox';
@@ -39,6 +39,8 @@ export default function CharacterSheet() {
   const updateMutation = useAppUpdateCharacter();
   const deleteMutation = useAppDeleteCharacter();
   const { rollDice, beyond20Active, setCharacterName } = useDice();
+  const { data: authData } = useAppAuth();
+  const authUserId = authData?.userId as string | undefined;
 
   const { data: rulebookBackgrounds } = useAppRulebookBackgrounds();
   const { data: rulebookGenomes } = useAppRulebookGenomes();
@@ -533,67 +535,58 @@ export default function CharacterSheet() {
         />
       )}
 
-      {/* Dice Roller Side Panel */}
-      <div
-        className={`fixed right-0 top-0 h-screen w-72 z-50 bg-card/95 backdrop-blur border-l border-primary/40 flex flex-col transition-transform duration-300 ease-in-out ${
-          diceOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        style={{ boxShadow: diceOpen ? '-4px 0 24px rgba(0,255,255,0.08)' : 'none' }}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-primary/30 bg-primary/5 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Dices className="w-4 h-4 text-primary" />
-            <span className="font-mono text-xs text-primary tracking-[0.2em] uppercase">Dice Roller</span>
-            {beyond20Active && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500/15 border border-green-500/40 rounded text-[10px] font-mono text-green-400 tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-                B20
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => setDiceOpen(false)}
-            className="text-muted-foreground hover:text-primary transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+      {/* Dice Roller Full Overlay */}
+      {diceOpen && (
+        <div className="fixed inset-0 z-50">
+          <DiceRoller
+            userId={authUserId}
+            onClose={() => setDiceOpen(false)}
+            onResult={(results) => {
+              const total = results.reduce((s, r) => s + r.result, 0);
+              const dice = results.map(r => `d${r.dieType}`).join('+');
+              document.dispatchEvent(
+                new CustomEvent('Beyond20_SendMessage', {
+                  detail: [{
+                    type: 'roll',
+                    title: `Dice: ${dice}`,
+                    character: rawCharacter?.name ?? 'Character',
+                    total,
+                    rolls: results.map(r => ({ dice: r.dieType, value: r.result })),
+                  }],
+                })
+              );
+            }}
+          />
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          <DiceRoller onClose={() => setDiceOpen(false)} />
-        </div>
-      </div>
+      )}
 
-      {/* Dice Tab Handle — desktop: vertical side tab; mobile: FAB bottom-right */}
-      {/* Desktop side tab */}
-      <button
-        onClick={() => setDiceOpen(prev => !prev)}
-        className={`hidden sm:flex fixed right-0 top-1/2 -translate-y-1/2 z-50 flex-col items-center justify-center gap-2 w-10 py-6 cursor-pointer border-l border-primary/40 transition-all duration-300 ${
-          diceOpen
-            ? 'bg-primary/20 text-primary -translate-x-72'
-            : 'bg-card/95 text-muted-foreground hover:bg-primary/10 hover:text-primary'
-        }`}
-        title="Toggle Dice Roller"
-      >
-        <Dices className="w-4 h-4" />
-        <span
-          className="font-mono text-[9px] uppercase tracking-[0.15em] leading-none"
-          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-        >
-          Dice
-        </span>
-      </button>
-      {/* Mobile FAB */}
-      <button
-        onClick={() => setDiceOpen(prev => !prev)}
-        className={`sm:hidden fixed bottom-6 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-black/50 transition-all duration-300 border ${
-          diceOpen
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-card border-primary/60 text-primary hover:bg-primary/20'
-        }`}
-        title="Toggle Dice Roller"
-      >
-        <Dices className="w-6 h-6" />
-      </button>
+      {/* Dice Tab Handle — desktop: vertical side tab; mobile: FAB — hidden while overlay is open */}
+      {!diceOpen && (
+        <>
+          {/* Desktop side tab */}
+          <button
+            onClick={() => setDiceOpen(true)}
+            className="hidden sm:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 flex-col items-center justify-center gap-2 w-10 py-6 cursor-pointer border-l border-primary/40 bg-card/95 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-300"
+            title="Open Dice Roller"
+          >
+            <Dices className="w-4 h-4" />
+            <span
+              className="font-mono text-[9px] uppercase tracking-[0.15em] leading-none"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            >
+              Dice
+            </span>
+          </button>
+          {/* Mobile FAB */}
+          <button
+            onClick={() => setDiceOpen(true)}
+            className="sm:hidden fixed bottom-6 right-4 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-black/50 border bg-card border-primary/60 text-primary hover:bg-primary/20 transition-all duration-300"
+            title="Open Dice Roller"
+          >
+            <Dices className="w-6 h-6" />
+          </button>
+        </>
+      )}
     </div>
   );
 }
