@@ -554,7 +554,7 @@ export default function CharacterSheet() {
 
       {/* Tray DiceRoller — always present, transparent, floating FAB in bottom-right */}
       {!quickRollOpen && (
-        <div className="fixed inset-0 z-50" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
+        <div className="fixed inset-0 z-50" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%', pointerEvents: 'none' } as React.CSSProperties}>
           <DiceRoller
             userId={authUserId}
             onResult={(results, label, modifier) => {
