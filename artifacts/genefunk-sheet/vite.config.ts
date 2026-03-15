@@ -46,6 +46,9 @@ export default defineConfig({
         ]
       : []),
   ],
+  optimizeDeps: {
+    exclude: ["@dimforge/rapier3d-compat"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
