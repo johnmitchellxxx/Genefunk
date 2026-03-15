@@ -5,8 +5,9 @@ import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
 import { Die } from './Die';
 
-const CAMERA_Y = 7.0;
-const CAMERA_Z = 12.1;
+// Nearly overhead: ~17° from vertical so depth reads clearly but top face is dominant
+const CAMERA_Y = 14.0;
+const CAMERA_Z = 4.5;
 
 function CameraSetup() {
   const { camera } = useThree();
@@ -14,7 +15,7 @@ function CameraSetup() {
     camera.position.set(0, CAMERA_Y, CAMERA_Z);
     camera.up.set(0, 1, 0);
     camera.lookAt(0, 0, 0);
-    (camera as THREE.PerspectiveCamera).fov = 65;
+    (camera as THREE.PerspectiveCamera).fov = 58;
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
   }, [camera]);
   return null;
@@ -84,17 +85,20 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
       onClick={settled ? onCanvasClick : undefined}
     >
       <Canvas
-        camera={{ fov: 65, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
+        camera={{ fov: 58, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       >
         <CameraSetup />
 
-        <ambientLight intensity={0.35} />
-        <directionalLight position={[5, 10, 8]} intensity={3.5} />
-        <directionalLight position={[-6, 5, 6]} intensity={1.8} />
-        <directionalLight position={[0, 2, 14]} intensity={1.4} />
-        <pointLight position={[0, 4, 10]} intensity={1.2} color="#ffffff" />
+        <ambientLight intensity={0.5} />
+        {/* Primary light from almost directly above with slight front offset */}
+        <directionalLight position={[2, 14, 4]} intensity={4.0} castShadow />
+        {/* Fill from left */}
+        <directionalLight position={[-8, 8, 2]} intensity={1.6} />
+        {/* Fill from right */}
+        <directionalLight position={[8, 8, 2]} intensity={1.2} />
+        <pointLight position={[0, 6, 0]} intensity={1.0} color="#ffffff" />
 
         <Physics gravity={[0, -15, 0]} timeStep="vary">
           <RigidBody type="fixed" friction={0.9} restitution={0.3}>
