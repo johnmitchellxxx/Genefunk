@@ -5,10 +5,12 @@ import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
 import { Die } from './Die';
 
-// Dramatic angle: ~35° from vertical — shows real 3D depth while top face stays readable
-const CAMERA_Y = 10.0;
-const CAMERA_Z = 7.0;
-const CAMERA_FOV = 65;
+// Nearly-overhead portrait camera — full arena visible on a phone screen
+// Portrait aspect ≈ 0.46, so horizontal FOV is much smaller than vertical.
+// Y=16, Z=2 gives ~15° tilt from overhead — enough depth without losing arena edges.
+const CAMERA_Y = 16.0;
+const CAMERA_Z = 2.0;
+const CAMERA_FOV = 55;
 
 function CameraSetup() {
   const { camera } = useThree();
@@ -34,8 +36,11 @@ interface DiceSceneProps {
 const SPAWN_SIDES = ['left', 'right', 'top', 'bottom'] as const;
 type SpawnSide = typeof SPAWN_SIDES[number];
 
-const ARENA_X = 14;
-const ARENA_Z = 9;
+// Portrait phone ≈ 0.46 aspect. At Y=16, Z=2, FOV=55:
+//   Horizontal view half-span ≈ ±3.8 units → ARENA_X = 5  (spawn at ±3.75)
+//   Vertical view half-span   ≈ ±8.0 units → ARENA_Z = 10 (spawn at ±7.5)
+const ARENA_X = 5;
+const ARENA_Z = 10;
 
 export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanvasClick }: DiceSceneProps) {
   const settledResultsRef = useRef<Map<string, number>>(new Map());
@@ -94,27 +99,24 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
         <CameraSetup />
 
         <ambientLight intensity={0.5} />
-        {/* Primary shadow-casting light — frustum covers full arena */}
+        {/* Primary shadow-casting light */}
         <directionalLight
-          position={[3, 14, 6]}
+          position={[2, 18, 4]}
           intensity={3.5}
           castShadow
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
           shadow-camera-near={0.5}
-          shadow-camera-far={40}
-          shadow-camera-left={-17}
-          shadow-camera-right={17}
-          shadow-camera-top={12}
-          shadow-camera-bottom={-12}
+          shadow-camera-far={30}
+          shadow-camera-left={-8}
+          shadow-camera-right={8}
+          shadow-camera-top={13}
+          shadow-camera-bottom={-13}
           shadow-bias={-0.002}
         />
-        {/* Fill from left */}
-        <directionalLight position={[-12, 8, 4]} intensity={1.4} />
-        {/* Fill from right */}
-        <directionalLight position={[12, 8, 4]} intensity={1.0} />
-        {/* Back rim — lights far side of arena visible in 35° camera */}
-        <directionalLight position={[0, 6, -12]} intensity={0.7} />
+        {/* Fill lights */}
+        <directionalLight position={[-6, 10, 4]} intensity={1.2} />
+        <directionalLight position={[6, 10, 4]} intensity={0.9} />
         <pointLight position={[0, 5, 0]} intensity={0.8} color="#ffffff" />
 
         {/* Invisible floor that only renders the shadow cast by dice */}

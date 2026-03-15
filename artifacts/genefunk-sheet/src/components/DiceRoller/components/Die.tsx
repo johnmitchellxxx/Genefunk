@@ -130,14 +130,15 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const dieScale = config.scale ?? 1;
 
   const spawnPos = useMemo((): [number, number, number] => {
-    const rz = (Math.random() - 0.5) * arenaZ;
-    const rx = (Math.random() - 0.5) * arenaX;
+    // Clamp random offsets to inner 60% of each axis so spawn is always on-screen
+    const rz = (Math.random() - 0.5) * arenaZ * 0.6;
+    const rx = (Math.random() - 0.5) * arenaX * 0.6;
     const y = 3 + Math.random() * 2;
     switch (spawnSide) {
-      case 'left':   return [-arenaX * 0.75, y, rz];
-      case 'right':  return [arenaX * 0.75, y, rz];
-      case 'top':    return [rx, y, -arenaZ * 0.75];
-      case 'bottom': return [rx, y, arenaZ * 0.75];
+      case 'left':   return [-arenaX * 0.7, y, rz];
+      case 'right':  return [arenaX * 0.7, y, rz];
+      case 'top':    return [rx, y, -arenaZ * 0.7];
+      case 'bottom': return [rx, y, arenaZ * 0.7];
     }
   }, [spawnSide, arenaX, arenaZ]);
 
@@ -148,14 +149,15 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     applied: boolean;
   } | null>(null);
   if (launchRef.current === null) {
-    const vx = spawnSide === 'left'   ?  5 + Math.random() * 5
-              : spawnSide === 'right'  ? -(5 + Math.random() * 5)
-              : (Math.random() - 0.5) * 8;
-    const vz = spawnSide === 'top'    ?  5 + Math.random() * 5
-              : spawnSide === 'bottom' ? -(5 + Math.random() * 5)
-              : (Math.random() - 0.5) * 8;
+    // Lateral velocity scaled to arena size so dice traverse ~70% of arena
+    const vx = spawnSide === 'left'   ?  3 + Math.random() * 3
+              : spawnSide === 'right'  ? -(3 + Math.random() * 3)
+              : (Math.random() - 0.5) * 4;
+    const vz = spawnSide === 'top'    ?  4 + Math.random() * 3
+              : spawnSide === 'bottom' ? -(4 + Math.random() * 3)
+              : (Math.random() - 0.5) * 5;
     launchRef.current = {
-      vx, vy: 3 + Math.random() * 4, vz,
+      vx, vy: 2 + Math.random() * 3, vz,
       ax: (Math.random() - 0.5) * 50,
       ay: (Math.random() - 0.5) * 50,
       az: (Math.random() - 0.5) * 50,
@@ -184,7 +186,8 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       // easeOutCubic: fast start, soft landing
       const ease = 1 - Math.pow(1 - t, 3);
       const q = snapStartQuatRef.current.clone().slerp(snapTargetQuatRef.current, ease);
-      rigidBodyRef.current.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
+      // false = don't wake body; keep it sleeping while we rotate it visually
+      rigidBodyRef.current.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, false);
       if (t >= 1) isSnappingRef.current = false;
       return;
     }
