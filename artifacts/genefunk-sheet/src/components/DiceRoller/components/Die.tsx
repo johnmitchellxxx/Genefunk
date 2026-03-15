@@ -31,9 +31,11 @@ function makeNumberTexture(
   bold: boolean,
   italic: boolean,
   dieColor: string,
-  /** Body opacity 0–1.  Background pixels use this alpha; number pixels are always alpha=1
-   *  so the numeral is never washed out regardless of die transparency. */
-  bodyOpacity: number,
+  /** When true (opaque die) the face background is drawn solid so the whole
+   *  face is filled.  When false (translucent die) the background stays fully
+   *  transparent — only the number pixels have any alpha — so the separate
+   *  inner body mesh shows through where there's no numeral. */
+  drawBackground: boolean,
 ): THREE.CanvasTexture {
   const size = 256;
   const canvas = document.createElement('canvas');
@@ -41,19 +43,20 @@ function makeNumberTexture(
   canvas.height = size;
   const ctx2d = canvas.getContext('2d')!;
 
-  // Clear to fully transparent first so we start with a known alpha channel
+  // Always start transparent
   ctx2d.clearRect(0, 0, size, size);
 
-  // Background: tinted-dark die color, alpha = bodyOpacity.
-  // At opacity=1 this looks like before; at opacity=0.3 the face is glassy but
-  // still tinted, and surface lighting (roughness/reflections) remains sharp.
-  const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
-  const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
-  ctx2d.globalAlpha = bodyOpacity;
-  ctx2d.fillStyle = darkBg;
-  ctx2d.fillRect(0, 0, size, size);
+  if (drawBackground) {
+    // Opaque die: fill with a dark tint of the die colour
+    const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
+    const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
+    ctx2d.globalAlpha = 1.0;
+    ctx2d.fillStyle = darkBg;
+    ctx2d.fillRect(0, 0, size, size);
+  }
+  // Translucent die: leave background at alpha=0; inner body mesh provides colour.
 
-  // Number is always fully opaque so it reads clearly on any body opacity
+  // Number is ALWAYS drawn at full opacity — it is never blended or faded.
   ctx2d.globalAlpha = 1.0;
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
@@ -78,10 +81,7 @@ function makeNumberTexture(
     ctx2d.stroke();
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  // Premultiplied alpha ensures correct blending when texture alpha < 1
-  tex.premultiplyAlpha = true;
-  return tex;
+  return new THREE.CanvasTexture(canvas);
 }
 
 /** 3-D figurine imprisoned inside the die.
@@ -189,8 +189,9 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const { geometry, faceCount, faceNormals } = useMemo(() => getDieGeometry(dieType), [dieType]);
 
   const numberTextures = useMemo(() => {
+    const drawBackground = config.opacity >= 1;
     return Array.from({ length: faceCount }, (_, i) =>
-      makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity)
+      makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
     );
   }, [faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity]);
 
@@ -337,17 +338,19 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     const translucent = config.opacity < 1;
     return numberTextures.map(tex => new THREE.MeshPhysicalMaterial({
       map: tex,
-      // opacity is baked into the texture alpha channel (background=partial, number=1.0)
-      // so we leave material opacity at 1 — surface shading (reflections, roughness)
-      // then works independently from how see-through the body is.
-      transparent: translucent,
+      // Alpha-cutout technique: pixels with alpha >= 0.5 render as fully solid
+      // in the OPAQUE render pass (not the transparent/blend pass).  This means
+      // number pixels (alpha=1) are 100 % solid — they can never be blended or
+      // feathered by any transparency pipeline regardless of die opacity.
+      // Background pixels (alpha=0 on translucent die, alpha=1 on opaque die)
+      // are either kept (opaque) or discarded (translucent).
+      alphaTest: 0.5,
+      transparent: false,        // forces opaque render pass → no alpha blending
       opacity: 1.0,
-      alphaTest: 0,
-      depthWrite: !translucent,
-      roughness: translucent ? 0.08 : 0.35,   // glassy surface when translucent
+      depthWrite: true,
+      roughness: translucent ? 0.08 : 0.35,
       metalness: 0,
-      // clearcoat gives the "lacquered resin" look real dice have
-      clearcoat: translucent ? 0.8 : 0.2,
+      clearcoat: translucent ? 0.5 : 0.2,
       clearcoatRoughness: 0.1,
       side: THREE.FrontSide,
     }));
@@ -366,6 +369,26 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       ccd={true}
     >
       <group scale={dieScale}>
+        {/* Inner body — only present for translucent dice.  Provides the coloured
+            resin/glass fill that shows through the alpha-cutout face meshes where
+            no number is drawn.  Uses the transparent render pass; face meshes
+            (opaque pass, alphaTest) have already written depth for number pixels,
+            so the body only shows through the transparent "holes". */}
+        {config.opacity < 1 && (
+          <mesh geometry={geometry}>
+            <meshPhysicalMaterial
+              color={config.color}
+              transparent
+              opacity={config.opacity}
+              roughness={0.08}
+              metalness={0}
+              clearcoat={0.8}
+              clearcoatRoughness={0.1}
+              side={THREE.BackSide}
+              depthWrite={false}
+            />
+          </mesh>
+        )}
         <mesh
           ref={meshRef}
           geometry={geometry}
