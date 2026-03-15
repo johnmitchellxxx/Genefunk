@@ -53,19 +53,7 @@ function makeNumberTexture(
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // White contrast halo — ensures readability regardless of die color or font color
-  ctx2d.shadowColor = '#ffffff';
-  ctx2d.shadowBlur = 26;
-  ctx2d.fillStyle = '#ffffff';
-  ctx2d.fillText(String(value), size / 2, size / 2);
-
-  // Die-color tint ring inside the white halo
-  ctx2d.shadowColor = dieColor;
-  ctx2d.shadowBlur = 12;
-  ctx2d.fillStyle = dieColor;
-  ctx2d.fillText(String(value), size / 2, size / 2);
-
-  // Final crisp number in chosen font color
+  // Crisp number — no glow, no halo
   ctx2d.shadowBlur = 0;
   ctx2d.fillStyle = fontColor;
   ctx2d.fillText(String(value), size / 2, size / 2);
@@ -188,7 +176,13 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       const q = snapStartQuatRef.current.clone().slerp(snapTargetQuatRef.current, ease);
       // false = don't wake body; keep it sleeping while we rotate it visually
       rigidBodyRef.current.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, false);
-      if (t >= 1) isSnappingRef.current = false;
+      if (t >= 1) {
+        isSnappingRef.current = false;
+        // Hard-stop: zero velocities and re-sleep so physics never twitches it again
+        rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, false);
+        rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, false);
+        rigidBodyRef.current.sleep();
+      }
       return;
     }
 
@@ -263,10 +257,10 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       key={`rb-${dieScale}`}
       ref={rigidBodyRef}
       position={spawnPos}
-      restitution={0.45}
-      friction={0.6}
-      linearDamping={0.3}
-      angularDamping={0.15}
+      restitution={0.2}
+      friction={0.8}
+      linearDamping={0.6}
+      angularDamping={0.5}
       colliders="hull"
       ccd={true}
     >
