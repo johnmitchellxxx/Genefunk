@@ -88,17 +88,35 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
         camera={{ fov: 55, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+        shadows
       >
         <CameraSetup />
 
         <ambientLight intensity={0.5} />
-        {/* Primary light from almost directly above with slight front offset */}
-        <directionalLight position={[2, 14, 4]} intensity={4.0} castShadow />
-        {/* Fill from left */}
+        {/* Primary shadow-casting light — tight frustum so shadow map is crisp */}
+        <directionalLight
+          position={[2, 14, 4]}
+          intensity={4.0}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-near={0.5}
+          shadow-camera-far={30}
+          shadow-camera-left={-12}
+          shadow-camera-right={12}
+          shadow-camera-top={8}
+          shadow-camera-bottom={-8}
+          shadow-bias={-0.002}
+        />
         <directionalLight position={[-8, 8, 2]} intensity={1.6} />
-        {/* Fill from right */}
         <directionalLight position={[8, 8, 2]} intensity={1.2} />
         <pointLight position={[0, 6, 0]} intensity={1.0} color="#ffffff" />
+
+        {/* Invisible floor that only renders the shadow cast by dice */}
+        <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]} receiveShadow>
+          <planeGeometry args={[(ARENA_X + 2) * 2, (ARENA_Z + 2) * 2]} />
+          <shadowMaterial opacity={0.22} />
+        </mesh>
 
         <Physics gravity={[0, -15, 0]} timeStep="vary">
           <RigidBody type="fixed" friction={0.9} restitution={0.3}>

@@ -556,7 +556,7 @@ export default function CharacterSheet() {
 
       {/* Dice Roller Full Overlay */}
       {diceOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
+        <div className="fixed inset-0 z-50" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
           <DiceRoller
             userId={authUserId}
             autoRoll={pendingRoll}
@@ -583,7 +583,7 @@ export default function CharacterSheet() {
 
       {/* Quick Roll Overlay — no tray UI, just dice + result */}
       {quickRollOpen && quickRollData && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
+        <div className="fixed inset-0 z-50" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
           <DiceRoller
             key={quickRollKey}
             userId={authUserId}
