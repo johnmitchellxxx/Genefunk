@@ -178,10 +178,18 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       rigidBodyRef.current.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, false);
       if (t >= 1) {
         isSnappingRef.current = false;
-        // Hard-stop: zero velocities and re-sleep so physics never twitches it again
-        rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, false);
-        rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, false);
-        rigidBodyRef.current.sleep();
+        // Hard-stop: zero velocities and re-sleep so physics never twitches it again.
+        // Guard with try/catch — Rapier may throw if the world is mid-teardown.
+        try {
+          const rb = rigidBodyRef.current;
+          if (rb) {
+            rb.setLinvel({ x: 0, y: 0, z: 0 }, false);
+            rb.setAngvel({ x: 0, y: 0, z: 0 }, false);
+            rb.sleep();
+          }
+        } catch {
+          // Body already removed from world; safe to ignore.
+        }
       }
       return;
     }

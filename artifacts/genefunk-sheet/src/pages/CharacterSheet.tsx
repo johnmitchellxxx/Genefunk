@@ -59,6 +59,20 @@ export default function CharacterSheet() {
   const [quickRollData, setQuickRollData] = useState<AutoRoll | null>(null);
   const [quickRollKey, setQuickRollKey] = useState(0);
 
+  // Stable close callback — inline arrows recreated every render reset the auto-dismiss timer
+  const closeQuickRoll = useCallback(() => {
+    setQuickRollOpen(false);
+    setQuickRollData(null);
+  }, []);
+
+  // Watchdog: if quickRoll is open for more than 8 s with no resolution (crash / stuck physics),
+  // force-close so the tray always comes back.
+  useEffect(() => {
+    if (!quickRollOpen) return;
+    const t = setTimeout(() => { setQuickRollOpen(false); setQuickRollData(null); }, 8000);
+    return () => clearTimeout(t);
+  }, [quickRollOpen, quickRollKey]); // quickRollKey changes on every new roll, resetting the timer
+
   const openRoll = useCallback((label: string, modifier: number, onComplete?: AutoRoll['onComplete']) => {
     setQuickRollData({ dice: [{ sides: 20 as const, count: 1 }], modifier, label, onComplete });
     setQuickRollKey(k => k + 1);
@@ -585,7 +599,7 @@ export default function CharacterSheet() {
             userId={authUserId}
             autoRoll={quickRollData}
             quickMode
-            onClose={() => { setQuickRollOpen(false); setQuickRollData(null); }}
+            onClose={closeQuickRoll}
             onResult={(results, label, modifier) => {
               const rawTotal = results.reduce((s, r) => s + r.result, 0);
               const finalTotal = rawTotal + modifier;

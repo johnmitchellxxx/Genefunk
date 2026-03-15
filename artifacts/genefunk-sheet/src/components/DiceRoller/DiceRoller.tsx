@@ -91,6 +91,13 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
     return () => clearTimeout(t);
   }, [quickMode, settled, handleDismissAll]);
 
+  // Safety net: if rolling gets stuck (physics crash / escape) for more than 7 s, force-dismiss.
+  useEffect(() => {
+    if (!rolling) return;
+    const t = setTimeout(() => handleDismissAll(), 7000);
+    return () => clearTimeout(t);
+  }, [rolling, handleDismissAll]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Enter' && !e.repeat) handleRoll();
