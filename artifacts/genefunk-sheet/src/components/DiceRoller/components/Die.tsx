@@ -46,7 +46,9 @@ function makeNumberTexture(
 
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
-  const px = Math.round(90 * fontSize);
+  const numStr = String(value);
+  const sizeScale = numStr.length >= 3 ? 0.55 : numStr.length === 2 ? 0.70 : 1.0;
+  const px = Math.round(90 * fontSize * sizeScale);
   ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';

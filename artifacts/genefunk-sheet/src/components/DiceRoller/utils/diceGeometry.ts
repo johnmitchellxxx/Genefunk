@@ -13,45 +13,63 @@ const TRI_UV: Array<[number, number]> = [
   [0.89, 0.275],
 ];
 
-function pentagonUVs(): Array<[number, number]> {
-  const r = 0.45;
-  const uvs: Array<[number, number]> = [];
-  for (let i = 0; i < 5; i++) {
-    const angle = Math.PI / 2 + (i * 2 * Math.PI) / 5;
-    uvs.push([0.5 + r * Math.cos(angle), 0.5 + r * Math.sin(angle)]);
-  }
-  return uvs;
-}
 
 function addFaceGroups(geo: THREE.BufferGeometry, trianglesPerFace: number): THREE.BufferGeometry {
   const nonIndexed = geo.toNonIndexed();
-  const posCount = nonIndexed.attributes.position.count;
+  const posAttr = nonIndexed.attributes.position;
+  const posCount = posAttr.count;
   const faceCount = posCount / 3 / trianglesPerFace;
   const uvArray = new Float32Array(posCount * 2);
-  const pentUVs = pentagonUVs();
 
   for (let face = 0; face < faceCount; face++) {
-    for (let tri = 0; tri < trianglesPerFace; tri++) {
-      const vtxBase = (face * trianglesPerFace + tri) * 3;
-      if (trianglesPerFace === 1) {
-        for (let v = 0; v < 3; v++) {
-          uvArray[(vtxBase + v) * 2 + 0] = TRI_UV[v][0];
-          uvArray[(vtxBase + v) * 2 + 1] = TRI_UV[v][1];
-        }
-      } else if (trianglesPerFace === 3) {
-        const fanUVs: Array<[number, number]>[] = [
-          [pentUVs[0], pentUVs[1], pentUVs[2]],
-          [pentUVs[0], pentUVs[2], pentUVs[3]],
-          [pentUVs[0], pentUVs[3], pentUVs[4]],
-        ];
-        const triUVs = fanUVs[tri];
-        for (let v = 0; v < 3; v++) {
-          uvArray[(vtxBase + v) * 2 + 0] = triUVs[v][0];
-          uvArray[(vtxBase + v) * 2 + 1] = triUVs[v][1];
-        }
+    const faceVertStart = face * trianglesPerFace * 3;
+    const totalFaceVerts = trianglesPerFace * 3;
+
+    if (trianglesPerFace === 1) {
+      for (let v = 0; v < 3; v++) {
+        uvArray[(faceVertStart + v) * 2 + 0] = TRI_UV[v][0];
+        uvArray[(faceVertStart + v) * 2 + 1] = TRI_UV[v][1];
+      }
+    } else if (trianglesPerFace === 3) {
+      // Proper per-face UV projection: read actual 3D positions and project
+      // onto the face plane so numbers are never distorted regardless of vertex ordering.
+      const verts: THREE.Vector3[] = [];
+      for (let i = 0; i < totalFaceVerts; i++) {
+        const vi = faceVertStart + i;
+        verts.push(new THREE.Vector3(posAttr.getX(vi), posAttr.getY(vi), posAttr.getZ(vi)));
+      }
+
+      // Centroid of all 9 verts (fan shares verts so centroid ≈ face center)
+      const centroid = new THREE.Vector3();
+      verts.forEach(v => centroid.add(v));
+      centroid.divideScalar(totalFaceVerts);
+
+      // Face normal = outward direction on sphere
+      const faceNormal = centroid.clone().normalize();
+
+      // Build two orthonormal axes on the face plane
+      const axisU = verts[0].clone().sub(centroid).normalize();
+      // Re-orthogonalise axisU against the face normal
+      axisU.addScaledVector(faceNormal, -axisU.dot(faceNormal)).normalize();
+      const axisV = new THREE.Vector3().crossVectors(faceNormal, axisU).normalize();
+
+      // Project vertices to 2-D face-local coordinates
+      const local: [number, number][] = verts.map(v => {
+        const d = v.clone().sub(centroid);
+        return [d.dot(axisU), d.dot(axisV)];
+      });
+
+      // Scale so the outermost vertex sits at UV radius 0.45 (stays inside texture)
+      const maxR = Math.max(...local.map(([u, v]) => Math.hypot(u, v)));
+      const scale = maxR > 0 ? 0.45 / maxR : 1;
+
+      for (let i = 0; i < totalFaceVerts; i++) {
+        uvArray[(faceVertStart + i) * 2 + 0] = 0.5 + local[i][0] * scale;
+        uvArray[(faceVertStart + i) * 2 + 1] = 0.5 + local[i][1] * scale;
       }
     }
-    nonIndexed.addGroup(face * trianglesPerFace * 3, trianglesPerFace * 3, face);
+
+    nonIndexed.addGroup(faceVertStart, totalFaceVerts, face);
   }
 
   nonIndexed.setAttribute('uv', new THREE.Float32BufferAttribute(uvArray, 2));
