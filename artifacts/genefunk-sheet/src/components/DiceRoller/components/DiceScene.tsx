@@ -7,14 +7,17 @@ import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
 import { Die } from './Die';
 
+const CAMERA_Y = 7.0;
+const CAMERA_Z = 12.1;
+
 function CameraSetup() {
   const { camera } = useThree();
   useEffect(() => {
-    const tiltAngle = (20 * Math.PI) / 180;
-    const dist = 10;
-    camera.position.set(0, dist * Math.cos(tiltAngle), dist * Math.sin(tiltAngle));
+    camera.position.set(0, CAMERA_Y, CAMERA_Z);
     camera.up.set(0, 1, 0);
     camera.lookAt(0, 0, 0);
+    (camera as THREE.PerspectiveCamera).fov = 65;
+    (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
   }, [camera]);
   return null;
 }
@@ -73,65 +76,74 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
   }));
 
   return (
-    <Canvas
-      shadows
-      camera={{ fov: 55, near: 0.1, far: 200 }}
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        cursor: settled ? 'pointer' : 'default',
+        pointerEvents: (rolling || settled) ? 'auto' : 'none',
+      }}
       onClick={settled ? onCanvasClick : undefined}
-      style={{ position: 'absolute', inset: 0, pointerEvents: (rolling || settled) ? 'auto' : 'none', cursor: settled ? 'pointer' : 'default' }}
-      gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
     >
-      <CameraSetup />
+      <Canvas
+        shadows
+        camera={{ fov: 65, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+      >
+        <CameraSetup />
 
-      <ambientLight intensity={0.5} />
-      <directionalLight
-        position={[5, 14, 8]}
-        intensity={2.0}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={40}
-        shadow-camera-left={-12}
-        shadow-camera-right={12}
-        shadow-camera-top={8}
-        shadow-camera-bottom={-8}
-      />
-      <directionalLight position={[-3, 8, -5]} intensity={0.8} />
-      <pointLight position={[-4, 6, -4]} intensity={0.8} color="#ffffff" />
-      <pointLight position={[4, 4, 4]} intensity={0.6} color="#ffffff" />
+        <ambientLight intensity={0.4} />
+        <directionalLight
+          position={[5, 10, 10]}
+          intensity={2.2}
+          castShadow
+          shadow-mapSize={[2048, 2048]}
+          shadow-camera-far={50}
+          shadow-camera-left={-14}
+          shadow-camera-right={14}
+          shadow-camera-top={10}
+          shadow-camera-bottom={-10}
+        />
+        <directionalLight position={[-5, 8, 6]} intensity={1.0} />
+        <pointLight position={[0, 6, 8]} intensity={1.0} color="#ffffff" />
+        <pointLight position={[-5, 4, 4]} intensity={0.6} color="#ffffff" />
 
-      <Environment preset="city" />
+        <Environment preset="city" />
 
-      <EffectComposer>
-        <Bloom intensity={1.2} luminanceThreshold={0.3} luminanceSmoothing={0.9} mipmapBlur />
-      </EffectComposer>
+        <EffectComposer>
+          <Bloom intensity={0.8} luminanceThreshold={0.4} luminanceSmoothing={0.9} mipmapBlur />
+        </EffectComposer>
 
-      <ContactShadows position={[0, -0.01, 0]} opacity={0.5} scale={24} blur={2} far={6} />
+        <ContactShadows position={[0, -0.01, 0]} opacity={0.6} scale={30} blur={3} far={8} />
 
-      <Physics gravity={[0, -15, 0]} timeStep="vary">
-        <RigidBody type="fixed" friction={0.9} restitution={0.3}>
-          <CuboidCollider args={[ARENA_X + 2, 4, ARENA_Z + 2]} position={[0, -4, 0]} />
-        </RigidBody>
-        <RigidBody type="fixed" restitution={0.4}>
-          <CuboidCollider args={[0.5, 8, ARENA_Z + 2]} position={[-(ARENA_X + 0.5), 0, 0]} />
-          <CuboidCollider args={[0.5, 8, ARENA_Z + 2]} position={[ARENA_X + 0.5, 0, 0]} />
-          <CuboidCollider args={[ARENA_X + 2, 8, 0.5]} position={[0, 0, -(ARENA_Z + 0.5)]} />
-          <CuboidCollider args={[ARENA_X + 2, 8, 0.5]} position={[0, 0, ARENA_Z + 0.5]} />
-          <CuboidCollider args={[ARENA_X + 2, 0.5, ARENA_Z + 2]} position={[0, 8, 0]} />
-        </RigidBody>
+        <Physics gravity={[0, -15, 0]} timeStep="vary">
+          <RigidBody type="fixed" friction={0.9} restitution={0.3}>
+            <CuboidCollider args={[ARENA_X + 2, 4, ARENA_Z + 2]} position={[0, -4, 0]} />
+          </RigidBody>
+          <RigidBody type="fixed" restitution={0.4}>
+            <CuboidCollider args={[0.5, 8, ARENA_Z + 2]} position={[-(ARENA_X + 0.5), 0, 0]} />
+            <CuboidCollider args={[0.5, 8, ARENA_Z + 2]} position={[ARENA_X + 0.5, 0, 0]} />
+            <CuboidCollider args={[ARENA_X + 2, 8, 0.5]} position={[0, 0, -(ARENA_Z + 0.5)]} />
+            <CuboidCollider args={[ARENA_X + 2, 8, 0.5]} position={[0, 0, ARENA_Z + 0.5]} />
+            <CuboidCollider args={[ARENA_X + 2, 0.5, ARENA_Z + 2]} position={[0, 8, 0]} />
+          </RigidBody>
 
-        {dieEntries.map(({ id, dieType, spawnSide }) => (
-          <Die
-            key={id}
-            id={id}
-            dieType={dieType}
-            config={config}
-            spawnSide={spawnSide}
-            arenaX={ARENA_X}
-            arenaZ={ARENA_Z}
-            rolling={rolling}
-            onSettle={handleSettle}
-          />
-        ))}
-      </Physics>
-    </Canvas>
+          {dieEntries.map(({ id, dieType, spawnSide }) => (
+            <Die
+              key={id}
+              id={id}
+              dieType={dieType}
+              config={config}
+              spawnSide={spawnSide}
+              arenaX={ARENA_X}
+              arenaZ={ARENA_Z}
+              rolling={rolling}
+              onSettle={handleSettle}
+            />
+          ))}
+        </Physics>
+      </Canvas>
+    </div>
   );
 }
