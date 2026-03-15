@@ -160,10 +160,10 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       map: tex,
       transparent: config.opacity < 1,
       opacity: config.opacity,
-      roughness: 0.35,
-      metalness: 0.15,
+      roughness: 0.15,
+      metalness: 0.05,
       emissive: dieColor,
-      emissiveIntensity: 0.4,
+      emissiveIntensity: 0.06,
       side: THREE.FrontSide,
     }));
   }, [numberTextures, dieColor, config.opacity]);
