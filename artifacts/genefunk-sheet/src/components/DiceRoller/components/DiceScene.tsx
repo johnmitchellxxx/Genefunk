@@ -5,9 +5,9 @@ import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
 import { Die } from './Die';
 
-// Nearly overhead: ~17° from vertical so depth reads clearly but top face is dominant
-const CAMERA_Y = 14.0;
-const CAMERA_Z = 4.5;
+// Nearly overhead: ~8° from vertical — almost pure top-down, result face faces viewer
+const CAMERA_Y = 16.0;
+const CAMERA_Z = 2.5;
 
 function CameraSetup() {
   const { camera } = useThree();
@@ -15,7 +15,7 @@ function CameraSetup() {
     camera.position.set(0, CAMERA_Y, CAMERA_Z);
     camera.up.set(0, 1, 0);
     camera.lookAt(0, 0, 0);
-    (camera as THREE.PerspectiveCamera).fov = 58;
+    (camera as THREE.PerspectiveCamera).fov = 55;
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
   }, [camera]);
   return null;
@@ -85,7 +85,7 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
       onClick={settled ? onCanvasClick : undefined}
     >
       <Canvas
-        camera={{ fov: 58, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
+        camera={{ fov: 55, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       >
