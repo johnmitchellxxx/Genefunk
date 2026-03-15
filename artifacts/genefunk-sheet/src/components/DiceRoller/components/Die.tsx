@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RigidBody, RapierRigidBody } from '@react-three/rapier';
+import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
 import { getDieGeometry, getFaceUp, INTERIOR_OBJECT_EMOJI } from '../utils/diceGeometry';
@@ -90,6 +90,7 @@ const SETTLE_SPEED_THRESHOLD = 0.08;
 const SNAP_DURATION = 0.45;
 
 export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, rolling }: DieProps) {
+  const { rapier } = useRapier();
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const settleCountRef = useRef(0);
@@ -219,8 +220,12 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       settleCountRef.current += 1;
       if (settleCountRef.current >= SETTLE_FRAMES) {
         hasSettledRef.current = true;
-        rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        rb.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        // Use wakeUp=false so zeroing velocities doesn't trigger a floor-collision response.
+        rb.setLinvel({ x: 0, y: 0, z: 0 }, false);
+        rb.setAngvel({ x: 0, y: 0, z: 0 }, false);
+        // Freeze body so the snap rotation can't cause Rapier to detect
+        // floor penetration and launch it skyward.
+        rb.setBodyType(rapier.RigidBodyType.Fixed, false);
         rb.sleep();
 
         // Determine which face is up right now
