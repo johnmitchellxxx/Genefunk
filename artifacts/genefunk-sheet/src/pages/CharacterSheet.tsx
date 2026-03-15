@@ -537,7 +537,7 @@ export default function CharacterSheet() {
 
       {/* Dice Roller Full Overlay */}
       {diceOpen && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm">
           <DiceRoller
             userId={authUserId}
             onClose={() => setDiceOpen(false)}
