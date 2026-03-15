@@ -16,15 +16,13 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
   const [rolling, setRolling] = useState(false);
   const [settled, setSettled] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
-  const [pendingResults, setPendingResults] = useState<RollResult[]>([]);
-  const [results, setResults] = useState<RollResult[]>([]);
+  const [settledResults, setSettledResults] = useState<RollResult[]>([]);
   const [showScene, setShowScene] = useState(false);
   const [rollKey, setRollKey] = useState(0);
 
   const handleRoll = useCallback(() => {
     if (pool.totalDice === 0 || rolling) return;
-    setResults([]);
-    setPendingResults([]);
+    setSettledResults([]);
     setSettled(false);
     setShowScene(true);
     setRolling(true);
@@ -40,32 +38,28 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
     const isAnyMax = newResults.some(r => r.result === r.dieType);
     sound.playSettle(isAnyMax);
 
-    setPendingResults(newResults);
+    setSettledResults(newResults);
     onResult?.(newResults);
   }, [sound, onResult]);
 
-  const handleDismissScene = useCallback(() => {
+  const handleDismissAll = useCallback(() => {
     setShowScene(false);
     setSettled(false);
-    setResults(pendingResults);
-    setPendingResults([]);
-  }, [pendingResults]);
-
-  const handleDismissResults = useCallback(() => {
-    setResults([]);
+    setSettledResults([]);
   }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Enter' && !e.repeat) handleRoll();
       if (e.key === 'Escape') {
-        if (showCustomize) setShowCustomize(false);
+        if (showScene) handleDismissAll();
+        else if (showCustomize) setShowCustomize(false);
         else onClose?.();
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleRoll, showCustomize, onClose]);
+  }, [handleRoll, showCustomize, onClose, showScene, handleDismissAll]);
 
   return (
     <div
@@ -81,8 +75,12 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
           rolling={rolling}
           settled={settled}
           onAllSettled={handleAllSettled}
-          onCanvasClick={settled ? handleDismissScene : undefined}
+          onCanvasClick={settled ? handleDismissAll : undefined}
         />
+      )}
+
+      {showScene && settled && settledResults.length > 0 && (
+        <ResultsDisplay results={settledResults} onDismiss={handleDismissAll} />
       )}
 
       <ControlPanel
@@ -118,8 +116,6 @@ export function DiceRoller({ onResult, onClose, userId }: DiceRollerProps) {
           Close Dice Tray ×
         </button>
       )}
-
-      <ResultsDisplay results={results} onDismiss={handleDismissResults} />
     </div>
   );
 }

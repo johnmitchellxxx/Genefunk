@@ -11,9 +11,9 @@ export function ResultsDisplay({ results, onDismiss }: ResultsDisplayProps) {
 
   useEffect(() => {
     if (results.length === 0) { setVisible(false); return; }
-    const t = setTimeout(() => setVisible(true), 200);
-    return () => { clearTimeout(t); };
-  }, [results, onDismiss]);
+    const t = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(t);
+  }, [results]);
 
   if (results.length === 0) return null;
 
@@ -22,23 +22,24 @@ export function ResultsDisplay({ results, onDismiss }: ResultsDisplayProps) {
 
   return (
     <div
-      onClick={() => { setVisible(false); setTimeout(onDismiss, 400); }}
       className={`
-        absolute inset-0 z-30 flex items-center justify-center cursor-pointer
-        transition-all duration-400
-        ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+        absolute inset-0 z-30 flex items-end justify-center pb-28 pointer-events-none
+        transition-all duration-300
+        ${visible ? 'opacity-100' : 'opacity-0'}
       `}
-      style={{ pointerEvents: visible ? 'auto' : 'none' }}
     >
       <div
-        onClick={() => { setVisible(false); setTimeout(onDismiss, 400); }}
+        onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+        style={{
+          pointerEvents: visible ? 'auto' : 'none',
+          clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
+        }}
         className={`
-          relative bg-card/95 backdrop-blur-md border px-8 py-6 shadow-2xl
-          transition-all duration-400
+          relative bg-card/95 backdrop-blur-md border px-8 py-6 shadow-2xl cursor-pointer
+          transition-all duration-300
           ${visible ? 'scale-100 translate-y-0' : 'scale-90 translate-y-4'}
           ${isMaxAll ? 'border-yellow-400/60 shadow-yellow-400/20' : 'border-primary/40 shadow-primary/10'}
         `}
-        style={{ clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))' }}
       >
         {isMaxAll && (
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-gray-900 text-xs font-black px-3 py-0.5 tracking-wide uppercase font-mono">
@@ -79,7 +80,7 @@ export function ResultsDisplay({ results, onDismiss }: ResultsDisplayProps) {
           </div>
         )}
 
-        <p className="text-center text-muted-foreground text-xs mt-3 font-mono">Click to dismiss</p>
+        <p className="text-center text-muted-foreground text-xs mt-3 font-mono">Click dice or here to dismiss</p>
       </div>
     </div>
   );
