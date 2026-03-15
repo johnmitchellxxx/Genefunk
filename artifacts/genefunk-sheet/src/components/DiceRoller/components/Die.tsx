@@ -16,6 +16,13 @@ interface DieProps {
   rolling: boolean;
 }
 
+function hexToRgb(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
+
 function makeNumberTexture(
   value: number,
   fontFamily: string,
@@ -23,31 +30,41 @@ function makeNumberTexture(
   fontSize: number,
   bold: boolean,
   italic: boolean,
-  bgColor: string,
+  dieColor: string,
 ): THREE.CanvasTexture {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx2d = canvas.getContext('2d')!;
-  ctx2d.fillStyle = bgColor;
+
+  // Dark body: 10% of die color for tinted-black face
+  const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
+  const darkBg = `rgb(${Math.round(r * 0.1)}, ${Math.round(g * 0.08)}, ${Math.round(b * 0.12)})`;
+  ctx2d.fillStyle = darkBg;
   ctx2d.fillRect(0, 0, size, size);
 
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
   const px = Math.round(90 * fontSize);
   ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
-  ctx2d.fillStyle = fontColor;
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
-  ctx2d.shadowColor = 'rgba(0,0,0,0.7)';
-  ctx2d.shadowBlur = 8;
+
+  // Glow halo in die color behind the number
+  ctx2d.shadowColor = dieColor;
+  ctx2d.shadowBlur = 18;
+  ctx2d.fillStyle = dieColor;
+  ctx2d.fillText(String(value), size / 2, size / 2);
+
+  // Crisp white number on top
+  ctx2d.shadowBlur = 0;
+  ctx2d.fillStyle = fontColor;
   ctx2d.fillText(String(value), size / 2, size / 2);
 
   if (value === 6 || value === 9) {
     const metrics = ctx2d.measureText(String(value));
     const w = metrics.width;
-    ctx2d.shadowBlur = 0;
     ctx2d.strokeStyle = fontColor;
     ctx2d.lineWidth = Math.max(3, px / 16);
     ctx2d.beginPath();
@@ -186,10 +203,11 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       map: tex,
       transparent: config.opacity < 1,
       opacity: config.opacity,
-      roughness: 0.15,
-      metalness: 0.05,
+      roughness: 0.2,
+      metalness: 0.3,
       emissive: dieColor,
-      emissiveIntensity: 0.06,
+      emissiveIntensity: 0.35,
+      emissiveMap: tex,
       side: THREE.FrontSide,
     }));
   }, [numberTextures, dieColor, config.opacity]);
