@@ -97,12 +97,19 @@ function makeEmojiTexture(emoji: string): THREE.CanvasTexture {
 
 const SETTLE_FRAMES = 45;
 const SETTLE_SPEED_THRESHOLD = 0.08;
+const SNAP_DURATION = 0.45;
 
 export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, rolling }: DieProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const settleCountRef = useRef(0);
   const hasSettledRef = useRef(false);
+
+  // Snap-to-flat animation state
+  const isSnappingRef = useRef(false);
+  const snapProgressRef = useRef(0);
+  const snapStartQuatRef = useRef<THREE.Quaternion | null>(null);
+  const snapTargetQuatRef = useRef<THREE.Quaternion | null>(null);
 
   const { geometry, faceCount, faceNormals } = useMemo(() => getDieGeometry(dieType), [dieType]);
 
@@ -155,16 +162,32 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     };
   }
 
-  // Reset launch state when a new roll starts
+  // Reset launch + snap state when a new roll starts
   useEffect(() => {
     if (rolling && launchRef.current) {
       launchRef.current.applied = false;
       hasSettledRef.current = false;
       settleCountRef.current = 0;
+      isSnappingRef.current = false;
+      snapProgressRef.current = 0;
+      snapStartQuatRef.current = null;
+      snapTargetQuatRef.current = null;
     }
   }, [rolling]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
+    // --- Snap-to-flat animation (runs after physics settles) ---
+    if (isSnappingRef.current && rigidBodyRef.current && snapStartQuatRef.current && snapTargetQuatRef.current) {
+      snapProgressRef.current = Math.min(snapProgressRef.current + delta / SNAP_DURATION, 1);
+      const t = snapProgressRef.current;
+      // easeOutCubic: fast start, soft landing
+      const ease = 1 - Math.pow(1 - t, 3);
+      const q = snapStartQuatRef.current.clone().slerp(snapTargetQuatRef.current, ease);
+      rigidBodyRef.current.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
+      if (t >= 1) isSnappingRef.current = false;
+      return;
+    }
+
     if (!rigidBodyRef.current || !rolling || !launchRef.current) return;
 
     // Apply launch impulse on the first frame Rapier body is ready
@@ -193,10 +216,26 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
         rb.setAngvel({ x: 0, y: 0, z: 0 }, true);
         rb.sleep();
-        const q = rb.rotation();
-        const quaternion = new THREE.Quaternion(q.x, q.y, q.z, q.w);
-        const faceIndex = getFaceUp(quaternion, { geometry, faceCount, faceNormals });
+
+        // Determine which face is up right now
+        const rawQ = rb.rotation();
+        const currentQuat = new THREE.Quaternion(rawQ.x, rawQ.y, rawQ.z, rawQ.w);
+        const faceIndex = getFaceUp(currentQuat, { geometry, faceCount, faceNormals });
         const result = Math.max(1, Math.min(faceCount, faceIndex));
+
+        // Compute the quaternion that puts the winning face perfectly flat (normal = world +Y)
+        const faceNormalLocal = faceNormals[faceIndex - 1].clone();
+        const worldFaceNormal = faceNormalLocal.applyQuaternion(currentQuat);
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        const deltaQ = new THREE.Quaternion().setFromUnitVectors(worldFaceNormal, worldUp);
+        // targetQuat = deltaQ applied in world space on top of currentQuat
+        const targetQuat = deltaQ.clone().multiply(currentQuat);
+
+        snapStartQuatRef.current = currentQuat.clone();
+        snapTargetQuatRef.current = targetQuat;
+        snapProgressRef.current = 0;
+        isSnappingRef.current = true;
+
         onSettle?.(id, result);
       }
     } else {
