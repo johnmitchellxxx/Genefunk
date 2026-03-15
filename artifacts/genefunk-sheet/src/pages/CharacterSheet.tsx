@@ -8,7 +8,7 @@ import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
 import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
-import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Dices } from 'lucide-react';
+import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
@@ -55,8 +55,6 @@ export default function CharacterSheet() {
 
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
   const [levelUpOpen, setLevelUpOpen] = useState(false);
-  const [diceOpen, setDiceOpen] = useState(false);
-  const [pendingRoll, setPendingRoll] = useState<AutoRoll | null>(null);
   const [quickRollOpen, setQuickRollOpen] = useState(false);
   const [quickRollData, setQuickRollData] = useState<AutoRoll | null>(null);
   const [quickRollKey, setQuickRollKey] = useState(0);
@@ -554,13 +552,11 @@ export default function CharacterSheet() {
         />
       )}
 
-      {/* Dice Roller Full Overlay */}
-      {diceOpen && (
+      {/* Tray DiceRoller — always present, transparent, floating FAB in bottom-right */}
+      {!quickRollOpen && (
         <div className="fixed inset-0 z-50" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
           <DiceRoller
             userId={authUserId}
-            autoRoll={pendingRoll}
-            onClose={() => { setDiceOpen(false); setPendingRoll(null); }}
             onResult={(results, label, modifier) => {
               const rawTotal = results.reduce((s, r) => s + r.result, 0);
               const finalTotal = rawTotal + modifier;
@@ -581,9 +577,9 @@ export default function CharacterSheet() {
         </div>
       )}
 
-      {/* Quick Roll Overlay — no tray UI, just dice + result */}
+      {/* Quick Roll Overlay — stat/skill/save clicks, dice + result only */}
       {quickRollOpen && quickRollData && (
-        <div className="fixed inset-0 z-50" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
+        <div className="fixed inset-0 z-[60]" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
           <DiceRoller
             key={quickRollKey}
             userId={authUserId}
@@ -608,34 +604,6 @@ export default function CharacterSheet() {
             }}
           />
         </div>
-      )}
-
-      {/* Dice Tab Handle — desktop: vertical side tab; mobile: FAB — hidden while overlay is open */}
-      {!diceOpen && (
-        <>
-          {/* Desktop side tab */}
-          <button
-            onClick={() => setDiceOpen(true)}
-            className="hidden sm:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 flex-col items-center justify-center gap-2 w-10 py-6 cursor-pointer border-l border-primary/40 bg-card/95 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-300"
-            title="Open Dice Roller"
-          >
-            <Dices className="w-4 h-4" />
-            <span
-              className="font-mono text-[9px] uppercase tracking-[0.15em] leading-none"
-              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-            >
-              Dice
-            </span>
-          </button>
-          {/* Mobile FAB */}
-          <button
-            onClick={() => setDiceOpen(true)}
-            className="sm:hidden fixed bottom-6 right-4 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-black/50 border bg-card border-primary/60 text-primary hover:bg-primary/20 transition-all duration-300"
-            title="Open Dice Roller"
-          >
-            <Dices className="w-6 h-6" />
-          </button>
-        </>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { useDicePool } from './hooks/useDicePool';
 import { usePresets } from './hooks/usePresets';
 import { useSound } from './hooks/useSound';
 import { DiceScene } from './components/DiceScene';
-import { ControlPanel } from './components/ControlPanel';
+import { FloatingTray } from './components/FloatingTray';
 import { CustomizePanel } from './components/CustomizePanel';
 import { ResultsDisplay } from './components/ResultsDisplay';
 
@@ -124,7 +124,7 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
 
       {!quickMode && (
         <>
-          <ControlPanel
+          <FloatingTray
             counts={pool.counts}
             onIncrement={pool.increment}
             onDecrement={pool.decrement}
@@ -145,17 +145,6 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
               isSaving={isSaving}
               onClose={() => setShowCustomize(false)}
             />
-          )}
-
-          {onClose && (
-            <button
-              onClick={onClose}
-              style={{ pointerEvents: 'auto', clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
-              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-card/80 hover:bg-card border border-border text-muted-foreground hover:text-foreground text-xs font-mono px-4 py-1.5 backdrop-blur-sm transition-all tracking-widest uppercase"
-              aria-label="Close dice roller"
-            >
-              Close Dice Tray ×
-            </button>
           )}
         </>
       )}
