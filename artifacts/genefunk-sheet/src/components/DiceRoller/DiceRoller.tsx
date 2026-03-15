@@ -51,6 +51,7 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
   useEffect(() => {
     if (!pendingAutoRollRef.current) return;
     if (pool.totalDice === 0 || rolling) return;
+    pendingAutoRollRef.current = null; // consume — prevents re-firing when rolling→false
     fireRoll();
   }, [pool.totalDice, rolling, fireRoll]);
 
