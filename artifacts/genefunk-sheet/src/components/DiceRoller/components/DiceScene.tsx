@@ -1,8 +1,6 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
-import { ContactShadows } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
 import { Die } from './Die';
@@ -86,34 +84,17 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled, onCanv
       onClick={settled ? onCanvasClick : undefined}
     >
       <Canvas
-        shadows
         camera={{ fov: 65, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       >
         <CameraSetup />
 
-        <ambientLight intensity={0.2} />
-        <directionalLight
-          position={[5, 10, 8]}
-          intensity={3.5}
-          castShadow
-          shadow-mapSize={[2048, 2048]}
-          shadow-camera-far={50}
-          shadow-camera-left={-14}
-          shadow-camera-right={14}
-          shadow-camera-top={10}
-          shadow-camera-bottom={-10}
-        />
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[5, 10, 8]} intensity={3.5} />
         <directionalLight position={[-6, 5, 6]} intensity={1.8} />
         <directionalLight position={[0, 2, 14]} intensity={1.4} />
         <pointLight position={[0, 4, 10]} intensity={1.2} color="#ffffff" />
-
-        <EffectComposer>
-          <Bloom intensity={0.3} luminanceThreshold={0.7} luminanceSmoothing={0.9} mipmapBlur />
-        </EffectComposer>
-
-        <ContactShadows position={[0, -0.01, 0]} opacity={0.6} scale={30} blur={3} far={8} />
 
         <Physics gravity={[0, -15, 0]} timeStep="vary">
           <RigidBody type="fixed" friction={0.9} restitution={0.3}>
