@@ -85,14 +85,21 @@ function makeNumberTexture(
 }
 
 /**
- * D4 face texture — draws three numbers at the three vertex positions matching
- * the physical projection of the tetrahedron face:
- *   TRI_UV[0] = (0.85, 0.80) → physical TOP-RIGHT  → canvas (~218, 51)
- *   TRI_UV[1] = (0.50, 0.12) → physical BOTTOM-CENTER → canvas (~128, 225)
- *   TRI_UV[2] = (0.15, 0.80) → physical TOP-LEFT   → canvas (~38, 51)
- * Numbers are drawn upright at their physical vertex positions so they appear
- * correctly oriented when each face is viewed straight-on from outside.
- * The result is the value shared across all three visible faces at the apex vertex.
+ * D4 face texture — draws three numbers in the authentic physical D4 pinwheel
+ * layout.  Each number is positioned 65 % of the way from the face centroid
+ * toward its vertex and rotated 120° from the others so it reads correctly
+ * when that vertex is pointing up.
+ *
+ * UV triangle vertex → canvas coordinate mapping (canvas y = (1 − UV_y) × 256):
+ *   TRI_UV[0] (0.85, 0.80) → canvas (218,  51)  top-right
+ *   TRI_UV[1] (0.50, 0.12) → canvas (128, 225)  bottom-center
+ *   TRI_UV[2] (0.15, 0.80) → canvas ( 38,  51)  top-left
+ * Centroid of these three points ≈ canvas (128, 109).
+ *
+ * Numbers are placed at 65 % from centroid toward each vertex:
+ *   topRight:     (187,  71)   rotated +120° (2π/3)
+ *   bottomCenter: (128, 184)   rotated    0° (upright — tip points up)
+ *   topLeft:      ( 69,  71)   rotated −120° (−2π/3)
  */
 function makeD4FaceTexture(
   topRightVal: number,
@@ -114,31 +121,61 @@ function makeD4FaceTexture(
 
   ctx2d.clearRect(0, 0, size, size);
 
+  // UV triangle vertex positions in canvas space
+  const vA: [number, number] = [218, 51];   // top-right  (TRI_UV[0])
+  const vB: [number, number] = [128, 225];  // bottom-center (TRI_UV[1])
+  const vC: [number, number] = [38,  51];   // top-left   (TRI_UV[2])
+  const cx = (vA[0] + vB[0] + vC[0]) / 3;  // ≈ 128
+  const cy = (vA[1] + vB[1] + vC[1]) / 3;  // ≈ 109
+
+  // Background: fill only the triangular face area so alphaTest correctly
+  // discards pixels outside the UV triangle on translucent dice.
   if (drawBackground) {
     const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
     const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
     ctx2d.globalAlpha = 1.0;
     ctx2d.fillStyle = darkBg;
-    ctx2d.fillRect(0, 0, size, size);
+    ctx2d.beginPath();
+    ctx2d.moveTo(vA[0], vA[1]);
+    ctx2d.lineTo(vB[0], vB[1]);
+    ctx2d.lineTo(vC[0], vC[1]);
+    ctx2d.closePath();
+    ctx2d.fill();
   }
 
   ctx2d.globalAlpha = 1.0;
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
-  const px = Math.round(52 * fontSize);
-  ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
-  ctx2d.fillStyle = fontColor;
+  const px = Math.round(48 * fontSize);
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // Draw each number slightly inward from its UV vertex so it sits inside the triangle.
-  // UV vertices in canvas coords (canvas y = (1 - UV_y) * 256):
-  //   vertex[0] top-right  UV(0.85,0.80) → canvas(218, 51) → draw at (200, 68)
-  //   vertex[1] bot-center UV(0.50,0.12) → canvas(128,225) → draw at (128,205)
-  //   vertex[2] top-left   UV(0.15,0.80) → canvas( 38, 51) → draw at ( 56, 68)
-  ctx2d.fillText(String(topRightVal),     200, 68);
-  ctx2d.fillText(String(bottomCenterVal), 128, 205);
-  ctx2d.fillText(String(topLeftVal),       56, 68);
+  // Physical D4 pinwheel: each number rotated 120° from the others.
+  // bottomCenter vertex = the tip pointing up → rotate 0° (upright).
+  // topRight → +120° clockwise; topLeft → −120°.
+  const T = 2 * Math.PI / 3;
+  const entries: [number, number, number, number][] = [
+    [topRightVal,     cx + 0.65 * (vA[0] - cx), cy + 0.65 * (vA[1] - cy),  T],
+    [bottomCenterVal, cx + 0.65 * (vB[0] - cx), cy + 0.65 * (vB[1] - cy),  0],
+    [topLeftVal,      cx + 0.65 * (vC[0] - cx), cy + 0.65 * (vC[1] - cy), -T],
+  ];
+
+  for (const [val, x, y, angle] of entries) {
+    ctx2d.save();
+    ctx2d.translate(x, y);
+    ctx2d.rotate(angle);
+    ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
+    // Dark outline so numbers are readable on both light and dark backgrounds
+    ctx2d.lineWidth = Math.max(4, px / 10);
+    ctx2d.lineJoin = 'round';
+    ctx2d.strokeStyle = drawBackground
+      ? `rgba(0,0,0,0.85)`
+      : `rgba(0,0,0,0.6)`;
+    ctx2d.strokeText(String(val), 0, 0);
+    ctx2d.fillStyle = fontColor;
+    ctx2d.fillText(String(val), 0, 0);
+    ctx2d.restore();
+  }
 
   return new THREE.CanvasTexture(canvas);
 }
@@ -250,11 +287,9 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
     if (dieType === 4) {
-      // Each face shows the result value when that face is the floor (opposite vertex).
-      // Using centered single-number textures (same as all other dice) guarantees
-      // numbers are always visible regardless of UV projection subtleties.
-      return D4_OPPOSITE_VALUES.map(result =>
-        makeNumberTexture(result, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
+      // Authentic D4: 3 numbers per face in a pinwheel layout, one near each vertex.
+      return D4_FACE_VERTEX_VALUES.map(([topRightVal, bottomCenterVal, topLeftVal]) =>
+        makeD4FaceTexture(topRightVal, bottomCenterVal, topLeftVal, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
       );
     }
     return Array.from({ length: faceCount }, (_, i) =>
