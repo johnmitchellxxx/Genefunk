@@ -8,7 +8,7 @@ import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
 import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, CLASSES, GENOMES, BACKGROUNDS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
-import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, ChevronRight, Trash2, X, Eye, ArrowUp, Camera } from 'lucide-react';
+import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, ChevronRight, GripVertical, Trash2, X, Eye, ArrowUp, Camera } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
@@ -895,6 +895,9 @@ function HacksPanel({ character, onUpdate }: PanelProps) {
   const [expandedHacks, setExpandedHacks] = useState<Set<string>>(new Set());
   const [showBrowser, setShowBrowser] = useState(false);
   const [browserLevel, setBrowserLevel] = useState<number>(0); // 0 = all
+  const [hackDragIdx, setHackDragIdx] = useState<number | null>(null);
+  const [hackDragOver, setHackDragOver] = useState<number | null>(null);
+  const hackDragFromHandle = React.useRef(false);
 
   const classHacks: HackData[] = HACKS_BY_CLASS[character.class ?? ''] ?? [];
   const knownNames = new Set(character.hacks.map(h => h.name));
@@ -986,12 +989,22 @@ function HacksPanel({ character, onUpdate }: PanelProps) {
           </div>
         ) : (
           <div className="space-y-1">
-            {character.hacks.map(hack => {
+            {character.hacks.map((hack, idx) => {
               const key = `known-${hack.id}`;
               const expanded = expandedHacks.has(key);
+              const isDragOver = hackDragOver === idx && hackDragIdx !== idx;
               return (
-                <div key={hack.id} className="border border-border/40 bg-background/20 clip-edges">
+                <div
+                  key={hack.id}
+                  draggable
+                  onDragStart={e => { if (!hackDragFromHandle.current) { e.preventDefault(); return; } setHackDragIdx(idx); e.dataTransfer.effectAllowed = 'move'; }}
+                  onDragOver={e => { e.preventDefault(); setHackDragOver(idx); }}
+                  onDrop={e => { e.preventDefault(); if (hackDragIdx !== null && hackDragIdx !== idx) { const next = [...character.hacks]; const [m] = next.splice(hackDragIdx, 1); next.splice(idx, 0, m); onUpdate('hacks', next); } setHackDragIdx(null); setHackDragOver(null); hackDragFromHandle.current = false; }}
+                  onDragEnd={() => { setHackDragIdx(null); setHackDragOver(null); hackDragFromHandle.current = false; }}
+                  className={`border border-border/40 bg-background/20 clip-edges transition-all ${isDragOver ? 'border-t-2 border-t-primary' : ''} ${hackDragIdx === idx ? 'opacity-40' : ''}`}
+                >
                   <div className="flex items-center gap-2 p-2 cursor-pointer hover:bg-white/5" onClick={() => toggleExpand(key)}>
+                    <GripVertical size={12} className="text-muted-foreground/30 hover:text-muted-foreground/70 cursor-grab shrink-0 transition-colors" onMouseDown={() => { hackDragFromHandle.current = true; }} onMouseUp={() => { hackDragFromHandle.current = false; }} onClick={e => e.stopPropagation()} />
                     <span className="text-primary font-mono text-xs w-5 text-center border border-primary/30 bg-primary/10">{hack.level}</span>
                     <span className="flex-1 text-sm font-semibold text-foreground truncate">{hack.name}</span>
                     {hack.type && (
@@ -1123,6 +1136,9 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
   const [addSelected, setAddSelected] = useState('');
   const [addCustomName, setAddCustomName] = useState('');
   const [addCustomDesc, setAddCustomDesc] = useState('');
+  const [eqDragIdx, setEqDragIdx] = useState<number | null>(null);
+  const [eqDragOver, setEqDragOver] = useState<number | null>(null);
+  const eqDragFromHandle = React.useRef(false);
 
   const equippedArmorName = character.equippedArmor ?? '';
   const equippedArmor: ArmorData | undefined = ARMOR.find(a => a.name === equippedArmorName);
@@ -1327,12 +1343,22 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
       {/* Inventory List */}
       <div className="space-y-0 font-mono text-sm">
         <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-1">Inventory</div>
-        {character.equipment.map(eq => {
+        {character.equipment.map((eq, idx) => {
           const isOpen = expandedItems.has(eq.id);
+          const isDragOver = eqDragOver === idx && eqDragIdx !== idx;
           return (
-            <div key={eq.id} className="border-b border-border/20">
+            <div
+              key={eq.id}
+              draggable
+              onDragStart={e => { if (!eqDragFromHandle.current) { e.preventDefault(); return; } setEqDragIdx(idx); e.dataTransfer.effectAllowed = 'move'; }}
+              onDragOver={e => { e.preventDefault(); setEqDragOver(idx); }}
+              onDrop={e => { e.preventDefault(); if (eqDragIdx !== null && eqDragIdx !== idx) { const next = [...character.equipment]; const [m] = next.splice(eqDragIdx, 1); next.splice(idx, 0, m); onUpdate('equipment', next); } setEqDragIdx(null); setEqDragOver(null); eqDragFromHandle.current = false; }}
+              onDragEnd={() => { setEqDragIdx(null); setEqDragOver(null); eqDragFromHandle.current = false; }}
+              className={`border-b border-border/20 transition-all ${isDragOver ? 'border-t-2 border-t-primary' : ''} ${eqDragIdx === idx ? 'opacity-40' : ''}`}
+            >
               <div className="flex items-center justify-between py-1.5 px-1.5 hover:bg-white/5 gap-1">
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <GripVertical size={12} className="text-muted-foreground/30 hover:text-muted-foreground/70 cursor-grab shrink-0 transition-colors" onMouseDown={() => { eqDragFromHandle.current = true; }} onMouseUp={() => { eqDragFromHandle.current = false; }} />
                   <button
                     onClick={() => toggleExpanded(eq.id)}
                     className="text-muted-foreground/60 hover:text-primary shrink-0 transition-colors"
@@ -1765,6 +1791,9 @@ function FeaturesPanel({ character, onUpdate }: PanelProps) {
   const [addCustomName, setAddCustomName] = useState('');
   const [addCustomSource, setAddCustomSource] = useState('');
   const [addCustomDesc, setAddCustomDesc] = useState('');
+  const [featDragIdx, setFeatDragIdx] = useState<number | null>(null);
+  const [featDragOver, setFeatDragOver] = useState<number | null>(null);
+  const featDragFromHandle = React.useRef(false);
 
   function toggleExpanded(id: string) {
     setExpandedFeatures(prev => {
@@ -1803,12 +1832,22 @@ function FeaturesPanel({ character, onUpdate }: PanelProps) {
         <span className="text-sm text-primary uppercase tracking-widest font-mono font-bold">Features & Traits</span>
       </div>
 
-      {character.features.map((feat) => {
+      {character.features.map((feat, idx) => {
         const isOpen = expandedFeatures.has(feat.id);
+        const isDragOver = featDragOver === idx && featDragIdx !== idx;
         return (
-          <div key={feat.id} className="border border-border/50 bg-background/30 clip-edges">
+          <div
+            key={feat.id}
+            draggable
+            onDragStart={e => { if (!featDragFromHandle.current) { e.preventDefault(); return; } setFeatDragIdx(idx); e.dataTransfer.effectAllowed = 'move'; }}
+            onDragOver={e => { e.preventDefault(); setFeatDragOver(idx); }}
+            onDrop={e => { e.preventDefault(); if (featDragIdx !== null && featDragIdx !== idx) { const next = [...character.features]; const [m] = next.splice(featDragIdx, 1); next.splice(idx, 0, m); onUpdate('features', next); } setFeatDragIdx(null); setFeatDragOver(null); featDragFromHandle.current = false; }}
+            onDragEnd={() => { setFeatDragIdx(null); setFeatDragOver(null); featDragFromHandle.current = false; }}
+            className={`border border-border/50 bg-background/30 clip-edges transition-all ${isDragOver ? 'border-t-2 border-t-primary' : ''} ${featDragIdx === idx ? 'opacity-40' : ''}`}
+          >
             <div className="flex items-center justify-between px-3 py-2 gap-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
+                <GripVertical size={12} className="text-muted-foreground/30 hover:text-muted-foreground/70 cursor-grab shrink-0 transition-colors" onMouseDown={() => { featDragFromHandle.current = true; }} onMouseUp={() => { featDragFromHandle.current = false; }} onClick={e => e.stopPropagation()} />
                 <button
                   onClick={() => toggleExpanded(feat.id)}
                   className="text-muted-foreground/60 hover:text-primary shrink-0 transition-colors"
