@@ -85,16 +85,19 @@ function makeNumberTexture(
 }
 
 /**
- * D4 face texture — draws three numbers at the three vertex positions that
- * correspond to TRI_UV layout: [top=(0.5,0.95), botL=(0.11,0.275), botR=(0.89,0.275)].
- * The result is always the value that appears on ALL three visible faces; since
- * the same vertex value is shared across all three visible faces, the user can
- * identify the result by finding the number in common.
+ * D4 face texture — draws three numbers at the three vertex positions matching
+ * the physical projection of the tetrahedron face:
+ *   TRI_UV[0] = (0.85, 0.80) → physical TOP-RIGHT  → canvas (~218, 51)
+ *   TRI_UV[1] = (0.50, 0.12) → physical BOTTOM-CENTER → canvas (~128, 225)
+ *   TRI_UV[2] = (0.15, 0.80) → physical TOP-LEFT   → canvas (~38, 51)
+ * Numbers are drawn upright at their physical vertex positions so they appear
+ * correctly oriented when each face is viewed straight-on from outside.
+ * The result is the value shared across all three visible faces at the apex vertex.
  */
 function makeD4FaceTexture(
-  topVal: number,
-  botLVal: number,
-  botRVal: number,
+  topRightVal: number,
+  bottomCenterVal: number,
+  topLeftVal: number,
   fontFamily: string,
   fontColor: string,
   fontSize: number,
@@ -128,13 +131,14 @@ function makeD4FaceTexture(
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // Position each number slightly inward from the corresponding TRI_UV vertex:
-  //   top vertex  UV (0.5, 0.95) → canvas (128, 244) — pull down to (128, 58)
-  //   botL vertex UV (0.11, 0.275) → canvas (28, 186) — pull right/up to (64, 172)
-  //   botR vertex UV (0.89, 0.275) → canvas (228, 186) — pull left/up to (192, 172)
-  ctx2d.fillText(String(topVal),  128, 58);
-  ctx2d.fillText(String(botLVal), 64,  172);
-  ctx2d.fillText(String(botRVal), 192, 172);
+  // Draw each number slightly inward from its UV vertex so it sits inside the triangle.
+  // UV vertices in canvas coords (canvas y = (1 - UV_y) * 256):
+  //   vertex[0] top-right  UV(0.85,0.80) → canvas(218, 51) → draw at (200, 68)
+  //   vertex[1] bot-center UV(0.50,0.12) → canvas(128,225) → draw at (128,205)
+  //   vertex[2] top-left   UV(0.15,0.80) → canvas( 38, 51) → draw at ( 56, 68)
+  ctx2d.fillText(String(topRightVal),     200, 68);
+  ctx2d.fillText(String(bottomCenterVal), 128, 205);
+  ctx2d.fillText(String(topLeftVal),       56, 68);
 
   return new THREE.CanvasTexture(canvas);
 }
@@ -246,8 +250,8 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
     if (dieType === 4) {
-      return D4_FACE_VERTEX_VALUES.map(([topVal, botLVal, botRVal]) =>
-        makeD4FaceTexture(topVal, botLVal, botRVal, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
+      return D4_FACE_VERTEX_VALUES.map(([topRightVal, bottomCenterVal, topLeftVal]) =>
+        makeD4FaceTexture(topRightVal, bottomCenterVal, topLeftVal, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
       );
     }
     return Array.from({ length: faceCount }, (_, i) =>

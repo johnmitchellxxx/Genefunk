@@ -7,10 +7,18 @@ export interface DieGeometryInfo {
   faceNormals: THREE.Vector3[];
 }
 
+// D4 UV layout — derived by projecting each face's vertices onto its own plane
+// and reading the 2D coordinates as seen from outside the face.
+// For every face of a regular tetrahedron the three vertex positions project to:
+//   vertex[0] → physical TOP-RIGHT  → UV (0.85, 0.80)
+//   vertex[1] → physical BOTTOM-CENTER → UV (0.50, 0.12)
+//   vertex[2] → physical TOP-LEFT   → UV (0.15, 0.80)
+// Placing UVs here means a number drawn upright in the canvas texture will
+// appear upright when the face is viewed straight-on from outside.
 const TRI_UV: Array<[number, number]> = [
-  [0.5, 0.95],
-  [0.11, 0.275],
-  [0.89, 0.275],
+  [0.85, 0.80],   // vertex[0]: top-right
+  [0.50, 0.12],   // vertex[1]: bottom-center
+  [0.15, 0.80],   // vertex[2]: top-left
 ];
 
 // THREE.TetrahedronGeometry(0.85) has these 4 unique vertices (unnormalized → scaled):
@@ -18,10 +26,10 @@ const TRI_UV: Array<[number, number]> = [
 // Assigned die values: v0=1, v1=2, v2=3, v3=4
 //
 // After toNonIndexed (indices [2,1,0, 0,3,2, 1,3,0, 2,3,1]):
-//   Face 0: [v2,v1,v0] → UV_TOP=3, UV_BOTL=2, UV_BOTR=1
-//   Face 1: [v0,v3,v2] → UV_TOP=1, UV_BOTL=4, UV_BOTR=3
-//   Face 2: [v1,v3,v0] → UV_TOP=2, UV_BOTL=4, UV_BOTR=1
-//   Face 3: [v2,v3,v1] → UV_TOP=3, UV_BOTL=4, UV_BOTR=2
+//   Face 0: [v2,v1,v0] → topR=3, botC=2, topL=1
+//   Face 1: [v0,v3,v2] → topR=1, botC=4, topL=3
+//   Face 2: [v1,v3,v0] → topR=2, botC=4, topL=1
+//   Face 3: [v2,v3,v1] → topR=3, botC=4, topL=2
 //
 // Result when face k is on the floor = value of opposite vertex:
 //   Face 0 opposite v3=4 → result 4
@@ -29,7 +37,7 @@ const TRI_UV: Array<[number, number]> = [
 //   Face 2 opposite v2=3 → result 3
 //   Face 3 opposite v0=1 → result 1
 
-/** [topVal, botLVal, botRVal] for each D4 face (index 0-3), matching TRI_UV positions. */
+/** [topRightVal, bottomCenterVal, topLeftVal] for each D4 face (index 0-3), matching TRI_UV positions. */
 export const D4_FACE_VERTEX_VALUES: readonly [number, number, number][] = [
   [3, 2, 1],
   [1, 4, 3],
