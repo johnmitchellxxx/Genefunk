@@ -384,8 +384,11 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
               metalness={0}
               clearcoat={0.8}
               clearcoatRoughness={0.1}
-              side={THREE.BackSide}
+              side={THREE.FrontSide}
               depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={2}
+              polygonOffsetUnits={2}
             />
           </mesh>
         )}
