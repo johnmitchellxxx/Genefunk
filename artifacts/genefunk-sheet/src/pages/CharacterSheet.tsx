@@ -1115,14 +1115,49 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
   const [shopTab, setShopTab] = useState<ShopTab>('armor');
   const [armorFilter, setArmorFilter] = useState<'All' | 'Light' | 'Medium' | 'Heavy'>('All');
   const [gearFilter, setGearFilter] = useState('All');
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addSelected, setAddSelected] = useState('');
+  const [addCustomName, setAddCustomName] = useState('');
+  const [addCustomDesc, setAddCustomDesc] = useState('');
 
   const equippedArmorName = character.equippedArmor ?? '';
   const equippedArmor: ArmorData | undefined = ARMOR.find(a => a.name === equippedArmorName);
 
-  function addToInventory(name: string, mass: number | string) {
+  const allKnownItems: { name: string; description: string; mass: number; group: string }[] = [
+    ...GEAR.map(g => ({ name: g.name, description: g.effect, mass: typeof g.mass === 'number' ? g.mass : 0, group: `Gear — ${g.category}` })),
+    ...DRUGS.map(d => ({ name: d.name, description: d.effect + (d.downside && d.downside !== 'None.' ? ` Downside: ${d.downside}` : ''), mass: 0, group: 'Drugs' })),
+    ...POISONS.map(p => ({ name: p.name, description: `${p.type}. DC ${p.dc}. ${p.effect}`, mass: 0, group: 'Poisons' })),
+    ...ARMOR.map(a => ({ name: a.name, description: `AC: ${a.acFormula} · DR ${a.dr} · ${a.conspicuous}${a.stealthDisadvantage ? ' · Stealth Disadv.' : ''}`, mass: typeof a.mass === 'number' ? a.mass : 0, group: `Armor — ${a.category}` })),
+  ];
+
+  function toggleExpanded(id: string) {
+    setExpandedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function addToInventory(name: string, mass: number | string, description?: string) {
     const weight = typeof mass === 'number' ? mass : 0;
-    const entry: EquipmentEntry = { id: Math.random().toString(), name, quantity: 1, weight, equipped: false };
+    const entry: EquipmentEntry = { id: Math.random().toString(), name, quantity: 1, weight, equipped: false, description: description ?? '' };
     onUpdate('equipment', [...character.equipment, entry]);
+  }
+
+  function handleAddFormSubmit() {
+    if (addSelected) {
+      const known = allKnownItems.find(i => i.name === addSelected);
+      if (known) {
+        addToInventory(known.name, known.mass, known.description);
+      }
+    } else if (addCustomName.trim()) {
+      addToInventory(addCustomName.trim(), 0, addCustomDesc.trim());
+    }
+    setAddSelected('');
+    setAddCustomName('');
+    setAddCustomDesc('');
+    setShowAddForm(false);
   }
 
   const gearCategories = ['All', ...Array.from(new Set(GEAR.map(g => g.category)))];
@@ -1220,7 +1255,7 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
                     <div className="flex gap-1 shrink-0">
                       <button onClick={() => onUpdate('equippedArmor' as keyof Character, a.name as Character[keyof Character])}
                         className="text-[10px] text-primary border border-primary/40 px-1.5 py-0.5 font-mono hover:bg-primary/10">Equip</button>
-                      <button onClick={() => addToInventory(a.name, a.mass)}
+                      <button onClick={() => addToInventory(a.name, a.mass, `AC: ${a.acFormula} · DR ${a.dr} · ${a.conspicuous}${a.stealthDisadvantage ? ' · Stealth Disadv.' : ''}`)}
                         className="text-[10px] text-accent border border-accent/40 px-1.5 py-0.5 font-mono hover:bg-accent/10">+Inv</button>
                     </div>
                   </div>
@@ -1240,7 +1275,7 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
                       <div className="text-[10px] text-yellow-400/80 font-mono leading-tight">{d.downside}</div>
                     )}
                   </div>
-                  <button onClick={() => addToInventory(d.name, 0)}
+                  <button onClick={() => addToInventory(d.name, 0, d.effect + (d.downside && d.downside !== 'None.' ? ` Downside: ${d.downside}` : ''))}
                     className="text-[10px] text-accent border border-accent/40 px-1.5 py-0.5 font-mono hover:bg-accent/10 shrink-0">+</button>
                 </div>
               ))}
@@ -1260,7 +1295,7 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
                       <div className="text-xs font-mono text-foreground">{g.name} <span className="text-accent">{g.cost}</span></div>
                       <div className="text-[10px] text-muted-foreground font-mono leading-tight">{g.effect}</div>
                     </div>
-                    <button onClick={() => addToInventory(g.name, g.mass)}
+                    <button onClick={() => addToInventory(g.name, g.mass, g.effect)}
                       className="text-[10px] text-accent border border-accent/40 px-1.5 py-0.5 font-mono hover:bg-accent/10 shrink-0">+</button>
                   </div>
                 ))}
@@ -1277,7 +1312,7 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
                     <div className="text-[10px] text-yellow-400/80 font-mono leading-tight">{p.type}</div>
                     <div className="text-[10px] text-muted-foreground font-mono leading-tight">{p.effect}</div>
                   </div>
-                  <button onClick={() => addToInventory(p.name, 0)}
+                  <button onClick={() => addToInventory(p.name, 0, `${p.type}. DC ${p.dc}. ${p.effect}`)}
                     className="text-[10px] text-accent border border-accent/40 px-1.5 py-0.5 font-mono hover:bg-accent/10 shrink-0">+</button>
                 </div>
               ))}
@@ -1287,29 +1322,93 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
       )}
 
       {/* Inventory List */}
-      <div className="space-y-0.5 font-mono text-sm">
+      <div className="space-y-0 font-mono text-sm">
         <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-1">Inventory</div>
-        {character.equipment.map(eq => (
-          <div key={eq.id} className="flex items-center justify-between py-1.5 px-1.5 border-b border-border/20 hover:bg-white/5 gap-1">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <EditableField value={eq.quantity} type="number" onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { quantity: Number(v) }))} className="text-foreground/70 w-6 text-right text-sm" />
-              <span className="text-muted-foreground">×</span>
-              <EditableField value={eq.name} onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { name: String(v) }))} className="text-foreground text-sm" />
+        {character.equipment.map(eq => {
+          const isOpen = expandedItems.has(eq.id);
+          return (
+            <div key={eq.id} className="border-b border-border/20">
+              <div className="flex items-center justify-between py-1.5 px-1.5 hover:bg-white/5 gap-1">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <button
+                    onClick={() => toggleExpanded(eq.id)}
+                    className="text-muted-foreground/60 hover:text-primary text-[10px] w-4 shrink-0 text-center leading-none"
+                    title="Toggle description"
+                  >
+                    {isOpen ? '▾' : '▸'}
+                  </button>
+                  <EditableField value={eq.quantity} type="number" onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { quantity: Number(v) }))} className="text-foreground/70 w-6 text-right text-sm" />
+                  <span className="text-muted-foreground">×</span>
+                  <EditableField value={eq.name} onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { name: String(v) }))} className="text-foreground text-sm" />
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <EditableField value={eq.weight || 0} type="number" onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { weight: Number(v) }))} className="text-foreground/70 text-sm w-6" />
+                  <span className="text-muted-foreground text-xs">kg</span>
+                  <button onClick={() => onUpdate('equipment', character.equipment.filter(e => e.id !== eq.id))} className="text-destructive text-xs hover:underline ml-1 font-mono">DEL</button>
+                </div>
+              </div>
+              {isOpen && (
+                <div className="px-6 pb-2">
+                  <textarea
+                    value={eq.description ?? ''}
+                    onChange={e => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { description: e.target.value }))}
+                    placeholder="No description. Click to add notes..."
+                    rows={3}
+                    className="w-full bg-background/40 border border-border/40 text-foreground/80 font-mono text-[11px] px-2 py-1.5 resize-y focus:outline-none focus:border-primary/60 placeholder:text-muted-foreground/40 leading-relaxed"
+                  />
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <EditableField value={eq.weight || 0} type="number" onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { weight: Number(v) }))} className="text-foreground/70 text-sm w-6" />
-              <span className="text-muted-foreground text-xs">kg</span>
-              <button onClick={() => onUpdate('equipment', character.equipment.filter(e => e.id !== eq.id))} className="text-destructive text-xs hover:underline ml-1 font-mono">DEL</button>
+          );
+        })}
+
+        {/* Add Item Form */}
+        {showAddForm ? (
+          <div className="mt-2 border border-border/40 bg-background/30 p-2 space-y-2">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Add Item</div>
+            <select
+              value={addSelected}
+              onChange={e => {
+                setAddSelected(e.target.value);
+                setAddCustomName('');
+                const known = allKnownItems.find(i => i.name === e.target.value);
+                setAddCustomDesc(known?.description ?? '');
+              }}
+              className="w-full bg-background border border-border text-foreground font-mono text-[11px] px-2 py-1.5 focus:outline-none focus:border-primary"
+            >
+              <option value="">— Pick from rulebook, or type custom below —</option>
+              {Array.from(new Set(allKnownItems.map(i => i.group))).map(group => (
+                <optgroup key={group} label={group}>
+                  {allKnownItems.filter(i => i.group === group).map(i => (
+                    <option key={i.name} value={i.name}>{i.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {!addSelected && (
+              <input
+                type="text"
+                value={addCustomName}
+                onChange={e => setAddCustomName(e.target.value)}
+                placeholder="Custom item name..."
+                className="w-full bg-background border border-border text-foreground font-mono text-[11px] px-2 py-1.5 focus:outline-none focus:border-primary placeholder:text-muted-foreground/40"
+              />
+            )}
+            <textarea
+              value={addCustomDesc}
+              onChange={e => setAddCustomDesc(e.target.value)}
+              placeholder="Description (auto-filled from rulebook if known)..."
+              rows={2}
+              className="w-full bg-background/40 border border-border/40 text-foreground/80 font-mono text-[11px] px-2 py-1.5 resize-none focus:outline-none focus:border-primary/60 placeholder:text-muted-foreground/40"
+            />
+            <div className="flex gap-2">
+              <CyberButton variant="primary" className="text-xs py-1 flex-1" onClick={handleAddFormSubmit}>Add to Inventory</CyberButton>
+              <CyberButton variant="ghost" className="text-xs py-1" onClick={() => { setShowAddForm(false); setAddSelected(''); setAddCustomName(''); setAddCustomDesc(''); }}>Cancel</CyberButton>
             </div>
           </div>
-        ))}
-        <CyberButton variant="ghost" className="w-full text-xs mt-2 py-1" onClick={() => {
-          const name = prompt("Item name:");
-          if (name) {
-            const entry: EquipmentEntry = { id: Math.random().toString(), name, quantity: 1, weight: 0, equipped: false };
-            onUpdate('equipment', [...character.equipment, entry]);
-          }
-        }}>+ Add Custom Item</CyberButton>
+        ) : (
+          <CyberButton variant="ghost" className="w-full text-xs mt-2 py-1" onClick={() => setShowAddForm(true)}>+ Add Item</CyberButton>
+        )}
       </div>
     </div>
   );
