@@ -662,7 +662,7 @@ export default function CharacterSheet() {
 
       {/* Quick Roll Overlay — stat/skill/save clicks, dice + result only */}
       {quickRollOpen && quickRollData && (
-        <div className="fixed inset-0 z-[60]" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%', background: 'rgba(0,0,0,0.72)' } as React.CSSProperties}>
+        <div className="fixed inset-0 z-[60]" style={{ '--primary': '263 89% 66%', '--primary-foreground': '0 0% 100%' } as React.CSSProperties}>
           <DiceRoller
             key={quickRollKey}
             userId={authUserId}
