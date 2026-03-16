@@ -78,7 +78,49 @@ function computeFaceNormals(geo: THREE.BufferGeometry, trianglesPerFace: number)
   return normals;
 }
 
-function addFaceGroups(geo: THREE.BufferGeometry, trianglesPerFace: number): THREE.BufferGeometry {
+/**
+ * Project the given vertices onto their face plane and return UV coordinates.
+ * axisV = faceNormal × axisU preserves CCW handedness so textures are never
+ * mirrored on CCW-wound faces (which is what Three.js built-in geometries use).
+ */
+function projectFaceUVs(verts: THREE.Vector3[], scale = 0.40): [number, number][] {
+  const centroid = new THREE.Vector3();
+  verts.forEach(v => centroid.add(v));
+  centroid.divideScalar(verts.length);
+
+  const faceNormal = centroid.clone().normalize();
+
+  // axisU: from centroid toward first vertex, projected onto face plane
+  let axisU = verts[0].clone().sub(centroid);
+  axisU.addScaledVector(faceNormal, -axisU.dot(faceNormal)).normalize();
+
+  // axisV = faceNormal × axisU — right-handed triplet → CCW UV for CCW faces
+  const axisV = new THREE.Vector3().crossVectors(faceNormal, axisU).normalize();
+
+  const local = verts.map(v => {
+    const d = v.clone().sub(centroid);
+    return [d.dot(axisU), d.dot(axisV)] as [number, number];
+  });
+
+  const maxR = Math.max(...local.map(([u, v]) => Math.hypot(u, v)));
+  const s = maxR > 0 ? scale / maxR : 1;
+  return local.map(([u, v]) => [0.5 + u * s, 0.5 + v * s] as [number, number]);
+}
+
+/**
+ * addFaceGroups — sets up material groups and UV coordinates.
+ *
+ * useProjection (default false):
+ *   false → use hardcoded TRI_UV (only correct for D4 whose texture function
+ *            draws numbers at the matching canvas positions).
+ *   true  → per-face UV projection; produces non-mirrored textures for any
+ *            CCW-wound geometry (IcosahedronGeometry, OctahedronGeometry, …).
+ */
+function addFaceGroups(
+  geo: THREE.BufferGeometry,
+  trianglesPerFace: number,
+  useProjection = false,
+): THREE.BufferGeometry {
   const nonIndexed = geo.toNonIndexed();
   const posAttr = nonIndexed.attributes.position;
   const posCount = posAttr.count;
@@ -89,47 +131,26 @@ function addFaceGroups(geo: THREE.BufferGeometry, trianglesPerFace: number): THR
     const faceVertStart = face * trianglesPerFace * 3;
     const totalFaceVerts = trianglesPerFace * 3;
 
-    if (trianglesPerFace === 1) {
+    if (trianglesPerFace === 1 && !useProjection) {
+      // TRI_UV path — only used for D4
       for (let v = 0; v < 3; v++) {
         uvArray[(faceVertStart + v) * 2 + 0] = TRI_UV[v][0];
         uvArray[(faceVertStart + v) * 2 + 1] = TRI_UV[v][1];
       }
-    } else if (trianglesPerFace === 3) {
-      // Proper per-face UV projection: read actual 3D positions and project
-      // onto the face plane so numbers are never distorted regardless of vertex ordering.
+    } else {
+      // Per-face UV projection (trianglesPerFace===1 with useProjection, or ===3 for D12)
       const verts: THREE.Vector3[] = [];
       for (let i = 0; i < totalFaceVerts; i++) {
         const vi = faceVertStart + i;
         verts.push(new THREE.Vector3(posAttr.getX(vi), posAttr.getY(vi), posAttr.getZ(vi)));
       }
-
-      // Centroid of all 9 verts (fan shares verts so centroid ≈ face center)
-      const centroid = new THREE.Vector3();
-      verts.forEach(v => centroid.add(v));
-      centroid.divideScalar(totalFaceVerts);
-
-      // Face normal = outward direction on sphere
-      const faceNormal = centroid.clone().normalize();
-
-      // Build two orthonormal axes on the face plane
-      const axisU = verts[0].clone().sub(centroid).normalize();
-      // Re-orthogonalise axisU against the face normal
-      axisU.addScaledVector(faceNormal, -axisU.dot(faceNormal)).normalize();
-      const axisV = new THREE.Vector3().crossVectors(faceNormal, axisU).normalize();
-
-      // Project vertices to 2-D face-local coordinates
-      const local: [number, number][] = verts.map(v => {
-        const d = v.clone().sub(centroid);
-        return [d.dot(axisU), d.dot(axisV)];
-      });
-
-      // Scale so the outermost vertex sits at UV radius 0.45 (stays inside texture)
-      const maxR = Math.max(...local.map(([u, v]) => Math.hypot(u, v)));
-      const scale = maxR > 0 ? 0.45 / maxR : 1;
-
+      // Scale: triangles sit inside a circle at ~0.577r from centre; use 0.40
+      // Pentagons (D12) are larger relative to circumradius; keep 0.45
+      const uvScale = trianglesPerFace === 1 ? 0.40 : 0.45;
+      const uvCoords = projectFaceUVs(verts, uvScale);
       for (let i = 0; i < totalFaceVerts; i++) {
-        uvArray[(faceVertStart + i) * 2 + 0] = 0.5 + local[i][0] * scale;
-        uvArray[(faceVertStart + i) * 2 + 1] = 0.5 + local[i][1] * scale;
+        uvArray[(faceVertStart + i) * 2 + 0] = uvCoords[i][0];
+        uvArray[(faceVertStart + i) * 2 + 1] = uvCoords[i][1];
       }
     }
 
@@ -142,7 +163,8 @@ function addFaceGroups(geo: THREE.BufferGeometry, trianglesPerFace: number): THR
 }
 
 function buildTetrahedron(): DieGeometryInfo {
-  const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.85), 1);
+  // D4: keep TRI_UV (makeD4FaceTexture draws numbers at the matching canvas positions)
+  const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.85), 1, false);
   const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 4, faceNormals };
 }
@@ -161,58 +183,64 @@ function buildCube(): DieGeometryInfo {
 }
 
 function buildOctahedron(): DieGeometryInfo {
-  const geo = addFaceGroups(new THREE.OctahedronGeometry(1.1), 1);
+  // useProjection=true: OctahedronGeometry is CCW-wound; projection gives correct handedness.
+  const geo = addFaceGroups(new THREE.OctahedronGeometry(1.1), 1, true);
   const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 8, faceNormals };
 }
 
 function buildD10(): DieGeometryInfo {
+  // Pentagonal bipyramid-like D10.
+  // Upper and lower equatorial rings are at ±yOff so the die is symmetric.
+  // Winding order is chosen so each face's outward normal points away from origin
+  // (CCW when viewed from outside) — this prevents face culling and ensures
+  // projectFaceUVs produces non-mirrored textures.
   const r = 1.0;
-  const h = 0.8;
-  const top = new THREE.Vector3(0, h, 0);
+  const h = 0.9;       // apex height
+  const yOff = 0.15;   // equatorial ring offset from y=0
+
+  const top = new THREE.Vector3(0,  h, 0);
   const bot = new THREE.Vector3(0, -h, 0);
-  const eq: THREE.Vector3[] = [];
-  const eqOff: THREE.Vector3[] = [];
+  const eq: THREE.Vector3[] = [];    // upper ring  (y = +yOff)
+  const eqOff: THREE.Vector3[] = []; // lower ring  (y = -yOff)
 
   for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2;
-    const ao = a + Math.PI / 5;
-    eq.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
-    eqOff.push(new THREE.Vector3(Math.cos(ao) * r, 0.1, Math.sin(ao) * r));
+    const a  = (i / 5) * Math.PI * 2;
+    const ao = a + Math.PI / 5;            // offset by 36°
+    eq.push(   new THREE.Vector3(Math.cos(a)  * r,  yOff, Math.sin(a)  * r));
+    eqOff.push(new THREE.Vector3(Math.cos(ao) * r, -yOff, Math.sin(ao) * r));
   }
 
   const positions: number[] = [];
   const uvs: number[] = [];
-
   const geo = new THREE.BufferGeometry();
 
+  // Top 5 faces: (top, eq[i+1], eq[i])
+  // Cross-product check: n.y = r²·sin72° > 0 → outward (upward) ✓
   for (let i = 0; i < 5; i++) {
-    const v0 = top, v1 = eq[i], v2 = eq[(i + 1) % 5];
+    const v0 = top, v1 = eq[(i + 1) % 5], v2 = eq[i];
     positions.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
-    uvs.push(...TRI_UV[0], ...TRI_UV[1], ...TRI_UV[2]);
+    const uvFace = projectFaceUVs([v0, v1, v2]);
+    uvs.push(...uvFace[0], ...uvFace[1], ...uvFace[2]);
     geo.addGroup(i * 3, 3, i);
   }
+
+  // Bottom 5 faces: (bot, eqOff[i], eqOff[i+1])
+  // Cross-product check: n.y = r²·sin(-72°) < 0 → outward (downward) ✓
   for (let i = 0; i < 5; i++) {
-    const v0 = bot, v1 = eqOff[(i + 1) % 5], v2 = eqOff[i];
     const fi = 5 + i;
+    const v0 = bot, v1 = eqOff[i], v2 = eqOff[(i + 1) % 5];
     positions.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
-    uvs.push(...TRI_UV[0], ...TRI_UV[1], ...TRI_UV[2]);
+    const uvFace = projectFaceUVs([v0, v1, v2]);
+    uvs.push(...uvFace[0], ...uvFace[1], ...uvFace[2]);
     geo.addGroup(fi * 3, 3, fi);
   }
 
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2));
   geo.computeVertexNormals();
 
-  const faceNormals: THREE.Vector3[] = [];
-  for (let i = 0; i < 5; i++) {
-    const a = ((i + 0.5) / 5) * Math.PI * 2;
-    faceNormals.push(new THREE.Vector3(Math.cos(a), 0.5, Math.sin(a)).normalize());
-  }
-  for (let i = 0; i < 5; i++) {
-    const a = ((i + 0.5) / 5) * Math.PI * 2 + Math.PI / 5;
-    faceNormals.push(new THREE.Vector3(Math.cos(a), -0.5, Math.sin(a)).normalize());
-  }
+  const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 10, faceNormals };
 }
 
@@ -223,7 +251,8 @@ function buildDodecahedron(): DieGeometryInfo {
 }
 
 function buildIcosahedron(): DieGeometryInfo {
-  const geo = addFaceGroups(new THREE.IcosahedronGeometry(1.1), 1);
+  // useProjection=true: IcosahedronGeometry is CCW-wound; projection fixes mirroring.
+  const geo = addFaceGroups(new THREE.IcosahedronGeometry(1.1), 1, true);
   const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 20, faceNormals };
 }
