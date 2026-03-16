@@ -5,6 +5,8 @@ export interface DieGeometryInfo {
   geometry: THREE.BufferGeometry;
   faceCount: number;
   faceNormals: THREE.Vector3[];
+  /** D4 only: per-face UV coords [faceIdx][vertexInFace] → [u, v] from projectFaceUVs */
+  d4VertexUVs?: Array<[[number,number],[number,number],[number,number]]>;
 }
 
 // D4 UV layout — derived by projecting each face's vertices onto its own plane
@@ -187,11 +189,28 @@ function addFaceGroups(
 }
 
 function buildTetrahedron(): DieGeometryInfo {
-  // D4: useProjection=true so UV positions come from the cross-product normal projection,
-  // which matches the canvas positions hardcoded in makeD4FaceTexture.
+  // D4: useProjection=true so UVs come from per-face cross-product projection.
   const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.85), 1, true);
   const faceNormals = computeFaceNormals(geo, 1);
-  return { geometry: geo, faceCount: 4, faceNormals };
+
+  // Read back the actual UV coords so Die.tsx can compute canvas positions
+  // from real data instead of hand-computed approximations.
+  const uvAttr = geo.attributes.uv as THREE.BufferAttribute;
+  const d4VertexUVs: Array<[[number,number],[number,number],[number,number]]> = [];
+  for (let f = 0; f < 4; f++) {
+    const base = f * 3;
+    d4VertexUVs.push([
+      [uvAttr.getX(base),   uvAttr.getY(base)],
+      [uvAttr.getX(base+1), uvAttr.getY(base+1)],
+      [uvAttr.getX(base+2), uvAttr.getY(base+2)],
+    ]);
+  }
+  // Log so we can verify in the browser console during debugging
+  console.log('[D4 UVs]', d4VertexUVs.map((f, i) =>
+    `face${i}: v0=(${f[0].map(n=>n.toFixed(3))}), v1=(${f[1].map(n=>n.toFixed(3))}), v2=(${f[2].map(n=>n.toFixed(3))})`
+  ).join('\n'));
+
+  return { geometry: geo, faceCount: 4, faceNormals, d4VertexUVs };
 }
 
 function buildCube(): DieGeometryInfo {

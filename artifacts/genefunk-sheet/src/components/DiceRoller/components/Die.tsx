@@ -105,6 +105,9 @@ function makeD4FaceTexture(
   v0val: number,
   v1val: number,
   v2val: number,
+  p0: [number, number],   // canvas position for vertex[0]
+  p1: [number, number],   // canvas position for vertex[1]
+  p2: [number, number],   // canvas position for vertex[2]
   fontFamily: string,
   fontColor: string,
   fontSize: number,
@@ -121,12 +124,9 @@ function makeD4FaceTexture(
 
   ctx2d.clearRect(0, 0, size, size);
 
-  // Canvas positions matching projectFaceUVs output for D4 (scale=0.40)
-  const p0: [number, number] = [230, 128];  // vertex[0] — RIGHT
-  const p1: [number, number] = [77,   39];  // vertex[1] — UPPER-LEFT
-  const p2: [number, number] = [77,  217];  // vertex[2] — LOWER-LEFT
-  const cx = 128;
-  const cy = 128;
+  // Centroid of the three vertex canvas positions
+  const cx = (p0[0] + p1[0] + p2[0]) / 3;
+  const cy = (p0[1] + p1[1] + p2[1]) / 3;
 
   if (drawBackground) {
     const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
@@ -278,22 +278,27 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const snapStartQuatRef = useRef<THREE.Quaternion | null>(null);
   const snapTargetQuatRef = useRef<THREE.Quaternion | null>(null);
 
-  const { geometry, faceCount, faceNormals } = useMemo(() => getDieGeometry(dieType), [dieType]);
+  const { geometry, faceCount, faceNormals, d4VertexUVs } = useMemo(() => getDieGeometry(dieType), [dieType]);
 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
-    if (dieType === 4) {
-      // D4: three upright numbers per face, one near each vertex corner.
+    if (dieType === 4 && d4VertexUVs) {
+      // D4: three upright numbers per face, positioned at actual UV-derived canvas coords.
       // D4_FACE_VERSION is in the deps so bumping it busts any stale cache.
-      return D4_FACE_VERTEX_VALUES.map(([topR, botC, topL]) =>
-        makeD4FaceTexture(topR, botC, topL, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
-      );
+      return D4_FACE_VERTEX_VALUES.map(([v0val, v1val, v2val], faceIdx) => {
+        const [[u0,v0],[u1,v1],[u2,v2]] = d4VertexUVs[faceIdx];
+        // canvas_x = u*256; canvas_y = (1−v)*256 (flipY=true on CanvasTexture)
+        const p0: [number,number] = [u0*256, (1-v0)*256];
+        const p1: [number,number] = [u1*256, (1-v1)*256];
+        const p2: [number,number] = [u2*256, (1-v2)*256];
+        return makeD4FaceTexture(v0val, v1val, v2val, p0, p1, p2, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground);
+      });
     }
     return Array.from({ length: faceCount }, (_, i) =>
       makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dieType, faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity, D4_FACE_VERSION]);
+  }, [dieType, faceCount, d4VertexUVs, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity, D4_FACE_VERSION]);
 
 
   const dieScale = config.scale ?? 1;
