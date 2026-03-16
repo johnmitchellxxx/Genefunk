@@ -4,7 +4,7 @@ import { Html } from '@react-three/drei';
 import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
-import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES, D4_FACE_VERTEX_VALUES } from '../utils/diceGeometry';
+import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES, D4_FACE_VERSION } from '../utils/diceGeometry';
 
 interface DieProps {
   dieType: DieType;
@@ -86,26 +86,19 @@ function makeNumberTexture(
 }
 
 /**
- * D4 face texture — draws three numbers, one near each vertex corner.
+ * D4 face texture — ONE large number at the face centroid.
  *
- * UV triangle vertex → canvas coordinate mapping (canvas y = (1 − UV_y) × 256):
- *   TRI_UV[0] (0.85, 0.80) → canvas (218,  51)  top-right  vertex A
- *   TRI_UV[1] (0.50, 0.12) → canvas (128, 225)  bottom-center vertex B
- *   TRI_UV[2] (0.15, 0.80) → canvas ( 38,  51)  top-left   vertex C
- * Centroid ≈ canvas (128, 109).
+ * The D4 UV layout (TRI_UV) places the face centroid at canvas ≈ (128, 109),
+ * which maps to UV (0.50, 0.573) — the visual centre of the triangular face.
+ * Drawing a single digit there is always legible from the overhead camera
+ * regardless of which face is facing up or how the die is oriented.
  *
- * Each number is placed 50 % of the way from the centroid toward its vertex
- * (pulled back from the tip for readability) and rotated so the TOP of the
- * digit points toward that vertex tip.
- *
- * Rotation formula: θ = atan2(dx, −dy) where (dx, dy) = vertex − centroid
- * in canvas space (y increases downward), yielding:
- *   vA: atan2(+90, +58) ≈ +57°   vB: atan2(0, −116) = 180°   vC: atan2(−90, +58) ≈ −57°
+ * value = D4_OPPOSITE_VALUES[faceIndex]: the result displayed when this face
+ * is on the floor.  The badge overlay confirms the roll; the face number is
+ * the "what would you roll if this face were down" reference label.
  */
 function makeD4FaceTexture(
-  topRightVal: number,
-  bottomCenterVal: number,
-  topLeftVal: number,
+  value: number,
   fontFamily: string,
   fontColor: string,
   fontSize: number,
@@ -122,14 +115,17 @@ function makeD4FaceTexture(
 
   ctx2d.clearRect(0, 0, size, size);
 
-  // UV triangle vertex positions in canvas space
-  const vA: [number, number] = [218, 51];   // top-right  (TRI_UV[0])
-  const vB: [number, number] = [128, 225];  // bottom-center (TRI_UV[1])
-  const vC: [number, number] = [38,  51];   // top-left   (TRI_UV[2])
-  const cx = (vA[0] + vB[0] + vC[0]) / 3;  // ≈ 128
-  const cy = (vA[1] + vB[1] + vC[1]) / 3;  // ≈ 109
+  // TRI_UV vertex canvas positions (y = (1 − UV_v) × 256):
+  //   TRI_UV[0] (0.85, 0.80) → canvas (218,  51)  top-right
+  //   TRI_UV[1] (0.50, 0.12) → canvas (128, 225)  bottom-centre
+  //   TRI_UV[2] (0.15, 0.80) → canvas ( 38,  51)  top-left
+  // Centroid (average of the three) ≈ canvas (128, 109).
+  const vA: [number, number] = [218, 51];
+  const vB: [number, number] = [128, 225];
+  const vC: [number, number] = [38,  51];
+  const cx = (vA[0] + vB[0] + vC[0]) / 3;  // 128
+  const cy = (vA[1] + vB[1] + vC[1]) / 3;  // 109
 
-  // Background: fill only the triangular face area
   if (drawBackground) {
     const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
     const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
@@ -146,39 +142,21 @@ function makeD4FaceTexture(
   ctx2d.globalAlpha = 1.0;
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
-  // Font sized to fit 3 numbers inside the triangle without overlap.
-  // The overhead camera already tilts each face ~54° so keeping numbers
-  // upright (no per-vertex rotation) makes them recognisable as digits.
-  // Adding rotation (e.g. atan2 pointing top-toward-vertex) compounds with
-  // the camera tilt and turns "2"→"S", "3"→"ε" etc — visually incorrect.
-  const px = Math.round(55 * fontSize);
+  // Large single digit — sized to fill roughly 60 % of the face height
+  const px = Math.round(80 * fontSize);
+
+  ctx2d.save();
+  ctx2d.translate(cx, cy);
+  ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
-
-  // Place each number 55% of the way from the centroid toward its vertex.
-  // No rotation: all digits drawn upright in the canvas so they remain
-  // legible from the overhead camera regardless of face orientation.
-  const FRAC = 0.55;
-  const entries: Array<[number, number, number]> = [
-    [topRightVal,     cx + FRAC * (vA[0] - cx), cy + FRAC * (vA[1] - cy)],
-    [bottomCenterVal, cx + FRAC * (vB[0] - cx), cy + FRAC * (vB[1] - cy)],
-    [topLeftVal,      cx + FRAC * (vC[0] - cx), cy + FRAC * (vC[1] - cy)],
-  ];
-
-  for (const [val, x, y] of entries) {
-    ctx2d.save();
-    ctx2d.translate(x, y);
-    ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
-    ctx2d.lineWidth = Math.max(5, px / 7);
-    ctx2d.lineJoin = 'round';
-    ctx2d.strokeStyle = drawBackground
-      ? `rgba(0,0,0,0.92)`
-      : `rgba(0,0,0,0.75)`;
-    ctx2d.strokeText(String(val), 0, 0);
-    ctx2d.fillStyle = fontColor;
-    ctx2d.fillText(String(val), 0, 0);
-    ctx2d.restore();
-  }
+  ctx2d.lineWidth = Math.max(6, px / 6);
+  ctx2d.lineJoin = 'round';
+  ctx2d.strokeStyle = drawBackground ? `rgba(0,0,0,0.92)` : `rgba(0,0,0,0.75)`;
+  ctx2d.strokeText(String(value), 0, 0);
+  ctx2d.fillStyle = fontColor;
+  ctx2d.fillText(String(value), 0, 0);
+  ctx2d.restore();
 
   return new THREE.CanvasTexture(canvas);
 }
@@ -292,18 +270,18 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
     if (dieType === 4) {
-      // D4: each face shows 3 DIFFERENT numbers — one near each vertex corner.
-      // The number near a vertex = the value of that vertex, not the face result.
-      // This matches physical D4 dice: the result is read from whichever vertex
-      // points up (all 3 side faces show the same number at that apex corner).
-      return D4_FACE_VERTEX_VALUES.map(([topR, botC, topL]) =>
-        makeD4FaceTexture(topR, botC, topL, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
+      // D4: one large number at the face centroid per face.
+      // Value = D4_OPPOSITE_VALUES[faceIdx] = result when this face is on the floor.
+      // D4_FACE_VERSION is in the deps array so bumping it busts any stale cache.
+      return D4_OPPOSITE_VALUES.map(val =>
+        makeD4FaceTexture(val, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
       );
     }
     return Array.from({ length: faceCount }, (_, i) =>
       makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
     );
-  }, [dieType, faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dieType, faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity, D4_FACE_VERSION]);
 
 
   const dieScale = config.scale ?? 1;

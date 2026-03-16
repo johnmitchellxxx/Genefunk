@@ -48,6 +48,14 @@ export const D4_FACE_VERTEX_VALUES: readonly [number, number, number][] = [
 /** Result value when face k is the floor face (most-downward normal). */
 export const D4_OPPOSITE_VALUES: readonly number[] = [4, 2, 3, 1];
 
+/**
+ * Bump this whenever the D4 texture generation logic changes.
+ * Including it in Die.tsx's numberTextures useMemo dep array ensures the
+ * textures are rebuilt after a full page reload even if user config is
+ * unchanged — avoiding stale cached textures from a previous code version.
+ */
+export const D4_FACE_VERSION = 2;
+
 
 /**
  * Compute per-face outward normals directly from a non-indexed BufferGeometry
