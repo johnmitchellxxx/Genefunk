@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
-import { getDieGeometry, getFaceUp } from '../utils/diceGeometry';
+import { getDieGeometry, getFaceUp, D4_FACE_VERTEX_VALUES, D4_OPPOSITE_VALUES } from '../utils/diceGeometry';
 
 interface DieProps {
   dieType: DieType;
@@ -80,6 +80,61 @@ function makeNumberTexture(
     ctx2d.lineTo(size / 2 + w / 2, size / 2 + px * 0.62);
     ctx2d.stroke();
   }
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+/**
+ * D4 face texture — draws three numbers at the three vertex positions that
+ * correspond to TRI_UV layout: [top=(0.5,0.95), botL=(0.11,0.275), botR=(0.89,0.275)].
+ * The result is always the value that appears on ALL three visible faces; since
+ * the same vertex value is shared across all three visible faces, the user can
+ * identify the result by finding the number in common.
+ */
+function makeD4FaceTexture(
+  topVal: number,
+  botLVal: number,
+  botRVal: number,
+  fontFamily: string,
+  fontColor: string,
+  fontSize: number,
+  bold: boolean,
+  italic: boolean,
+  dieColor: string,
+  drawBackground: boolean,
+): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx2d = canvas.getContext('2d')!;
+
+  ctx2d.clearRect(0, 0, size, size);
+
+  if (drawBackground) {
+    const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
+    const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
+    ctx2d.globalAlpha = 1.0;
+    ctx2d.fillStyle = darkBg;
+    ctx2d.fillRect(0, 0, size, size);
+  }
+
+  ctx2d.globalAlpha = 1.0;
+  const weight = bold ? 'bold' : 'normal';
+  const style = italic ? 'italic' : 'normal';
+  const px = Math.round(52 * fontSize);
+  ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
+  ctx2d.fillStyle = fontColor;
+  ctx2d.textAlign = 'center';
+  ctx2d.textBaseline = 'middle';
+
+  // Position each number slightly inward from the corresponding TRI_UV vertex:
+  //   top vertex  UV (0.5, 0.95) → canvas (128, 244) — pull down to (128, 58)
+  //   botL vertex UV (0.11, 0.275) → canvas (28, 186) — pull right/up to (64, 172)
+  //   botR vertex UV (0.89, 0.275) → canvas (228, 186) — pull left/up to (192, 172)
+  ctx2d.fillText(String(topVal),  128, 58);
+  ctx2d.fillText(String(botLVal), 64,  172);
+  ctx2d.fillText(String(botRVal), 192, 172);
 
   return new THREE.CanvasTexture(canvas);
 }
@@ -190,10 +245,15 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
+    if (dieType === 4) {
+      return D4_FACE_VERTEX_VALUES.map(([topVal, botLVal, botRVal]) =>
+        makeD4FaceTexture(topVal, botLVal, botRVal, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
+      );
+    }
     return Array.from({ length: faceCount }, (_, i) =>
       makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
     );
-  }, [faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity]);
+  }, [dieType, faceCount, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, config.opacity]);
 
 
   const dieScale = config.scale ?? 1;
@@ -308,19 +368,40 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         rb.setBodyType(rapier.RigidBodyType.Fixed, false);
         rb.sleep();
 
-        // Determine which face is up right now
         const rawQ = rb.rotation();
         const currentQuat = new THREE.Quaternion(rawQ.x, rawQ.y, rawQ.z, rawQ.w);
-        const faceIndex = getFaceUp(currentQuat, { geometry, faceCount, faceNormals });
-        const result = Math.max(1, Math.min(faceCount, faceIndex));
 
-        // Compute the quaternion that puts the winning face perfectly flat (normal = world +Y)
-        const faceNormalLocal = faceNormals[faceIndex - 1].clone();
-        const worldFaceNormal = faceNormalLocal.applyQuaternion(currentQuat);
-        const worldUp = new THREE.Vector3(0, 1, 0);
-        const deltaQ = new THREE.Quaternion().setFromUnitVectors(worldFaceNormal, worldUp);
-        // targetQuat = deltaQ applied in world space on top of currentQuat
-        const targetQuat = deltaQ.clone().multiply(currentQuat);
+        let result: number;
+        let targetQuat: THREE.Quaternion;
+
+        if (dieType === 4) {
+          // D4 rests on a face with a vertex pointing up.
+          // Find the face whose normal is most downward — that is the floor face.
+          const downDir = new THREE.Vector3(0, -1, 0);
+          let bestDownDot = -Infinity, floorFaceIdx = 0;
+          faceNormals.forEach((n, i) => {
+            const dot = n.clone().applyQuaternion(currentQuat).dot(downDir);
+            if (dot > bestDownDot) { bestDownDot = dot; floorFaceIdx = i; }
+          });
+          result = D4_OPPOSITE_VALUES[floorFaceIdx];
+
+          // Snap: rotate so the floor face normal aligns exactly with world -Y,
+          // which naturally puts the result vertex at the top (+Y).
+          const floorNormalLocal = faceNormals[floorFaceIdx].clone();
+          const worldFloorNormal = floorNormalLocal.applyQuaternion(currentQuat);
+          const deltaQ = new THREE.Quaternion().setFromUnitVectors(worldFloorNormal, downDir);
+          targetQuat = deltaQ.clone().multiply(currentQuat);
+        } else {
+          // All other dice: snap the most-upward face normal to world +Y.
+          const faceIndex = getFaceUp(currentQuat, { geometry, faceCount, faceNormals });
+          result = Math.max(1, Math.min(faceCount, faceIndex));
+
+          const faceNormalLocal = faceNormals[faceIndex - 1].clone();
+          const worldFaceNormal = faceNormalLocal.applyQuaternion(currentQuat);
+          const worldUp = new THREE.Vector3(0, 1, 0);
+          const deltaQ = new THREE.Quaternion().setFromUnitVectors(worldFaceNormal, worldUp);
+          targetQuat = deltaQ.clone().multiply(currentQuat);
+        }
 
         snapStartQuatRef.current = currentQuat.clone();
         snapTargetQuatRef.current = targetQuat;

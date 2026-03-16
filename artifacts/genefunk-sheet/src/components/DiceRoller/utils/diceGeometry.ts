@@ -13,6 +13,33 @@ const TRI_UV: Array<[number, number]> = [
   [0.89, 0.275],
 ];
 
+// THREE.TetrahedronGeometry(0.85) has these 4 unique vertices (unnormalized → scaled):
+//   v0=(1,1,1)  v1=(-1,-1,1)  v2=(-1,1,-1)  v3=(1,-1,-1)   × (0.85/√3)
+// Assigned die values: v0=1, v1=2, v2=3, v3=4
+//
+// After toNonIndexed (indices [2,1,0, 0,3,2, 1,3,0, 2,3,1]):
+//   Face 0: [v2,v1,v0] → UV_TOP=3, UV_BOTL=2, UV_BOTR=1
+//   Face 1: [v0,v3,v2] → UV_TOP=1, UV_BOTL=4, UV_BOTR=3
+//   Face 2: [v1,v3,v0] → UV_TOP=2, UV_BOTL=4, UV_BOTR=1
+//   Face 3: [v2,v3,v1] → UV_TOP=3, UV_BOTL=4, UV_BOTR=2
+//
+// Result when face k is on the floor = value of opposite vertex:
+//   Face 0 opposite v3=4 → result 4
+//   Face 1 opposite v1=2 → result 2
+//   Face 2 opposite v2=3 → result 3
+//   Face 3 opposite v0=1 → result 1
+
+/** [topVal, botLVal, botRVal] for each D4 face (index 0-3), matching TRI_UV positions. */
+export const D4_FACE_VERTEX_VALUES: readonly [number, number, number][] = [
+  [3, 2, 1],
+  [1, 4, 3],
+  [2, 4, 1],
+  [3, 4, 2],
+];
+
+/** Result value when face k is the floor face (most-downward normal). */
+export const D4_OPPOSITE_VALUES: readonly number[] = [4, 2, 3, 1];
+
 
 /**
  * Compute per-face outward normals directly from a non-indexed BufferGeometry

@@ -159,6 +159,17 @@ export default function CharacterSheet() {
           </div>
           <div className="flex items-center gap-2">
             {updateMutation.isPending && <Activity className="w-4 h-4 text-accent animate-spin" />}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded border text-xs font-mono transition-colors cursor-default ${beyond20Active ? 'border-green-500/60 bg-green-500/10 text-green-400' : 'border-border/40 bg-muted/30 text-muted-foreground'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${beyond20Active ? 'bg-green-400' : 'bg-muted-foreground/40'}`} />
+                  B20 {beyond20Active ? 'linked' : 'offline'}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {beyond20Active ? 'Beyond20 extension detected — rolls will be forwarded to Roll20/Foundry.' : 'Beyond20 extension not detected. Install it to forward rolls to VTT.'}
+              </TooltipContent>
+            </Tooltip>
             <CyberButton variant="secondary" className="px-3 py-1 text-xs" onClick={() => setLevelUpOpen(true)}>
               <ArrowUp className="w-3 h-3 inline mr-1" /> Level Up
             </CyberButton>
