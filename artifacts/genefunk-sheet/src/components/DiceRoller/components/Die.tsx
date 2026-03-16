@@ -146,39 +146,34 @@ function makeD4FaceTexture(
   ctx2d.globalAlpha = 1.0;
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
-  // Larger font — D4 numbers must be readable from a top-down camera
-  const px = Math.round(60 * fontSize);
+  // Font sized to fit 3 numbers inside the triangle without overlap.
+  // The overhead camera already tilts each face ~54° so keeping numbers
+  // upright (no per-vertex rotation) makes them recognisable as digits.
+  // Adding rotation (e.g. atan2 pointing top-toward-vertex) compounds with
+  // the camera tilt and turns "2"→"S", "3"→"ε" etc — visually incorrect.
+  const px = Math.round(55 * fontSize);
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // For each vertex, compute the rotation angle so the digit's TOP points
-  // toward the vertex tip.  In canvas space (y-down):
-  //   text "up" after ctx.rotate(θ) = (sin θ, −cos θ)
-  //   we want this = normalize(vertex − centroid)
-  //   → θ = atan2(dx, −dy)   where (dx, dy) = vertex − centroid
-  const angleFor = (v: [number, number]) =>
-    Math.atan2(v[0] - cx, -(v[1] - cy));
-
-  // Numbers are placed 50 % from centroid toward vertex — close enough to the
-  // tip to look "at the corner" but far enough to avoid clipping.
-  const FRAC = 0.50;
-  const entries: [number, number, number, number][] = [
-    [topRightVal,     cx + FRAC * (vA[0] - cx), cy + FRAC * (vA[1] - cy), angleFor(vA)],
-    [bottomCenterVal, cx + FRAC * (vB[0] - cx), cy + FRAC * (vB[1] - cy), angleFor(vB)],
-    [topLeftVal,      cx + FRAC * (vC[0] - cx), cy + FRAC * (vC[1] - cy), angleFor(vC)],
+  // Place each number 55% of the way from the centroid toward its vertex.
+  // No rotation: all digits drawn upright in the canvas so they remain
+  // legible from the overhead camera regardless of face orientation.
+  const FRAC = 0.55;
+  const entries: Array<[number, number, number]> = [
+    [topRightVal,     cx + FRAC * (vA[0] - cx), cy + FRAC * (vA[1] - cy)],
+    [bottomCenterVal, cx + FRAC * (vB[0] - cx), cy + FRAC * (vB[1] - cy)],
+    [topLeftVal,      cx + FRAC * (vC[0] - cx), cy + FRAC * (vC[1] - cy)],
   ];
 
-  for (const [val, x, y, angle] of entries) {
+  for (const [val, x, y] of entries) {
     ctx2d.save();
     ctx2d.translate(x, y);
-    ctx2d.rotate(angle);
     ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
-    // Thick outline for contrast against the die face colour
-    ctx2d.lineWidth = Math.max(5, px / 8);
+    ctx2d.lineWidth = Math.max(5, px / 7);
     ctx2d.lineJoin = 'round';
     ctx2d.strokeStyle = drawBackground
-      ? `rgba(0,0,0,0.90)`
-      : `rgba(0,0,0,0.70)`;
+      ? `rgba(0,0,0,0.92)`
+      : `rgba(0,0,0,0.75)`;
     ctx2d.strokeText(String(val), 0, 0);
     ctx2d.fillStyle = fontColor;
     ctx2d.fillText(String(val), 0, 0);
