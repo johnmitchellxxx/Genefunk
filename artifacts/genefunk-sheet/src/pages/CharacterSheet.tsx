@@ -7,7 +7,7 @@ import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } fro
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
-import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
+import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, CLASSES, GENOMES, BACKGROUNDS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Camera } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
@@ -1734,28 +1734,172 @@ function CyberneticsPanel({ character, onUpdate }: PanelProps) {
   );
 }
 
+const ALL_KNOWN_FEATURES: { name: string; description: string; source: string }[] = (() => {
+  const out: { name: string; description: string; source: string }[] = [];
+  for (const cls of CLASSES) {
+    for (const feats of Object.values(cls.featuresByLevel)) {
+      for (const f of feats) {
+        out.push({ name: f.name, description: f.description, source: cls.name });
+      }
+    }
+  }
+  for (const genome of GENOMES) {
+    for (const t of genome.traits) {
+      out.push({ name: t.name, description: t.description, source: `${genome.name} Genome` });
+    }
+  }
+  for (const bg of BACKGROUNDS) {
+    out.push({ name: bg.featureName, description: bg.featureDescription, source: `${bg.name} Background` });
+  }
+  const seen = new Set<string>();
+  return out.filter(f => { if (seen.has(f.name)) return false; seen.add(f.name); return true; });
+})();
+
 function FeaturesPanel({ character, onUpdate }: PanelProps) {
+  const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addSelected, setAddSelected] = useState('');
+  const [addCustomName, setAddCustomName] = useState('');
+  const [addCustomSource, setAddCustomSource] = useState('');
+  const [addCustomDesc, setAddCustomDesc] = useState('');
+
+  function toggleExpanded(id: string) {
+    setExpandedFeatures(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function handleAddSubmit() {
+    if (addSelected) {
+      const known = ALL_KNOWN_FEATURES.find(f => f.name === addSelected);
+      if (known) {
+        const entry: FeatureEntry = { id: Math.random().toString(), name: known.name, source: known.source, description: known.description };
+        onUpdate('features', [...character.features, entry]);
+      }
+    } else if (addCustomName.trim()) {
+      const entry: FeatureEntry = { id: Math.random().toString(), name: addCustomName.trim(), source: addCustomSource.trim() || undefined, description: addCustomDesc.trim() };
+      onUpdate('features', [...character.features, entry]);
+    }
+    setAddSelected('');
+    setAddCustomName('');
+    setAddCustomSource('');
+    setAddCustomDesc('');
+    setShowAddForm(false);
+  }
+
+  const groupedFeatures = ALL_KNOWN_FEATURES.reduce<Record<string, typeof ALL_KNOWN_FEATURES>>((acc, f) => {
+    (acc[f.source] ??= []).push(f);
+    return acc;
+  }, {});
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between mb-1">
         <span className="text-sm text-primary uppercase tracking-widest font-mono font-bold">Features & Traits</span>
       </div>
-      {character.features.map((feat) => (
-        <div key={feat.id} className="p-3 border border-border bg-background/30 clip-edges">
-          <div className="flex justify-between items-start">
-            <EditableField value={feat.name} onSave={v => onUpdate('features', updateArrayEntry(character.features, feat.id, { name: String(v) }))} className="font-bold text-primary text-sm" />
-            <button onClick={() => onUpdate('features', character.features.filter(f => f.id !== feat.id))} className="text-destructive text-xs hover:underline font-mono">DEL</button>
+
+      {character.features.map((feat) => {
+        const isOpen = expandedFeatures.has(feat.id);
+        return (
+          <div key={feat.id} className="border border-border/50 bg-background/30 clip-edges">
+            <div className="flex items-center justify-between px-3 py-2 gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <button
+                  onClick={() => toggleExpanded(feat.id)}
+                  className="text-muted-foreground/60 hover:text-primary text-[10px] w-4 shrink-0 text-center leading-none"
+                  title="Toggle description"
+                >
+                  {isOpen ? '▾' : '▸'}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <EditableField value={feat.name} onSave={v => onUpdate('features', updateArrayEntry(character.features, feat.id, { name: String(v) }))} className="font-bold text-primary text-sm" />
+                  {feat.source && <div className="text-[10px] text-muted-foreground font-mono">{feat.source}</div>}
+                </div>
+              </div>
+              <button onClick={() => onUpdate('features', character.features.filter(f => f.id !== feat.id))} className="text-destructive text-xs hover:underline font-mono shrink-0">DEL</button>
+            </div>
+            {isOpen && (
+              <div className="px-3 pb-3">
+                <textarea
+                  value={feat.description ?? ''}
+                  onChange={e => onUpdate('features', updateArrayEntry(character.features, feat.id, { description: e.target.value }))}
+                  placeholder="No description. Click to add notes..."
+                  rows={4}
+                  className="w-full bg-background/40 border border-border/40 text-foreground/80 font-mono text-[11px] px-2 py-1.5 resize-y focus:outline-none focus:border-primary/60 placeholder:text-muted-foreground/40 leading-relaxed"
+                />
+                {feat.source && (
+                  <div className="mt-1">
+                    <input
+                      type="text"
+                      value={feat.source}
+                      onChange={e => onUpdate('features', updateArrayEntry(character.features, feat.id, { source: e.target.value }))}
+                      placeholder="Source..."
+                      className="w-full bg-transparent border-0 border-b border-border/30 text-muted-foreground font-mono text-[10px] px-0 py-0.5 focus:outline-none focus:border-primary/40"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <EditableField value={feat.description || ''} onSave={v => onUpdate('features', updateArrayEntry(character.features, feat.id, { description: String(v) }))} className="text-sm text-foreground/70 mt-1.5 font-mono" />
+        );
+      })}
+
+      {showAddForm ? (
+        <div className="mt-2 border border-border/40 bg-background/30 p-2 space-y-2">
+          <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Add Feature / Trait</div>
+          <select
+            value={addSelected}
+            onChange={e => {
+              setAddSelected(e.target.value);
+              setAddCustomName('');
+              const known = ALL_KNOWN_FEATURES.find(f => f.name === e.target.value);
+              setAddCustomDesc(known?.description ?? '');
+              setAddCustomSource(known?.source ?? '');
+            }}
+            className="w-full bg-background border border-border text-foreground font-mono text-[11px] px-2 py-1.5 focus:outline-none focus:border-primary"
+          >
+            <option value="">— Pick from rulebook, or type custom below —</option>
+            {Object.entries(groupedFeatures).map(([source, feats]) => (
+              <optgroup key={source} label={source}>
+                {feats.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+              </optgroup>
+            ))}
+          </select>
+          {!addSelected && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={addCustomName}
+                onChange={e => setAddCustomName(e.target.value)}
+                placeholder="Feature name..."
+                className="flex-1 bg-background border border-border text-foreground font-mono text-[11px] px-2 py-1.5 focus:outline-none focus:border-primary placeholder:text-muted-foreground/40"
+              />
+              <input
+                type="text"
+                value={addCustomSource}
+                onChange={e => setAddCustomSource(e.target.value)}
+                placeholder="Source (class, genome...)"
+                className="flex-1 bg-background border border-border text-foreground font-mono text-[11px] px-2 py-1.5 focus:outline-none focus:border-primary placeholder:text-muted-foreground/40"
+              />
+            </div>
+          )}
+          <textarea
+            value={addCustomDesc}
+            onChange={e => setAddCustomDesc(e.target.value)}
+            placeholder="Description (auto-filled from rulebook if known)..."
+            rows={3}
+            className="w-full bg-background/40 border border-border/40 text-foreground/80 font-mono text-[11px] px-2 py-1.5 resize-none focus:outline-none focus:border-primary/60 placeholder:text-muted-foreground/40"
+          />
+          <div className="flex gap-2">
+            <CyberButton variant="primary" className="text-xs py-1 flex-1" onClick={handleAddSubmit}>Add Feature</CyberButton>
+            <CyberButton variant="ghost" className="text-xs py-1" onClick={() => { setShowAddForm(false); setAddSelected(''); setAddCustomName(''); setAddCustomDesc(''); setAddCustomSource(''); }}>Cancel</CyberButton>
+          </div>
         </div>
-      ))}
-      <CyberButton variant="ghost" className="w-full text-xs py-1" onClick={() => {
-        const name = prompt("Feature Name:");
-        if (name) {
-          const entry: FeatureEntry = { id: Math.random().toString(), name, description: '' };
-          onUpdate('features', [...character.features, entry]);
-        }
-      }}>+ Add Feature</CyberButton>
+      ) : (
+        <CyberButton variant="ghost" className="w-full text-xs py-1 mt-1" onClick={() => setShowAddForm(true)}>+ Add Feature</CyberButton>
+      )}
     </div>
   );
 }
