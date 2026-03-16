@@ -8,7 +8,7 @@ import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
 import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, CLASSES, GENOMES, BACKGROUNDS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
-import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Camera } from 'lucide-react';
+import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, ChevronRight, Trash2, X, Eye, ArrowUp, Camera } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
@@ -1005,7 +1005,7 @@ function HacksPanel({ character, onUpdate }: PanelProps) {
                       className="text-destructive/60 hover:text-destructive text-xs font-mono ml-1"
                       title="Forget hack"
                     >✕</button>
-                    <span className="text-muted-foreground text-xs">{expanded ? '▲' : '▼'}</span>
+                    <ChevronRight size={14} className={`text-muted-foreground transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
                   </div>
                   {expanded && (
                     <div className="px-3 pb-2 pt-0 border-t border-border/20">
@@ -1028,7 +1028,10 @@ function HacksPanel({ character, onUpdate }: PanelProps) {
             onClick={() => setShowBrowser(b => !b)}
           >
             <span>{character.class} Hack Library ({classHacks.length} hacks)</span>
-            <span>{showBrowser ? '▲ Hide' : '▼ Browse'}</span>
+            <span className="flex items-center gap-1">
+              <ChevronRight size={14} className={`transition-transform duration-200 ${showBrowser ? 'rotate-90' : ''}`} />
+              {showBrowser ? 'Hide' : 'Browse'}
+            </span>
           </button>
           {showBrowser && (
             <div className="mt-1 border border-border/30 bg-background/10">
@@ -1077,7 +1080,7 @@ function HacksPanel({ character, onUpdate }: PanelProps) {
                                   title="Learn this hack"
                                 >Learn</button>
                               )}
-                              <span className="text-muted-foreground text-[10px] flex-shrink-0">{expanded ? '▲' : '▼'}</span>
+                              <ChevronRight size={13} className={`text-muted-foreground flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
                             </div>
                             {expanded && (
                               <div className="px-3 pb-2 border-t border-border/10 bg-background/20">
@@ -1332,10 +1335,10 @@ function InventoryPanel({ character, onUpdate }: PanelProps) {
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <button
                     onClick={() => toggleExpanded(eq.id)}
-                    className="text-muted-foreground/60 hover:text-primary text-[10px] w-4 shrink-0 text-center leading-none"
+                    className="text-muted-foreground/60 hover:text-primary shrink-0 transition-colors"
                     title="Toggle description"
                   >
-                    {isOpen ? '▾' : '▸'}
+                    <ChevronRight size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                   </button>
                   <EditableField value={eq.quantity} type="number" onSave={v => onUpdate('equipment', updateArrayEntry(character.equipment, eq.id, { quantity: Number(v) }))} className="text-foreground/70 w-6 text-right text-sm" />
                   <span className="text-muted-foreground">×</span>
@@ -1808,10 +1811,10 @@ function FeaturesPanel({ character, onUpdate }: PanelProps) {
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <button
                   onClick={() => toggleExpanded(feat.id)}
-                  className="text-muted-foreground/60 hover:text-primary text-[10px] w-4 shrink-0 text-center leading-none"
+                  className="text-muted-foreground/60 hover:text-primary shrink-0 transition-colors"
                   title="Toggle description"
                 >
-                  {isOpen ? '▾' : '▸'}
+                  <ChevronRight size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                 </button>
                 <div className="flex-1 min-w-0">
                   <EditableField value={feat.name} onSave={v => onUpdate('features', updateArrayEntry(character.features, feat.id, { name: String(v) }))} className="font-bold text-primary text-sm" />
