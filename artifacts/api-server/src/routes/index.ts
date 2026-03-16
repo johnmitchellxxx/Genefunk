@@ -5,6 +5,7 @@ import charactersRouter from "./characters";
 import rulebookRouter from "./rulebook";
 import usersRouter from "./users";
 import dicePrefsRouter from "./dicePrefs";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(charactersRouter);
 router.use(rulebookRouter);
 router.use(usersRouter);
 router.use(dicePrefsRouter);
+router.use(storageRouter);
 
 export default router;

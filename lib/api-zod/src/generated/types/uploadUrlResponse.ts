@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface RulebookCadre {
-  id: number;
-  name: string;
-  description?: string;
-  affiliation?: string;
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
 }

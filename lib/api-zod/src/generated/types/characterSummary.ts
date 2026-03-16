@@ -15,6 +15,8 @@ export interface CharacterSummary {
   class?: string | null;
   level: number;
   userId?: string;
+  /** @nullable */
+  portraitUrl?: string | null;
   updatedAt: Date;
   /** @nullable */
   deletedAt?: Date | null;

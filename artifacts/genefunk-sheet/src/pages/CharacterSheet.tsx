@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRoute } from 'wouter';
 import { useAppCharacter, useAppUpdateCharacter, useAppDeleteCharacter, useAppRulebookBackgrounds, useAppRulebookGenomes, useAppRulebookClasses, useAppRulebookCadres, useAppAuth } from '@/hooks/use-api';
@@ -8,7 +8,7 @@ import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
 import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
-import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp } from 'lucide-react';
+import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, Trash2, X, Eye, ArrowUp, Camera } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
@@ -55,6 +55,8 @@ export default function CharacterSheet() {
 
   const [miniTab, setMiniTab] = useState<MiniTab>('actions');
   const [levelUpOpen, setLevelUpOpen] = useState(false);
+  const [isUploadingPortrait, setIsUploadingPortrait] = useState(false);
+  const portraitInputRef = useRef<HTMLInputElement>(null);
   const [quickRollOpen, setQuickRollOpen] = useState(false);
   const [quickRollData, setQuickRollData] = useState<AutoRoll | null>(null);
   const [quickRollKey, setQuickRollKey] = useState(0);
@@ -92,6 +94,29 @@ export default function CharacterSheet() {
   const handleUpdate = (field: string, value: unknown) => {
     if (!rawCharacter) return;
     updateMutation.mutate({ id, data: { [field]: value } });
+  };
+
+  const handlePortraitUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPortrait(true);
+    try {
+      const urlRes = await fetch('/api/storage/uploads/request-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type || 'image/jpeg' }),
+      });
+      if (!urlRes.ok) throw new Error('Failed to get upload URL');
+      const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
+      const putRes = await fetch(uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } });
+      if (!putRes.ok) throw new Error('Upload failed');
+      handleUpdate('portraitUrl', objectPath);
+    } catch (err) {
+      console.error('Portrait upload failed:', err);
+    } finally {
+      setIsUploadingPortrait(false);
+      if (portraitInputRef.current) portraitInputRef.current.value = '';
+    }
   };
 
   const handleDelete = () => {
@@ -138,7 +163,31 @@ export default function CharacterSheet() {
             <Link href="/characters" className="text-muted-foreground hover:text-primary transition-colors">
               <ChevronLeft className="w-5 h-5" />
             </Link>
-            <img src={`${import.meta.env.BASE_URL}images/avatar-placeholder.png`} className="w-10 h-10 rounded-full border border-primary" alt="Avatar" />
+            <button
+              onClick={() => portraitInputRef.current?.click()}
+              className="relative group w-10 h-10 rounded-full border border-primary overflow-hidden flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary"
+              title="Upload hero portrait"
+              disabled={isUploadingPortrait}
+            >
+              <img
+                src={character.portraitUrl ? `/api/storage${character.portraitUrl}` : `${import.meta.env.BASE_URL}images/avatar-placeholder.png`}
+                className="w-full h-full object-cover"
+                alt="Avatar"
+              />
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {isUploadingPortrait
+                  ? <Activity className="w-4 h-4 text-primary animate-spin" />
+                  : <Camera className="w-4 h-4 text-primary" />
+                }
+              </div>
+            </button>
+            <input
+              ref={portraitInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handlePortraitUpload}
+            />
             <div className="flex items-center gap-3 flex-wrap">
               <EditableField 
                 value={character.name} 

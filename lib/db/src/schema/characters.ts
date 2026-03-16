@@ -79,6 +79,7 @@ export const charactersTable = pgTable("characters", {
   exhaustionLevel: integer("exhaustion_level").notNull().default(0),
   passivePerception: integer("passive_perception"),
   equippedArmor: text("equipped_armor"),
+  portraitUrl: text("portrait_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),

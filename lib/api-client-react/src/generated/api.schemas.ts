@@ -43,6 +43,8 @@ export interface CharacterSummary {
   class?: string | null;
   level: number;
   userId?: string;
+  /** @nullable */
+  portraitUrl?: string | null;
   updatedAt: string;
   /** @nullable */
   deletedAt?: string | null;
@@ -238,6 +240,8 @@ export interface Character {
   exhaustionLevel: number;
   /** @nullable */
   passivePerception?: number | null;
+  /** @nullable */
+  portraitUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -426,6 +430,24 @@ export interface RulebookGenome {
 export interface RulebookCadre {
   id: number;
   name: string;
-  description: string;
-  affiliation: string;
+  description?: string;
+  affiliation?: string;
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export interface ErrorEnvelope {
+  error: string;
 }
