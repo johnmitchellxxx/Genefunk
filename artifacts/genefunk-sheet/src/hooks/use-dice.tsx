@@ -150,7 +150,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       .filter(d => d.count > 0)
       .map(d => `${d.count}d${d.sides}`)
       .join('+') + (modifier !== 0 ? `${modifier >= 0 ? '+' : ''}${modifier}` : '');
-    sendRollToBeyond20(name, expr, { characterName });
+    sendRollToBeyond20(name, expr, { characterName, numericModifier: modifier });
 
     setCustomRoll(roll);
     setCustomPhase('tumble');

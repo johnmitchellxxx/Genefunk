@@ -632,17 +632,26 @@ export default function CharacterSheet() {
           <DiceRoller
             userId={authUserId}
             onResult={(results, label, modifier) => {
-              const rawTotal = results.reduce((s, r) => s + r.result, 0);
-              const finalTotal = rawTotal + modifier;
-              const dice = results.map(r => `d${r.dieType}`).join('+');
+              if (!beyond20Active) return;
+              const groups: Record<number, number> = {};
+              results.forEach(r => { groups[r.dieType] = (groups[r.dieType] || 0) + 1; });
+              const diceExpr = Object.entries(groups).map(([sides, count]) => `${count}d${sides}`).join('+');
+              const roll = modifier !== 0 ? `${diceExpr}${modifier >= 0 ? '+' : ''}${modifier}` : diceExpr;
               document.dispatchEvent(
                 new CustomEvent('Beyond20_SendMessage', {
                   detail: [{
-                    type: 'roll',
-                    title: label || `Dice: ${dice}`,
-                    character: rawCharacter?.name ?? 'Character',
-                    total: finalTotal,
-                    rolls: results.map(r => ({ dice: r.dieType, value: r.result })),
+                    action: 'roll',
+                    type: 'custom',
+                    name: label || diceExpr,
+                    roll,
+                    modifier: String(modifier),
+                    advantage: 0,
+                    whisper: 0,
+                    character: {
+                      name: rawCharacter?.name ?? 'GeneFunk Character',
+                      type: 'Character',
+                      url: window.location.href,
+                    },
                   }],
                 })
               );
@@ -661,17 +670,26 @@ export default function CharacterSheet() {
             quickMode
             onClose={closeQuickRoll}
             onResult={(results, label, modifier) => {
-              const rawTotal = results.reduce((s, r) => s + r.result, 0);
-              const finalTotal = rawTotal + modifier;
-              const dice = results.map(r => `d${r.dieType}`).join('+');
+              if (!beyond20Active) return;
+              const groups: Record<number, number> = {};
+              results.forEach(r => { groups[r.dieType] = (groups[r.dieType] || 0) + 1; });
+              const diceExpr = Object.entries(groups).map(([sides, count]) => `${count}d${sides}`).join('+');
+              const roll = modifier !== 0 ? `${diceExpr}${modifier >= 0 ? '+' : ''}${modifier}` : diceExpr;
               document.dispatchEvent(
                 new CustomEvent('Beyond20_SendMessage', {
                   detail: [{
-                    type: 'roll',
-                    title: label || `Dice: ${dice}`,
-                    character: rawCharacter?.name ?? 'Character',
-                    total: finalTotal,
-                    rolls: results.map(r => ({ dice: r.dieType, value: r.result })),
+                    action: 'roll',
+                    type: 'custom',
+                    name: label || diceExpr,
+                    roll,
+                    modifier: String(modifier),
+                    advantage: 0,
+                    whisper: 0,
+                    character: {
+                      name: rawCharacter?.name ?? 'GeneFunk Character',
+                      type: 'Character',
+                      url: window.location.href,
+                    },
                   }],
                 })
               );
