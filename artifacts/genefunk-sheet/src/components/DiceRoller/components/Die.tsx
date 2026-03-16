@@ -294,14 +294,11 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
     const drawBackground = config.opacity >= 1;
     if (dieType === 4 && d4VertexUVs) {
       // D4: three upright numbers per face, positioned at actual UV-derived canvas coords.
+      // Pass raw UV coords — makeD4FaceTexture converts to canvas at 512px.
       // D4_FACE_VERSION is in the deps so bumping it busts any stale cache.
       return D4_FACE_VERTEX_VALUES.map(([v0val, v1val, v2val], faceIdx) => {
-        const [[u0,v0],[u1,v1],[u2,v2]] = d4VertexUVs[faceIdx];
-        // canvas_x = u*256; canvas_y = (1−v)*256 (flipY=true on CanvasTexture)
-        const p0: [number,number] = [u0*256, (1-v0)*256];
-        const p1: [number,number] = [u1*256, (1-v1)*256];
-        const p2: [number,number] = [u2*256, (1-v2)*256];
-        return makeD4FaceTexture(v0val, v1val, v2val, p0, p1, p2, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground);
+        const [p0uv, p1uv, p2uv] = d4VertexUVs[faceIdx];
+        return makeD4FaceTexture(v0val, v1val, v2val, p0uv, p1uv, p2uv, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground);
       });
     }
     return Array.from({ length: faceCount }, (_, i) =>
