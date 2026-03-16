@@ -55,6 +55,10 @@ function playClick(
 export function startDiceRoll(dicePool: number[]): () => void {
   const ac = getAudioContext();
   let active = true;
+  // Store the pending tick handle so we can cancel it immediately on stop —
+  // without this, a long inter-click gap keeps "ticking" silently for up to
+  // a second after the dice settle.
+  let nextTickHandle: ReturnType<typeof setTimeout> | null = null;
 
   const numDice = Math.max(1, dicePool.length);
   const avgSides =
@@ -92,11 +96,18 @@ export function startDiceRoll(dicePool: number[]): () => void {
     const easedT = t < 0.6 ? (t / 0.6) * 0.15 : 0.15 + ((t - 0.6) / 0.4) * 0.85;
     const baseInterval = fastInterval + (slowInterval - fastInterval) * easedT;
     const interval = baseInterval * (0.7 + Math.random() * 0.6);
-    setTimeout(tick, interval);
+    nextTickHandle = setTimeout(tick, interval);
   };
 
   tick();
-  return () => { active = false; };
+
+  return () => {
+    active = false;
+    if (nextTickHandle !== null) {
+      clearTimeout(nextTickHandle);
+      nextTickHandle = null;
+    }
+  };
 }
 
 /**

@@ -5,35 +5,35 @@ import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
 import { Die } from './Die';
 
-// Nearly-overhead camera — Y=16, Z=2 gives ~15° tilt from overhead.
-const CAMERA_Y = 16.0;
-const CAMERA_Z = 2.0;
-const CAMERA_FOV = 55;
+// True top-down camera: directly overhead, no tilt whatsoever.
+// CAMERA_Z must be 0 — any offset creates a tilt.
+// camera.up = (0,0,-1) because when looking straight down the world-Y
+// "up" is degenerate; we use world -Z as the screen-up direction instead.
+const CAMERA_Y = 18.0;
+const CAMERA_FOV = 50;
 
 /**
- * Compute arena half-extents so the physics walls always align with the
- * edges of the visible viewport, regardless of screen size or orientation.
- *
- * Camera is fixed at (0, CAMERA_Y, CAMERA_Z) looking at origin, vFOV=55°.
- * Analytical frustum-ground intersection:
- *  - Z extent is constant (determined by vFOV + camera height) ≈ ±8.5 world units
- *  - X extent scales linearly with the viewport aspect ratio
+ * Compute arena half-extents so physics walls sit just outside the visible
+ * ground area.  For a perfectly overhead camera at height H, vFOV α:
+ *   halfZ = tan(α/2) × H          (vertical, constant)
+ *   halfX = tan(α/2) × H × aspect (horizontal, scales with viewport)
+ * +15% margin so walls are never accidentally in view.
  */
 function computeArena(): { x: number; z: number } {
   const aspect = window.innerWidth / window.innerHeight;
-  const vFovRad = (CAMERA_FOV * Math.PI) / 180;
-  const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
-  // Ground half-extents: tan(halfFOV) × camera_height, with 15% margin for walls
-  const halfZ = Math.tan(vFovRad / 2) * CAMERA_Y * 1.15;
-  const halfX = Math.tan(hFovRad / 2) * CAMERA_Y * 1.15;
+  const halfAngle = Math.tan((CAMERA_FOV * Math.PI) / 180 / 2);
+  const halfZ = halfAngle * CAMERA_Y * 1.15;
+  const halfX = halfZ * aspect;
   return { x: Math.max(5, halfX), z: Math.max(8, halfZ) };
 }
 
 function CameraSetup() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, CAMERA_Y, CAMERA_Z);
-    camera.up.set(0, 1, 0);
+    // Straight down: (0, CAMERA_Y, 0) → lookAt (0,0,0)
+    // When looking along -Y, world "up" (0,1,0) is degenerate — use -Z instead
+    camera.position.set(0, CAMERA_Y, 0);
+    camera.up.set(0, 0, -1);
     camera.lookAt(0, 0, 0);
     (camera as THREE.PerspectiveCamera).fov = CAMERA_FOV;
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
@@ -102,33 +102,34 @@ export function DiceScene({ pool, config, rolling, settled, onAllSettled }: Dice
       }}
     >
       <Canvas
-        camera={{ fov: CAMERA_FOV, near: 0.1, far: 200, position: [0, CAMERA_Y, CAMERA_Z] }}
+        camera={{ fov: CAMERA_FOV, near: 0.1, far: 200, position: [0, CAMERA_Y, 0] }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
         shadows
       >
         <CameraSetup />
 
-        <ambientLight intensity={0.5} />
-        {/* Primary shadow-casting light */}
+        <ambientLight intensity={0.6} />
+        {/* Primary shadow light — offset so dice faces get side-shading even
+            from an overhead camera, keeping them readable */}
         <directionalLight
-          position={[2, 18, 4]}
-          intensity={3.5}
+          position={[4, 20, 6]}
+          intensity={3.0}
           castShadow
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
           shadow-camera-near={0.5}
-          shadow-camera-far={30}
-          shadow-camera-left={-8}
-          shadow-camera-right={8}
-          shadow-camera-top={13}
-          shadow-camera-bottom={-13}
+          shadow-camera-far={35}
+          shadow-camera-left={-14}
+          shadow-camera-right={14}
+          shadow-camera-top={14}
+          shadow-camera-bottom={-14}
           shadow-bias={-0.002}
         />
-        {/* Fill lights */}
-        <directionalLight position={[-6, 10, 4]} intensity={1.2} />
-        <directionalLight position={[6, 10, 4]} intensity={0.9} />
-        <pointLight position={[0, 5, 0]} intensity={0.8} color="#ffffff" />
+        {/* Fill lights from the sides so no face is completely black */}
+        <directionalLight position={[-8, 10, -4]} intensity={1.2} />
+        <directionalLight position={[8, 10, 4]} intensity={0.9} />
+        <pointLight position={[0, 6, 0]} intensity={0.7} color="#ffffff" />
 
         {/* Invisible floor that only renders the shadow cast by dice */}
         <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]} receiveShadow>
