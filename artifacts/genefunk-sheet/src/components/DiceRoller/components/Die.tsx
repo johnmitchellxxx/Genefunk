@@ -105,9 +105,9 @@ function makeD4FaceTexture(
   v0val: number,
   v1val: number,
   v2val: number,
-  p0: [number, number],   // canvas position for vertex[0]
-  p1: [number, number],   // canvas position for vertex[1]
-  p2: [number, number],   // canvas position for vertex[2]
+  p0uv: [number, number],   // UV coords for vertex[0]
+  p1uv: [number, number],   // UV coords for vertex[1]
+  p2uv: [number, number],   // UV coords for vertex[2]
   fontFamily: string,
   fontColor: string,
   fontSize: number,
@@ -116,13 +116,21 @@ function makeD4FaceTexture(
   dieColor: string,
   drawBackground: boolean,
 ): THREE.CanvasTexture {
-  const size = 256;
+  // 512×512 canvas — larger resolution compensates for the severe foreshortening
+  // (~55° face tilt from horizontal) that makes 256px numbers unreadable.
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx2d = canvas.getContext('2d')!;
 
   ctx2d.clearRect(0, 0, size, size);
+
+  // Convert UV → canvas coords at the new size
+  // canvas_x = u*size; canvas_y = (1−v)*size  (flipY=true on CanvasTexture)
+  const p0: [number, number] = [p0uv[0] * size, (1 - p0uv[1]) * size];
+  const p1: [number, number] = [p1uv[0] * size, (1 - p1uv[1]) * size];
+  const p2: [number, number] = [p2uv[0] * size, (1 - p2uv[1]) * size];
 
   // Centroid of the three vertex canvas positions
   const cx = (p0[0] + p1[0] + p2[0]) / 3;
@@ -144,14 +152,16 @@ function makeD4FaceTexture(
   ctx2d.globalAlpha = 1.0;
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
-  const px = Math.round(55 * fontSize);
+  // Scale font proportionally with canvas (was 55 at 256px → ~110 at 512px)
+  // Extra size headroom offsets the foreshortening squish seen from overhead.
+  const px = Math.round(110 * fontSize);
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // Draw each number 55% of the way from centroid toward its vertex —
-  // keeps digits away from the very tip while staying clearly near their corner.
-  // No rotation: digits stay upright and legible from the overhead camera.
-  const FRAC = 0.55;
+  // Draw at 45% from centroid toward each vertex — closer to center than 55%
+  // so numbers sit where the face is least foreshortened from the overhead camera,
+  // while still being clearly positioned near their corner.
+  const FRAC = 0.45;
   const entries: Array<[number, number, number]> = [
     [v0val, cx + FRAC * (p0[0] - cx), cy + FRAC * (p0[1] - cy)],
     [v1val, cx + FRAC * (p1[0] - cx), cy + FRAC * (p1[1] - cy)],
