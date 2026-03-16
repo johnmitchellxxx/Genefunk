@@ -1,5 +1,6 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
@@ -282,6 +283,8 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const meshRef = useRef<THREE.Mesh>(null);
   const settleCountRef = useRef(0);
   const hasSettledRef = useRef(false);
+  // For D4: the result shown in the Html overlay once the die settles
+  const [settledResult, setSettledResult] = useState<number | null>(null);
 
   // Snap-to-flat animation state
   const isSnappingRef = useRef(false);
@@ -356,6 +359,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       snapProgressRef.current = 0;
       snapStartQuatRef.current = null;
       snapTargetQuatRef.current = null;
+      setSettledResult(null);
     }
   }, [rolling]);
 
@@ -461,6 +465,8 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         isSnappingRef.current = true;
 
         onSettle?.(id, result);
+        // D4 result overlay: reveal the number once we know what it is
+        if (dieType === 4) setSettledResult(result);
       }
     } else {
       settleCountRef.current = 0;
@@ -534,6 +540,38 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         />
         {config.interiorObject && (
           <InteriorFigurine type={config.interiorObject} />
+        )}
+        {/* D4 result overlay: one unambiguous number shown after the die settles.
+            Physical D4 vertex-reading is confusing from a top-down camera because
+            three 120°-rotated copies of the same digit look like different symbols.
+            This Html badge bypasses the 3D texture entirely and shows the result
+            in clear 2D screen space, anchored above the die's apex. */}
+        {dieType === 4 && settledResult !== null && (
+          <Html
+            position={[0, 1.1, 0]}
+            center
+            style={{ pointerEvents: 'none', userSelect: 'none' }}
+            zIndexRange={[100, 200]}
+          >
+            <div style={{
+              background: 'rgba(0,0,0,0.82)',
+              border: `2px solid ${config.fontColor}`,
+              borderRadius: '50%',
+              width: 38,
+              height: 38,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: config.fontFamily || 'serif',
+              fontWeight: 'bold',
+              fontSize: 22,
+              color: config.fontColor || '#ffffff',
+              lineHeight: 1,
+              boxShadow: `0 0 8px ${config.fontColor}88`,
+            }}>
+              {settledResult}
+            </div>
+          </Html>
         )}
       </group>
     </RigidBody>
