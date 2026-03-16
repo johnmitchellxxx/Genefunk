@@ -250,8 +250,11 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
     if (dieType === 4) {
-      return D4_FACE_VERTEX_VALUES.map(([topRightVal, bottomCenterVal, topLeftVal]) =>
-        makeD4FaceTexture(topRightVal, bottomCenterVal, topLeftVal, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
+      // Each face shows the result value when that face is the floor (opposite vertex).
+      // Using centered single-number textures (same as all other dice) guarantees
+      // numbers are always visible regardless of UV projection subtleties.
+      return D4_OPPOSITE_VALUES.map(result =>
+        makeNumberTexture(result, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
       );
     }
     return Array.from({ length: faceCount }, (_, i) =>
