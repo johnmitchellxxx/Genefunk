@@ -54,7 +54,7 @@ export const D4_OPPOSITE_VALUES: readonly number[] = [4, 2, 3, 1];
  * textures are rebuilt after a full page reload even if user config is
  * unchanged — avoiding stale cached textures from a previous code version.
  */
-export const D4_FACE_VERSION = 2;
+export const D4_FACE_VERSION = 3;
 
 
 /**
