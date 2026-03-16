@@ -85,21 +85,21 @@ function makeNumberTexture(
 }
 
 /**
- * D4 face texture — draws three numbers in the authentic physical D4 pinwheel
- * layout.  Each number is positioned 65 % of the way from the face centroid
- * toward its vertex and rotated 120° from the others so it reads correctly
- * when that vertex is pointing up.
+ * D4 face texture — draws three numbers, one near each vertex corner.
  *
  * UV triangle vertex → canvas coordinate mapping (canvas y = (1 − UV_y) × 256):
- *   TRI_UV[0] (0.85, 0.80) → canvas (218,  51)  top-right
- *   TRI_UV[1] (0.50, 0.12) → canvas (128, 225)  bottom-center
- *   TRI_UV[2] (0.15, 0.80) → canvas ( 38,  51)  top-left
- * Centroid of these three points ≈ canvas (128, 109).
+ *   TRI_UV[0] (0.85, 0.80) → canvas (218,  51)  top-right  vertex A
+ *   TRI_UV[1] (0.50, 0.12) → canvas (128, 225)  bottom-center vertex B
+ *   TRI_UV[2] (0.15, 0.80) → canvas ( 38,  51)  top-left   vertex C
+ * Centroid ≈ canvas (128, 109).
  *
- * Numbers are placed at 65 % from centroid toward each vertex:
- *   topRight:     (187,  71)   rotated +120° (2π/3)
- *   bottomCenter: (128, 184)   rotated    0° (upright — tip points up)
- *   topLeft:      ( 69,  71)   rotated −120° (−2π/3)
+ * Each number is placed 50 % of the way from the centroid toward its vertex
+ * (pulled back from the tip for readability) and rotated so the TOP of the
+ * digit points toward that vertex tip.
+ *
+ * Rotation formula: θ = atan2(dx, −dy) where (dx, dy) = vertex − centroid
+ * in canvas space (y increases downward), yielding:
+ *   vA: atan2(+90, +58) ≈ +57°   vB: atan2(0, −116) = 180°   vC: atan2(−90, +58) ≈ −57°
  */
 function makeD4FaceTexture(
   topRightVal: number,
@@ -128,8 +128,7 @@ function makeD4FaceTexture(
   const cx = (vA[0] + vB[0] + vC[0]) / 3;  // ≈ 128
   const cy = (vA[1] + vB[1] + vC[1]) / 3;  // ≈ 109
 
-  // Background: fill only the triangular face area so alphaTest correctly
-  // discards pixels outside the UV triangle on translucent dice.
+  // Background: fill only the triangular face area
   if (drawBackground) {
     const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
     const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
@@ -146,18 +145,26 @@ function makeD4FaceTexture(
   ctx2d.globalAlpha = 1.0;
   const weight = bold ? 'bold' : 'normal';
   const style = italic ? 'italic' : 'normal';
-  const px = Math.round(48 * fontSize);
+  // Larger font — D4 numbers must be readable from a top-down camera
+  const px = Math.round(60 * fontSize);
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // Physical D4 pinwheel: each number rotated 120° from the others.
-  // bottomCenter vertex = the tip pointing up → rotate 0° (upright).
-  // topRight → +120° clockwise; topLeft → −120°.
-  const T = 2 * Math.PI / 3;
+  // For each vertex, compute the rotation angle so the digit's TOP points
+  // toward the vertex tip.  In canvas space (y-down):
+  //   text "up" after ctx.rotate(θ) = (sin θ, −cos θ)
+  //   we want this = normalize(vertex − centroid)
+  //   → θ = atan2(dx, −dy)   where (dx, dy) = vertex − centroid
+  const angleFor = (v: [number, number]) =>
+    Math.atan2(v[0] - cx, -(v[1] - cy));
+
+  // Numbers are placed 50 % from centroid toward vertex — close enough to the
+  // tip to look "at the corner" but far enough to avoid clipping.
+  const FRAC = 0.50;
   const entries: [number, number, number, number][] = [
-    [topRightVal,     cx + 0.65 * (vA[0] - cx), cy + 0.65 * (vA[1] - cy),  T],
-    [bottomCenterVal, cx + 0.65 * (vB[0] - cx), cy + 0.65 * (vB[1] - cy),  0],
-    [topLeftVal,      cx + 0.65 * (vC[0] - cx), cy + 0.65 * (vC[1] - cy), -T],
+    [topRightVal,     cx + FRAC * (vA[0] - cx), cy + FRAC * (vA[1] - cy), angleFor(vA)],
+    [bottomCenterVal, cx + FRAC * (vB[0] - cx), cy + FRAC * (vB[1] - cy), angleFor(vB)],
+    [topLeftVal,      cx + FRAC * (vC[0] - cx), cy + FRAC * (vC[1] - cy), angleFor(vC)],
   ];
 
   for (const [val, x, y, angle] of entries) {
@@ -165,12 +172,12 @@ function makeD4FaceTexture(
     ctx2d.translate(x, y);
     ctx2d.rotate(angle);
     ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
-    // Dark outline so numbers are readable on both light and dark backgrounds
-    ctx2d.lineWidth = Math.max(4, px / 10);
+    // Thick outline for contrast against the die face colour
+    ctx2d.lineWidth = Math.max(5, px / 8);
     ctx2d.lineJoin = 'round';
     ctx2d.strokeStyle = drawBackground
-      ? `rgba(0,0,0,0.85)`
-      : `rgba(0,0,0,0.6)`;
+      ? `rgba(0,0,0,0.90)`
+      : `rgba(0,0,0,0.70)`;
     ctx2d.strokeText(String(val), 0, 0);
     ctx2d.fillStyle = fontColor;
     ctx2d.fillText(String(val), 0, 0);

@@ -9,8 +9,13 @@ import { Die } from './Die';
 // CAMERA_Z must be 0 — any offset creates a tilt.
 // camera.up = (0,0,-1) because when looking straight down the world-Y
 // "up" is degenerate; we use world -Z as the screen-up direction instead.
-const CAMERA_Y = 18.0;
-const CAMERA_FOV = 50;
+//
+// FOV=25 + height=38 keeps the same ground coverage as FOV=50 + height=18
+// (halfZ = tan(FOV/2) × height is equal in both cases) while reducing
+// perspective warp at the edges to near-zero — objects at the corners no
+// longer appear noticeably skewed or foreshortened.
+const CAMERA_Y = 38.0;
+const CAMERA_FOV = 25;
 
 /**
  * Compute arena half-extents so physics walls sit just outside the visible
