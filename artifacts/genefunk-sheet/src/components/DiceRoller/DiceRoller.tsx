@@ -23,13 +23,17 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
   const [rollModifier, setRollModifier] = useState(0);
   const pendingAutoRollRef = useRef<AutoRoll | null>(null);
 
+  // Track current expanded pool in a ref so fireRoll doesn't need it as a dep
+  const poolExpandedRef = useRef<number[]>([]);
+  poolExpandedRef.current = pool.expanded as number[];
+
   const fireRoll = useCallback(() => {
     setSettledResults([]);
     setSettled(false);
     setShowScene(true);
     setRolling(true);
     setRollKey(k => k + 1);
-    sound.startRolling();
+    sound.startRolling(poolExpandedRef.current);
   }, [sound]);
 
   const handleRoll = useCallback(() => {
@@ -61,7 +65,7 @@ export function DiceRoller({ onResult, onClose, userId, autoRoll, quickMode }: D
     sound.stopRolling();
 
     const isAnyMax = newResults.some(r => r.result === r.dieType);
-    sound.playSettle(isAnyMax);
+    sound.playSettle(isAnyMax, newResults.map(r => r.dieType));
 
     setSettledResults(newResults);
 
