@@ -51,6 +51,23 @@ export const D4_FACE_VERTEX_VALUES: readonly [number, number, number][] = [
 export const D4_OPPOSITE_VALUES: readonly number[] = [4, 2, 3, 1];
 
 /**
+ * Face centroid positions in tetrahedron LOCAL space (unscaled by dieScale).
+ * For TetrahedronGeometry(0.85):  vertices at radius 0.85 → ±0.4907 per axis.
+ * Centroids are at  ±(0.85/(3√3)) ≈ ±0.1636 per axis.
+ *
+ * Order matches the buffer face order [v2,v1,v0], [v0,v3,v2], [v1,v3,v0], [v2,v3,v1].
+ * Use these as <Html position={...}> inside <group scale={dieScale}> so that the
+ * label is automatically placed at the correct world-space centroid after physics
+ * rotation + snap, without any manual quaternion math.
+ */
+export const D4_FACE_CENTROIDS: readonly [number, number, number][] = [
+  [-0.1636,  0.1636,  0.1636],  // face 0  [v2,v1,v0]
+  [ 0.1636,  0.1636, -0.1636],  // face 1  [v0,v3,v2]
+  [ 0.1636, -0.1636,  0.1636],  // face 2  [v1,v3,v0]
+  [-0.1636, -0.1636, -0.1636],  // face 3  [v2,v3,v1]
+];
+
+/**
  * Bump this whenever the D4 texture generation logic changes.
  * Including it in Die.tsx's numberTextures useMemo dep array ensures the
  * textures are rebuilt after a full page reload even if user config is

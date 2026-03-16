@@ -4,7 +4,7 @@ import { Html } from '@react-three/drei';
 import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
-import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES, D4_FACE_VERTEX_VALUES, D4_FACE_VERSION } from '../utils/diceGeometry';
+import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES, D4_FACE_VERSION, D4_FACE_CENTROIDS } from '../utils/diceGeometry';
 
 interface DieProps {
   dieType: DieType;
@@ -86,99 +86,38 @@ function makeNumberTexture(
 }
 
 /**
- * D4 face texture — three numbers, one near each vertex corner, all upright.
+ * D4 face texture — background colour only, NO digits.
  *
- * Canvas positions are derived from projectFaceUVs (useProjection=true) output
- * for a regular tetrahedron face (all four faces share the same UV pattern):
- *
- *   vertex[0] → UV (0.900, 0.500) → canvas (230, 128)   ← RIGHT
- *   vertex[1] → UV (0.300, 0.846) → canvas ( 77,  39)   ← UPPER-LEFT
- *   vertex[2] → UV (0.300, 0.154) → canvas ( 77, 217)   ← LOWER-LEFT
- *   centroid  → UV (0.500, 0.500) → canvas (128, 128)
- *
- * (canvas_x = UV_u × 256;  canvas_y = (1 − UV_v) × 256)
- *
- * These must match the geometry UVs exactly so each number appears at its
- * vertex's 3D position, visible from the overhead camera.
+ * Digits drawn on tetrahedron face textures always appear rotated / mirrored
+ * from the overhead camera because the die's Y-axis spin after physics is
+ * random.  A "4" can look like an "N" or "Z" depending on how the die lands.
+ * The actual result numbers are rendered as screen-space <Html> labels placed
+ * at the visible face centroids after the die settles (see render section below).
  */
 function makeD4FaceTexture(
-  v0val: number,
-  v1val: number,
-  v2val: number,
-  p0uv: [number, number],   // UV coords for vertex[0]
-  p1uv: [number, number],   // UV coords for vertex[1]
-  p2uv: [number, number],   // UV coords for vertex[2]
-  fontFamily: string,
-  fontColor: string,
-  fontSize: number,
-  bold: boolean,
-  italic: boolean,
   dieColor: string,
   drawBackground: boolean,
+  p0uv: [number, number],
+  p1uv: [number, number],
+  p2uv: [number, number],
 ): THREE.CanvasTexture {
-  // 512×512 canvas — larger resolution compensates for the severe foreshortening
-  // (~55° face tilt from horizontal) that makes 256px numbers unreadable.
-  const size = 512;
+  const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx2d = canvas.getContext('2d')!;
-
   ctx2d.clearRect(0, 0, size, size);
-
-  // Convert UV → canvas coords at the new size
-  // canvas_x = u*size; canvas_y = (1−v)*size  (flipY=true on CanvasTexture)
-  const p0: [number, number] = [p0uv[0] * size, (1 - p0uv[1]) * size];
-  const p1: [number, number] = [p1uv[0] * size, (1 - p1uv[1]) * size];
-  const p2: [number, number] = [p2uv[0] * size, (1 - p2uv[1]) * size];
-
-  // Centroid of the three vertex canvas positions
-  const cx = (p0[0] + p1[0] + p2[0]) / 3;
-  const cy = (p0[1] + p1[1] + p2[1]) / 3;
 
   if (drawBackground) {
     const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
     const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
-    ctx2d.globalAlpha = 1.0;
     ctx2d.fillStyle = darkBg;
     ctx2d.beginPath();
-    ctx2d.moveTo(p0[0], p0[1]);
-    ctx2d.lineTo(p1[0], p1[1]);
-    ctx2d.lineTo(p2[0], p2[1]);
+    ctx2d.moveTo(p0uv[0] * size, (1 - p0uv[1]) * size);
+    ctx2d.lineTo(p1uv[0] * size, (1 - p1uv[1]) * size);
+    ctx2d.lineTo(p2uv[0] * size, (1 - p2uv[1]) * size);
     ctx2d.closePath();
     ctx2d.fill();
-  }
-
-  ctx2d.globalAlpha = 1.0;
-  const weight = bold ? 'bold' : 'normal';
-  const style = italic ? 'italic' : 'normal';
-  // Scale font proportionally with canvas (was 55 at 256px → ~110 at 512px)
-  // Extra size headroom offsets the foreshortening squish seen from overhead.
-  const px = Math.round(110 * fontSize);
-  ctx2d.textAlign = 'center';
-  ctx2d.textBaseline = 'middle';
-
-  // Draw at 45% from centroid toward each vertex — closer to center than 55%
-  // so numbers sit where the face is least foreshortened from the overhead camera,
-  // while still being clearly positioned near their corner.
-  const FRAC = 0.45;
-  const entries: Array<[number, number, number]> = [
-    [v0val, cx + FRAC * (p0[0] - cx), cy + FRAC * (p0[1] - cy)],
-    [v1val, cx + FRAC * (p1[0] - cx), cy + FRAC * (p1[1] - cy)],
-    [v2val, cx + FRAC * (p2[0] - cx), cy + FRAC * (p2[1] - cy)],
-  ];
-
-  for (const [val, x, y] of entries) {
-    ctx2d.save();
-    ctx2d.translate(x, y);
-    ctx2d.font = `${style} ${weight} ${px}px ${fontFamily}`;
-    ctx2d.lineWidth = Math.max(5, px / 7);
-    ctx2d.lineJoin = 'round';
-    ctx2d.strokeStyle = drawBackground ? `rgba(0,0,0,0.92)` : `rgba(0,0,0,0.75)`;
-    ctx2d.strokeText(String(val), 0, 0);
-    ctx2d.fillStyle = fontColor;
-    ctx2d.fillText(String(val), 0, 0);
-    ctx2d.restore();
   }
 
   return new THREE.CanvasTexture(canvas);
@@ -279,8 +218,9 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const meshRef = useRef<THREE.Mesh>(null);
   const settleCountRef = useRef(0);
   const hasSettledRef = useRef(false);
-  // For D4: the result shown in the Html overlay once the die settles
+  // For D4: the result + which face is on the floor (used to pick visible faces for Html labels)
   const [settledResult, setSettledResult] = useState<number | null>(null);
+  const [d4FloorFace, setD4FloorFace] = useState<number | null>(null);
 
   // Snap-to-flat animation state
   const isSnappingRef = useRef(false);
@@ -293,13 +233,10 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
     if (dieType === 4 && d4VertexUVs) {
-      // D4: three upright numbers per face, positioned at actual UV-derived canvas coords.
-      // Pass raw UV coords — makeD4FaceTexture converts to canvas at 512px.
-      // D4_FACE_VERSION is in the deps so bumping it busts any stale cache.
-      return D4_FACE_VERTEX_VALUES.map(([v0val, v1val, v2val], faceIdx) => {
-        const [p0uv, p1uv, p2uv] = d4VertexUVs[faceIdx];
-        return makeD4FaceTexture(v0val, v1val, v2val, p0uv, p1uv, p2uv, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground);
-      });
+      // D4: background-only textures — digits are handled by screen-space Html overlays.
+      return d4VertexUVs.map(([p0uv, p1uv, p2uv]) =>
+        makeD4FaceTexture(config.color, drawBackground, p0uv, p1uv, p2uv)
+      );
     }
     return Array.from({ length: faceCount }, (_, i) =>
       makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
@@ -357,6 +294,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
       snapStartQuatRef.current = null;
       snapTargetQuatRef.current = null;
       setSettledResult(null);
+      setD4FloorFace(null);
     }
   }, [rolling]);
 
@@ -426,21 +364,23 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
 
         let result: number;
         let targetQuat: THREE.Quaternion;
+        let d4FloorFaceIdx = -1;  // set in the D4 branch; used for Html overlay
 
         if (dieType === 4) {
           // D4 rests on a face with a vertex pointing up.
           // Find the face whose normal is most downward — that is the floor face.
           const downDir = new THREE.Vector3(0, -1, 0);
-          let bestDownDot = -Infinity, floorFaceIdx = 0;
+          let bestDownDot = -Infinity;
+          d4FloorFaceIdx = 0;
           faceNormals.forEach((n, i) => {
             const dot = n.clone().applyQuaternion(currentQuat).dot(downDir);
-            if (dot > bestDownDot) { bestDownDot = dot; floorFaceIdx = i; }
+            if (dot > bestDownDot) { bestDownDot = dot; d4FloorFaceIdx = i; }
           });
-          result = D4_OPPOSITE_VALUES[floorFaceIdx];
+          result = D4_OPPOSITE_VALUES[d4FloorFaceIdx];
 
           // Snap: rotate so the floor face normal aligns exactly with world -Y,
           // which naturally puts the result vertex at the top (+Y).
-          const floorNormalLocal = faceNormals[floorFaceIdx].clone();
+          const floorNormalLocal = faceNormals[d4FloorFaceIdx].clone();
           const worldFloorNormal = floorNormalLocal.applyQuaternion(currentQuat);
           const deltaQ = new THREE.Quaternion().setFromUnitVectors(worldFloorNormal, downDir);
           targetQuat = deltaQ.clone().multiply(currentQuat);
@@ -462,8 +402,10 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         isSnappingRef.current = true;
 
         onSettle?.(id, result);
-        // D4 result overlay: reveal the number once we know what it is
-        if (dieType === 4) setSettledResult(result);
+        if (dieType === 4) {
+          setSettledResult(result);
+          setD4FloorFace(floorFaceIdx);
+        }
       }
     } else {
       settleCountRef.current = 0;
@@ -538,47 +480,44 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         {config.interiorObject && (
           <InteriorFigurine type={config.interiorObject} />
         )}
-        {/* D4 result overlay: one unambiguous number shown after the die settles.
-            Physical D4 vertex-reading is confusing from a top-down camera because
-            three 120°-rotated copies of the same digit look like different symbols.
-            This Html badge bypasses the 3D texture entirely and shows the result
-            in clear 2D screen space, anchored above the die's apex. */}
-        {dieType === 4 && settledResult !== null && (
-          <Html
-            position={[0, 0, 0]}
-            center
-            style={{
-              pointerEvents: 'none',
-              userSelect: 'none',
-              // Shift the badge UP in screen space (CSS Y decreases upward).
-              // Using screen-space pixels here is intentional — the overhead camera
-              // maps world-Y to depth (not screen-Y), so a world offset would just
-              // cause parallax drift.  A CSS translateY pulls the badge cleanly
-              // above the die apex regardless of where in the arena the die landed.
-              transform: 'translateY(-90px)',
-            }}
-            zIndexRange={[100, 200]}
-          >
-            <div style={{
-              background: 'rgba(0,0,0,0.85)',
-              border: `2px solid ${config.fontColor}`,
-              borderRadius: '50%',
-              width: 42,
-              height: 42,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: config.fontFamily || 'serif',
-              fontWeight: 'bold',
-              fontSize: 24,
-              color: config.fontColor || '#ffffff',
-              lineHeight: 1,
-              boxShadow: `0 0 10px ${config.fontColor}99`,
-            }}>
-              {settledResult}
-            </div>
-          </Html>
-        )}
+        {/* D4 result labels: one per VISIBLE face, anchored at each face's
+            centroid in local 3D space so they track the die's settled position.
+            Screen-space text (Html) is always upright regardless of how physics
+            rotated the die — fixing the "rotated digits look like wrong letters"
+            problem that face textures can never solve from an overhead camera. */}
+        {dieType === 4 && settledResult !== null && d4FloorFace !== null &&
+          D4_FACE_CENTROIDS.map((centroid, faceIdx) => {
+            if (faceIdx === d4FloorFace) return null;
+            return (
+              <Html
+                key={faceIdx}
+                position={centroid}
+                center
+                style={{ pointerEvents: 'none', userSelect: 'none' }}
+                zIndexRange={[100, 200]}
+              >
+                <div style={{
+                  background: 'rgba(0,0,0,0.82)',
+                  border: `2px solid ${config.fontColor || '#ffffff'}`,
+                  borderRadius: '50%',
+                  width: 36,
+                  height: 36,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontFamily: config.fontFamily || 'serif',
+                  fontWeight: 'bold',
+                  fontSize: 20,
+                  color: config.fontColor || '#ffffff',
+                  lineHeight: 1,
+                  boxShadow: `0 0 8px ${config.fontColor || '#ffffff'}99`,
+                }}>
+                  {settledResult}
+                </div>
+              </Html>
+            );
+          })
+        }
       </group>
     </RigidBody>
   );
