@@ -1,7 +1,13 @@
 import { schedule } from 'node-cron';
 import { db } from '@workspace/db';
 import { charactersTable } from '@workspace/db/schema';
-import { isNull, like } from 'drizzle-orm';
+import { isNull, inArray, and, like } from 'drizzle-orm';
+
+/**
+ * The four player user IDs that get weekly backups.
+ * Theron is included so his character is backed up automatically once he creates one.
+ */
+const PLAYER_USER_IDS = ['john', 'kevin', 'simon', 'theron'];
 
 function getDateLabel(): string {
   const now = new Date();
@@ -12,11 +18,16 @@ export async function runWeeklyBackup(): Promise<{ created: number; skipped: num
   const dateLabel = getDateLabel();
   const suffix = ` ${dateLabel}`;
 
-  // Get all active (non-deleted) characters
+  // Get all active (non-deleted) characters for the player roster
   const activeCharacters = await db
     .select()
     .from(charactersTable)
-    .where(isNull(charactersTable.deletedAt));
+    .where(
+      and(
+        isNull(charactersTable.deletedAt),
+        inArray(charactersTable.userId, PLAYER_USER_IDS),
+      )
+    );
 
   let created = 0;
   let skipped = 0;
@@ -66,5 +77,5 @@ export function startBackupScheduler() {
     }
   });
 
-  console.log('[backup] Weekly character snapshot scheduler started (runs Sundays at midnight)');
+  console.log('[backup] Weekly snapshot scheduler started — runs Sundays at midnight for players: ' + PLAYER_USER_IDS.join(', '));
 }
