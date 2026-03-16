@@ -4,7 +4,7 @@ import { Html } from '@react-three/drei';
 import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
-import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES, D4_FACE_VERSION, D4_FACE_CENTROIDS } from '../utils/diceGeometry';
+import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES, D4_FACE_VERSION } from '../utils/diceGeometry';
 
 interface DieProps {
   dieType: DieType;
@@ -524,44 +524,47 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         {config.interiorObject && (
           <InteriorFigurine type={config.interiorObject} />
         )}
-        {/* D4 result labels: one per VISIBLE face, anchored at each face's
-            centroid in local 3D space so they track the die's settled position.
-            Screen-space text (Html) is always upright regardless of how physics
-            rotated the die — fixing the "rotated digits look like wrong letters"
-            problem that face textures can never solve from an overhead camera. */}
-        {dieType === 4 && settledResult !== null && d4FloorFace !== null &&
-          D4_FACE_CENTROIDS.map((centroid, faceIdx) => {
-            if (faceIdx === d4FloorFace) return null;
-            return (
-              <Html
-                key={faceIdx}
-                position={centroid}
-                center
-                style={{ pointerEvents: 'none', userSelect: 'none' }}
-                zIndexRange={[100, 200]}
-              >
-                <div style={{
-                  background: 'rgba(0,0,0,0.82)',
-                  border: `2px solid ${config.fontColor || '#ffffff'}`,
-                  borderRadius: '50%',
-                  width: 36,
-                  height: 36,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontFamily: config.fontFamily || 'serif',
-                  fontWeight: 'bold',
-                  fontSize: 20,
-                  color: config.fontColor || '#ffffff',
-                  lineHeight: 1,
-                  boxShadow: `0 0 8px ${config.fontColor || '#ffffff'}99`,
-                }}>
-                  {settledResult}
-                </div>
-              </Html>
-            );
-          })
-        }
+        {/* D4 result label: ONE circle at the apex vertex (the single top corner
+            that all three visible faces share — exactly how a real D4 is read).
+            Screen-space Html is always upright regardless of physics Y-spin. */}
+        {dieType === 4 && settledResult !== null && d4FloorFace !== null && (() => {
+          // Apex vertex local positions for each floor face (TetrahedronGeometry r=0.85)
+          // v0=(+,+,+) v1=(-,-,+) v2=(-,+,-) v3=(+,-,-)
+          // floor=0→apex=v3, floor=1→apex=v1, floor=2→apex=v2, floor=3→apex=v0
+          const D4_APEX: [number,number,number][] = [
+            [ 0.4907, -0.4907, -0.4907],
+            [-0.4907, -0.4907,  0.4907],
+            [-0.4907,  0.4907, -0.4907],
+            [ 0.4907,  0.4907,  0.4907],
+          ];
+          return (
+            <Html
+              position={D4_APEX[d4FloorFace]}
+              center
+              style={{ pointerEvents: 'none', userSelect: 'none' }}
+              zIndexRange={[100, 200]}
+            >
+              <div style={{
+                background: 'rgba(0,0,0,0.82)',
+                border: `2px solid ${config.fontColor || '#ffffff'}`,
+                borderRadius: '50%',
+                width: 40,
+                height: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: config.fontFamily || 'serif',
+                fontWeight: 'bold',
+                fontSize: 22,
+                color: config.fontColor || '#ffffff',
+                lineHeight: 1,
+                boxShadow: `0 0 10px ${config.fontColor || '#ffffff'}bb`,
+              }}>
+                {settledResult}
+              </div>
+            </Html>
+          );
+        })()}
       </group>
     </RigidBody>
   );
