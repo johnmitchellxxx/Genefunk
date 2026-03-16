@@ -1863,9 +1863,9 @@ function FeaturesPanel({ character, onUpdate }: PanelProps) {
             }}
             className="w-full bg-background border border-border text-foreground font-mono text-[11px] px-2 py-1.5 focus:outline-none focus:border-primary"
           >
-            <option value="">— Pick from rulebook, or type custom below —</option>
+            <option value="">— Custom Feature or Trait —</option>
             {Object.entries(groupedFeatures).map(([source, feats]) => (
-              <optgroup key={source} label={source}>
+              <optgroup key={source} label={`── ${source} ──`}>
                 {feats.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
               </optgroup>
             ))}
