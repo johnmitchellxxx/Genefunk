@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import type { DieType, DieConfig } from '../types';
-import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES } from '../utils/diceGeometry';
+import { getDieGeometry, getFaceUp, D4_OPPOSITE_VALUES, D4_FACE_VERTEX_VALUES } from '../utils/diceGeometry';
 
 interface DieProps {
   dieType: DieType;
@@ -287,11 +287,12 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
     if (dieType === 4) {
-      // D4: each face shows the same number 3 times — once near each vertex,
-      // rotated toward that vertex so it's readable from any direction.
-      // The number on each face = the result you get when that face is the floor.
-      return D4_OPPOSITE_VALUES.map(result =>
-        makeD4FaceTexture(result, result, result, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
+      // D4: each face shows 3 DIFFERENT numbers — one near each vertex corner.
+      // The number near a vertex = the value of that vertex, not the face result.
+      // This matches physical D4 dice: the result is read from whichever vertex
+      // points up (all 3 side faces show the same number at that apex corner).
+      return D4_FACE_VERTEX_VALUES.map(([topR, botC, topL]) =>
+        makeD4FaceTexture(topR, botC, topL, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)
       );
     }
     return Array.from({ length: faceCount }, (_, i) =>
