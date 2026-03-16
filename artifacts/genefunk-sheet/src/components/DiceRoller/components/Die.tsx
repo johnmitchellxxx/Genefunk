@@ -548,26 +548,35 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
             in clear 2D screen space, anchored above the die's apex. */}
         {dieType === 4 && settledResult !== null && (
           <Html
-            position={[0, 1.1, 0]}
+            position={[0, 0, 0]}
             center
-            style={{ pointerEvents: 'none', userSelect: 'none' }}
+            style={{
+              pointerEvents: 'none',
+              userSelect: 'none',
+              // Shift the badge UP in screen space (CSS Y decreases upward).
+              // Using screen-space pixels here is intentional — the overhead camera
+              // maps world-Y to depth (not screen-Y), so a world offset would just
+              // cause parallax drift.  A CSS translateY pulls the badge cleanly
+              // above the die apex regardless of where in the arena the die landed.
+              transform: 'translateY(-90px)',
+            }}
             zIndexRange={[100, 200]}
           >
             <div style={{
-              background: 'rgba(0,0,0,0.82)',
+              background: 'rgba(0,0,0,0.85)',
               border: `2px solid ${config.fontColor}`,
               borderRadius: '50%',
-              width: 38,
-              height: 38,
+              width: 42,
+              height: 42,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontFamily: config.fontFamily || 'serif',
               fontWeight: 'bold',
-              fontSize: 22,
+              fontSize: 24,
               color: config.fontColor || '#ffffff',
               lineHeight: 1,
-              boxShadow: `0 0 8px ${config.fontColor}88`,
+              boxShadow: `0 0 10px ${config.fontColor}99`,
             }}>
               {settledResult}
             </div>
