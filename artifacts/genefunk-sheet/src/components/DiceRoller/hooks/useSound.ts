@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { startDiceRoll, playDiceSettle } from '../utils/audioSynth';
 
 export interface UseSoundReturn {
@@ -9,6 +9,13 @@ export interface UseSoundReturn {
 
 export function useSound(): UseSoundReturn {
   const stopRollRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      stopRollRef.current?.();
+      stopRollRef.current = null;
+    };
+  }, []);
 
   const startRolling = useCallback((dicePool: number[]) => {
     if (stopRollRef.current) {
