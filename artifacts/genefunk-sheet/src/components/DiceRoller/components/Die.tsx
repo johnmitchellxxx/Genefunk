@@ -404,7 +404,7 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
         onSettle?.(id, result);
         if (dieType === 4) {
           setSettledResult(result);
-          setD4FloorFace(floorFaceIdx);
+          setD4FloorFace(d4FloorFaceIdx);
         }
       }
     } else {
