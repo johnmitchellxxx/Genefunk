@@ -54,7 +54,7 @@ export const D4_OPPOSITE_VALUES: readonly number[] = [4, 2, 3, 1];
  * textures are rebuilt after a full page reload even if user config is
  * unchanged — avoiding stale cached textures from a previous code version.
  */
-export const D4_FACE_VERSION = 3;
+export const D4_FACE_VERSION = 4;
 
 
 /**
@@ -187,8 +187,9 @@ function addFaceGroups(
 }
 
 function buildTetrahedron(): DieGeometryInfo {
-  // D4: keep TRI_UV (makeD4FaceTexture draws numbers at the matching canvas positions)
-  const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.85), 1, false);
+  // D4: useProjection=true so UV positions come from the cross-product normal projection,
+  // which matches the canvas positions hardcoded in makeD4FaceTexture.
+  const geo = addFaceGroups(new THREE.TetrahedronGeometry(0.85), 1, true);
   const faceNormals = computeFaceNormals(geo, 1);
   return { geometry: geo, faceCount: 4, faceNormals };
 }

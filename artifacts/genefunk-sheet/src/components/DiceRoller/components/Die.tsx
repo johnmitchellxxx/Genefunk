@@ -88,21 +88,23 @@ function makeNumberTexture(
 /**
  * D4 face texture — three numbers, one near each vertex corner, all upright.
  *
- * UV triangle vertex → canvas coordinate mapping (canvas y = (1 − UV_y) × 256):
- *   TRI_UV[0] (0.85, 0.80) → canvas (218,  51)  top-right  vertex A
- *   TRI_UV[1] (0.50, 0.12) → canvas (128, 225)  bottom-center vertex B
- *   TRI_UV[2] (0.15, 0.80) → canvas ( 38,  51)  top-left   vertex C
- * Centroid ≈ canvas (128, 109).
+ * Canvas positions are derived from projectFaceUVs (useProjection=true) output
+ * for a regular tetrahedron face (all four faces share the same UV pattern):
  *
- * Numbers are drawn UPRIGHT (no rotation).  The per-vertex rotation that
- * previously pointed digits toward their vertex tip compounded with the
- * overhead camera's ~54° face-tilt and turned "2"→"S", "3"→"ε", etc.
- * Keeping angle=0 leaves digits recognisable from any viewing direction.
+ *   vertex[0] → UV (0.900, 0.500) → canvas (230, 128)   ← RIGHT
+ *   vertex[1] → UV (0.300, 0.846) → canvas ( 77,  39)   ← UPPER-LEFT
+ *   vertex[2] → UV (0.300, 0.154) → canvas ( 77, 217)   ← LOWER-LEFT
+ *   centroid  → UV (0.500, 0.500) → canvas (128, 128)
+ *
+ * (canvas_x = UV_u × 256;  canvas_y = (1 − UV_v) × 256)
+ *
+ * These must match the geometry UVs exactly so each number appears at its
+ * vertex's 3D position, visible from the overhead camera.
  */
 function makeD4FaceTexture(
-  topRightVal: number,
-  bottomCenterVal: number,
-  topLeftVal: number,
+  v0val: number,
+  v1val: number,
+  v2val: number,
   fontFamily: string,
   fontColor: string,
   fontSize: number,
@@ -119,11 +121,12 @@ function makeD4FaceTexture(
 
   ctx2d.clearRect(0, 0, size, size);
 
-  const vA: [number, number] = [218, 51];   // top-right  (TRI_UV[0])
-  const vB: [number, number] = [128, 225];  // bottom-center (TRI_UV[1])
-  const vC: [number, number] = [38,  51];   // top-left   (TRI_UV[2])
-  const cx = (vA[0] + vB[0] + vC[0]) / 3;  // ≈ 128
-  const cy = (vA[1] + vB[1] + vC[1]) / 3;  // ≈ 109
+  // Canvas positions matching projectFaceUVs output for D4 (scale=0.40)
+  const p0: [number, number] = [230, 128];  // vertex[0] — RIGHT
+  const p1: [number, number] = [77,   39];  // vertex[1] — UPPER-LEFT
+  const p2: [number, number] = [77,  217];  // vertex[2] — LOWER-LEFT
+  const cx = 128;
+  const cy = 128;
 
   if (drawBackground) {
     const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
@@ -131,9 +134,9 @@ function makeD4FaceTexture(
     ctx2d.globalAlpha = 1.0;
     ctx2d.fillStyle = darkBg;
     ctx2d.beginPath();
-    ctx2d.moveTo(vA[0], vA[1]);
-    ctx2d.lineTo(vB[0], vB[1]);
-    ctx2d.lineTo(vC[0], vC[1]);
+    ctx2d.moveTo(p0[0], p0[1]);
+    ctx2d.lineTo(p1[0], p1[1]);
+    ctx2d.lineTo(p2[0], p2[1]);
     ctx2d.closePath();
     ctx2d.fill();
   }
@@ -145,13 +148,14 @@ function makeD4FaceTexture(
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
-  // Place each number 55% of the way from the centroid toward its vertex.
-  // No rotation — digits stay upright and legible from the overhead camera.
+  // Draw each number 55% of the way from centroid toward its vertex —
+  // keeps digits away from the very tip while staying clearly near their corner.
+  // No rotation: digits stay upright and legible from the overhead camera.
   const FRAC = 0.55;
   const entries: Array<[number, number, number]> = [
-    [topRightVal,     cx + FRAC * (vA[0] - cx), cy + FRAC * (vA[1] - cy)],
-    [bottomCenterVal, cx + FRAC * (vB[0] - cx), cy + FRAC * (vB[1] - cy)],
-    [topLeftVal,      cx + FRAC * (vC[0] - cx), cy + FRAC * (vC[1] - cy)],
+    [v0val, cx + FRAC * (p0[0] - cx), cy + FRAC * (p0[1] - cy)],
+    [v1val, cx + FRAC * (p1[0] - cx), cy + FRAC * (p1[1] - cy)],
+    [v2val, cx + FRAC * (p2[0] - cx), cy + FRAC * (p2[1] - cy)],
   ];
 
   for (const [val, x, y] of entries) {
