@@ -50,6 +50,13 @@ const D20_PATH = (
   </>
 );
 
+const GearIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+);
+
 export function FloatingTray({
   counts, onIncrement, onDecrement, onRoll, onClear, onCustomize, totalDice, rolling,
 }: FloatingTrayProps) {
@@ -61,6 +68,8 @@ export function FloatingTray({
     setOpen(false);
     onClear();
   };
+
+  const handleReset = () => onClear();
 
   const startLongPress = (dieType: DieType) => {
     longPressRef.current = setTimeout(() => {
@@ -88,12 +97,21 @@ export function FloatingTray({
 
   return (
     <div
-      className="fixed bottom-6 right-4 z-20 flex flex-col items-center gap-2.5"
+      className="fixed bottom-6 right-4 z-20 flex flex-col items-end gap-2.5"
       style={{ pointerEvents: 'auto' }}
     >
       {open && (
         <>
-          {/* Die column — D4 at top, D20 nearest FAB */}
+          {/* ── Customize — prominent pill at the very top ── */}
+          <button
+            onClick={onCustomize}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-zinc-800/95 border border-white/15 text-zinc-200 hover:text-white hover:bg-zinc-700/95 text-xs font-semibold tracking-wide shadow-lg transition-all duration-150 whitespace-nowrap animate-in slide-in-from-bottom-4 fade-in duration-200"
+          >
+            <GearIcon />
+            Customize Dice
+          </button>
+
+          {/* ── Die column — D4 at top, D20 nearest FAB ── */}
           <div className="flex flex-col items-center gap-2 animate-in slide-in-from-bottom-4 fade-in duration-200">
             {TRAY_ORDER.slice().reverse().map(dieType => {
               const count = counts[dieType];
@@ -132,35 +150,38 @@ export function FloatingTray({
             })}
           </div>
 
-          {/* Roll pill — only when dice are selected */}
-          {totalDice > 0 && (
+          {/* ── Roll + Reset row ── */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleReset}
+              disabled={totalDice === 0}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full font-bold text-xs tracking-wide
+                bg-zinc-700/95 border border-white/10 text-zinc-200 hover:text-white hover:bg-zinc-600/95
+                transition-all duration-150 shadow-lg active:scale-95
+                disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Reset
+            </button>
+
             <button
               onClick={handleRoll}
-              disabled={rolling}
+              disabled={rolling || totalDice === 0}
               className={`
                 flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm tracking-wide
                 transition-all duration-150 shadow-lg active:scale-95
-                ${rolling
+                ${rolling || totalDice === 0
                   ? 'bg-primary/40 text-primary/60 cursor-not-allowed'
                   : 'bg-primary text-black hover:brightness-110 shadow-primary/40'}
               `}
             >
-              {rolling ? '…' : `Roll ${totalDice}d`}
+              {rolling ? '…' : totalDice > 0 ? `Roll ${totalDice}d` : 'Roll'}
             </button>
-          )}
+          </div>
 
-          {/* Customize tiny link */}
-          <button
-            onClick={onCustomize}
-            className="text-[9px] text-zinc-500 hover:text-zinc-300 font-mono tracking-widest uppercase transition-colors"
-          >
-            Customize
-          </button>
-
-          {/* X close button */}
+          {/* ── Close ── */}
           <button
             onClick={handleClose}
-            className="w-[52px] h-[52px] rounded-full bg-zinc-900/95 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800/95 flex items-center justify-center shadow-lg transition-all duration-150 text-xl"
+            className="w-[52px] h-[52px] rounded-full bg-zinc-900/95 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800/95 flex items-center justify-center shadow-lg transition-all duration-150 text-xl self-center"
             aria-label="Close dice tray"
           >
             ✕

@@ -5,12 +5,29 @@ import * as THREE from 'three';
 import type { DieType, DieConfig, RollResult } from '../types';
 import { Die } from './Die';
 
-// Nearly-overhead portrait camera — full arena visible on a phone screen
-// Portrait aspect ≈ 0.46, so horizontal FOV is much smaller than vertical.
-// Y=16, Z=2 gives ~15° tilt from overhead — enough depth without losing arena edges.
+// Nearly-overhead camera — Y=16, Z=2 gives ~15° tilt from overhead.
 const CAMERA_Y = 16.0;
 const CAMERA_Z = 2.0;
 const CAMERA_FOV = 55;
+
+/**
+ * Compute arena half-extents so the physics walls always align with the
+ * edges of the visible viewport, regardless of screen size or orientation.
+ *
+ * Camera is fixed at (0, CAMERA_Y, CAMERA_Z) looking at origin, vFOV=55°.
+ * Analytical frustum-ground intersection:
+ *  - Z extent is constant (determined by vFOV + camera height) ≈ ±8.5 world units
+ *  - X extent scales linearly with the viewport aspect ratio
+ */
+function computeArena(): { x: number; z: number } {
+  const aspect = window.innerWidth / window.innerHeight;
+  const vFovRad = (CAMERA_FOV * Math.PI) / 180;
+  const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
+  // Ground half-extents: tan(halfFOV) × camera_height, with 15% margin for walls
+  const halfZ = Math.tan(vFovRad / 2) * CAMERA_Y * 1.15;
+  const halfX = Math.tan(hFovRad / 2) * CAMERA_Y * 1.15;
+  return { x: Math.max(5, halfX), z: Math.max(8, halfZ) };
+}
 
 function CameraSetup() {
   const { camera } = useThree();
@@ -35,13 +52,10 @@ interface DiceSceneProps {
 const SPAWN_SIDES = ['left', 'right', 'top', 'bottom'] as const;
 type SpawnSide = typeof SPAWN_SIDES[number];
 
-// Portrait phone ≈ 0.46 aspect. At Y=16, Z=2, FOV=55:
-//   Horizontal view half-span ≈ ±3.8 units → ARENA_X = 5  (spawn at ±3.75)
-//   Vertical view half-span   ≈ ±8.0 units → ARENA_Z = 10 (spawn at ±7.5)
-const ARENA_X = 5;
-const ARENA_Z = 10;
-
 export function DiceScene({ pool, config, rolling, settled, onAllSettled }: DiceSceneProps) {
+  // Compute once per mount (the component remounts per roll via key).
+  // This ensures walls always match the actual visible viewport size.
+  const { x: ARENA_X, z: ARENA_Z } = computeArena();
   const settledResultsRef = useRef<Map<string, number>>(new Map());
   const expectedCountRef = useRef(0);
   const hasReportedRef = useRef(false);
