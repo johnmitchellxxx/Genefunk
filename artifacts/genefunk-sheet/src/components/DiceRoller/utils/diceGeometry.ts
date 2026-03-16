@@ -82,13 +82,29 @@ function computeFaceNormals(geo: THREE.BufferGeometry, trianglesPerFace: number)
  * Project the given vertices onto their face plane and return UV coordinates.
  * axisV = faceNormal × axisU preserves CCW handedness so textures are never
  * mirrored on CCW-wound faces (which is what Three.js built-in geometries use).
+ *
+ * For triangular faces the normal is computed from the cross product of two
+ * edges — this is exact regardless of die shape.  For polygon faces (D12
+ * pentagons) the centroid direction is used as a reliable proxy because those
+ * vertices lie on a near-sphere.
  */
 function projectFaceUVs(verts: THREE.Vector3[], scale = 0.40): [number, number][] {
   const centroid = new THREE.Vector3();
   verts.forEach(v => centroid.add(v));
   centroid.divideScalar(verts.length);
 
-  const faceNormal = centroid.clone().normalize();
+  // Cross-product normal for triangles — accurate for any geometry shape,
+  // including the custom D10 bipyramid whose apex vertices are far off-sphere.
+  let faceNormal: THREE.Vector3;
+  if (verts.length === 3) {
+    faceNormal = new THREE.Vector3()
+      .crossVectors(verts[1].clone().sub(verts[0]), verts[2].clone().sub(verts[0]))
+      .normalize();
+    // Ensure it points outward (away from origin / centroid)
+    if (faceNormal.dot(centroid) < 0) faceNormal.negate();
+  } else {
+    faceNormal = centroid.clone().normalize();
+  }
 
   // axisU: from centroid toward first vertex, projected onto face plane
   let axisU = verts[0].clone().sub(centroid);
