@@ -86,16 +86,20 @@ function makeNumberTexture(
 }
 
 /**
- * D4 face texture — background colour only, NO digits.
+ * D4 face texture — background + three decorative vertex numbers.
  *
- * Digits drawn on tetrahedron face textures always appear rotated / mirrored
- * from the overhead camera because the die's Y-axis spin after physics is
- * random.  A "4" can look like an "N" or "Z" depending on how the die lands.
- * The actual result numbers are rendered as screen-space <Html> labels placed
- * at the visible face centroids after the die settles (see render section below).
+ * Numbers will appear rotated when the die is spinning (random Y-axis from
+ * physics), but a spinning die is always somewhat unreadable — this is
+ * expected and acceptable.  After the die settles, screen-space <Html> labels
+ * pinned to each visible face centroid show the result clearly and upright.
  */
 function makeD4FaceTexture(
+  v0val: number,
+  v1val: number,
+  v2val: number,
   dieColor: string,
+  fontColor: string,
+  fontFamily: string,
   drawBackground: boolean,
   p0uv: [number, number],
   p1uv: [number, number],
@@ -108,16 +112,49 @@ function makeD4FaceTexture(
   const ctx2d = canvas.getContext('2d')!;
   ctx2d.clearRect(0, 0, size, size);
 
+  // Convert UV → canvas pixel position (flipY: canvas_y = (1-v)*size)
+  const p0: [number, number] = [p0uv[0] * size, (1 - p0uv[1]) * size];
+  const p1: [number, number] = [p1uv[0] * size, (1 - p1uv[1]) * size];
+  const p2: [number, number] = [p2uv[0] * size, (1 - p2uv[1]) * size];
+
   if (drawBackground) {
     const [r, g, b] = hexToRgb(dieColor.startsWith('#') ? dieColor : '#8b5cf6');
     const darkBg = `rgb(${Math.round(r * 0.15)}, ${Math.round(g * 0.12)}, ${Math.round(b * 0.18)})`;
     ctx2d.fillStyle = darkBg;
     ctx2d.beginPath();
-    ctx2d.moveTo(p0uv[0] * size, (1 - p0uv[1]) * size);
-    ctx2d.lineTo(p1uv[0] * size, (1 - p1uv[1]) * size);
-    ctx2d.lineTo(p2uv[0] * size, (1 - p2uv[1]) * size);
+    ctx2d.moveTo(p0[0], p0[1]);
+    ctx2d.lineTo(p1[0], p1[1]);
+    ctx2d.lineTo(p2[0], p2[1]);
     ctx2d.closePath();
     ctx2d.fill();
+  }
+
+  // Centroid — numbers are drawn 45% of the way from centroid toward each vertex
+  const cx = (p0[0] + p1[0] + p2[0]) / 3;
+  const cy = (p0[1] + p1[1] + p2[1]) / 3;
+  const FRAC = 0.45;
+  const px = 68; // font size in pixels on the 256px canvas
+
+  ctx2d.font = `bold ${px}px ${fontFamily || 'serif'}`;
+  ctx2d.textAlign = 'center';
+  ctx2d.textBaseline = 'middle';
+
+  const entries: [number, number, number][] = [
+    [v0val, cx + FRAC * (p0[0] - cx), cy + FRAC * (p0[1] - cy)],
+    [v1val, cx + FRAC * (p1[0] - cx), cy + FRAC * (p1[1] - cy)],
+    [v2val, cx + FRAC * (p2[0] - cx), cy + FRAC * (p2[1] - cy)],
+  ];
+
+  for (const [val, x, y] of entries) {
+    ctx2d.save();
+    ctx2d.translate(x, y);
+    ctx2d.lineWidth = Math.max(4, px / 8);
+    ctx2d.lineJoin = 'round';
+    ctx2d.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx2d.strokeText(String(val), 0, 0);
+    ctx2d.fillStyle = fontColor || '#ffffff';
+    ctx2d.fillText(String(val), 0, 0);
+    ctx2d.restore();
   }
 
   return new THREE.CanvasTexture(canvas);
@@ -233,10 +270,17 @@ export function Die({ dieType, config, id, spawnSide, arenaX, arenaZ, onSettle, 
   const numberTextures = useMemo(() => {
     const drawBackground = config.opacity >= 1;
     if (dieType === 4 && d4VertexUVs) {
-      // D4: background-only textures — digits are handled by screen-space Html overlays.
-      return d4VertexUVs.map(([p0uv, p1uv, p2uv]) =>
-        makeD4FaceTexture(config.color, drawBackground, p0uv, p1uv, p2uv)
-      );
+      // v0=1,v1=2,v2=3,v3=4 (from D4_OPPOSITE_VALUES).
+      // ThreeJS TetrahedronGeometry face winding: [v2,v1,v0],[v0,v3,v2],[v1,v3,v0],[v2,v3,v1]
+      const faceVals: [number,number,number][] = [[3,2,1],[1,4,3],[2,4,1],[3,4,2]];
+      return d4VertexUVs.map(([p0uv, p1uv, p2uv], faceIdx) => {
+        const [v0val, v1val, v2val] = faceVals[faceIdx];
+        return makeD4FaceTexture(
+          v0val, v1val, v2val,
+          config.color, config.fontColor, config.fontFamily,
+          drawBackground, p0uv, p1uv, p2uv,
+        );
+      });
     }
     return Array.from({ length: faceCount }, (_, i) =>
       makeNumberTexture(i + 1, config.fontFamily, config.fontColor, config.fontSize, config.bold, config.italic, config.color, drawBackground)

@@ -73,7 +73,7 @@ export const D4_FACE_CENTROIDS: readonly [number, number, number][] = [
  * textures are rebuilt after a full page reload even if user config is
  * unchanged — avoiding stale cached textures from a previous code version.
  */
-export const D4_FACE_VERSION = 5;
+export const D4_FACE_VERSION = 6;
 
 
 /**
@@ -222,11 +222,6 @@ function buildTetrahedron(): DieGeometryInfo {
       [uvAttr.getX(base+2), uvAttr.getY(base+2)],
     ]);
   }
-  // Log so we can verify in the browser console during debugging
-  console.log('[D4 UVs]', d4VertexUVs.map((f, i) =>
-    `face${i}: v0=(${f[0].map(n=>n.toFixed(3))}), v1=(${f[1].map(n=>n.toFixed(3))}), v2=(${f[2].map(n=>n.toFixed(3))})`
-  ).join('\n'));
-
   return { geometry: geo, faceCount: 4, faceNormals, d4VertexUVs };
 }
 
