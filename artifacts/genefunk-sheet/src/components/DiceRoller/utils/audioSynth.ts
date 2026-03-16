@@ -62,18 +62,20 @@ export function startDiceRoll(dicePool: number[]): () => void {
       ? dicePool.reduce((s, d) => s + d, 0) / dicePool.length
       : 6;
 
-  // Larger dice → lower-pitched click (D4 ≈ 3200 Hz, D20 ≈ 2000 Hz)
   const baseFreq = Math.max(1400, 3500 - avgSides * 75);
-  // Larger dice → slightly longer click body
   const baseDecay = 25 + avgSides * 1.2;
 
+  const startTime = performance.now();
+  const rollDuration = 1800;
   let tickIndex = 0;
 
   const tick = () => {
     if (!active) return;
     tickIndex++;
 
-    // Main surface click
+    const elapsed = performance.now() - startTime;
+    const t = Math.min(elapsed / rollDuration, 1);
+
     playClick(
       ac,
       baseFreq + (Math.random() - 0.5) * 700,
@@ -81,14 +83,15 @@ export function startDiceRoll(dicePool: number[]): () => void {
       baseDecay,
     );
 
-    // Every 4–6 ticks add a low-frequency thump (die bouncing off a wall/floor)
     if (tickIndex % (4 + Math.floor(Math.random() * 3)) === 0) {
       playClick(ac, 180 + Math.random() * 120, 0.28, baseDecay * 2);
     }
 
-    // Click rate: more dice fire faster; interval has organic jitter
-    const baseInterval = Math.max(45, 220 - numDice * 18);
-    const interval = baseInterval * (0.4 + Math.random() * 1.2);
+    const fastInterval = Math.max(45, 220 - numDice * 18);
+    const slowInterval = fastInterval * 5;
+    const easedT = t < 0.6 ? (t / 0.6) * 0.15 : 0.15 + ((t - 0.6) / 0.4) * 0.85;
+    const baseInterval = fastInterval + (slowInterval - fastInterval) * easedT;
+    const interval = baseInterval * (0.7 + Math.random() * 0.6);
     setTimeout(tick, interval);
   };
 
