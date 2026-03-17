@@ -191,6 +191,14 @@ export default function CharacterList() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {!auth?.isAuthenticated && (
+              <button
+                onClick={() => { setPendingCreate(null); setIdentifyOpen(true); setTimeout(() => identifyInputRef.current?.focus(), 50); }}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-mono uppercase tracking-wider border border-primary text-primary hover:bg-primary/10 transition-all clip-edges"
+              >
+                Log In
+              </button>
+            )}
             <button
               onClick={() => openCreate('blank')}
               disabled={createMutation.isPending}
