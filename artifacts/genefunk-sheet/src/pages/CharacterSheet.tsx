@@ -7,14 +7,14 @@ import { CyberCard, EditableField, EditableSelect, CyberButton, CyberBadge } fro
 import { StatBox } from '@/components/StatBox';
 import { SkillList } from '@/components/SkillList';
 import { ABILITIES, SENSES, getModifier, formatModifier, getProficiencyBonus, getAttackBonus } from '@/lib/rules';
-import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, CLASSES, GENOMES, BACKGROUNDS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebookData';
+import { UPGRADES, ARMOR, DRUGS, GEAR, POISONS, HACKS_BY_CLASS, CLASSES, GENOMES, BACKGROUNDS, type UpgradeData, type ArmorData, type HackData } from '@/lib/rulebook';
 import { Activity, Shield, Heart, Zap, Crosshair, ChevronLeft, ChevronRight, GripVertical, Trash2, X, Eye, ArrowUp, Camera } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { WeaponPicker } from '@/components/WeaponPicker';
 import { DiceRoller } from '@/components/DiceRoller';
 import type { AutoRoll } from '@/components/DiceRoller';
 import { LevelUpPanel } from '@/components/LevelUpPanel';
-import type { WeaponRef } from '@/lib/weaponData';
+import type { WeaponRef } from '@/lib/rulebook';
 import type {
   Character,
   AttackEntry,

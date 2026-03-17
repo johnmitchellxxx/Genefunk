@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { CyberButton, CyberCard } from '@/components/CyberUI';
-import { GENOMES, CLASSES, BACKGROUNDS, POINT_BUY_COSTS, POINT_BUY_TOTAL, ASI_LEVELS } from '@/lib/rulebookData';
-import type { GenomeData, ClassData, BackgroundData, AbilityKey, SenseKey } from '@/lib/rulebookData';
+import { GENOMES, CLASSES, BACKGROUNDS, POINT_BUY_COSTS, POINT_BUY_TOTAL } from '@/lib/rulebook';
+import type { GenomeData, ClassData, BackgroundData, AbilityKey, SenseKey } from '@/lib/rulebook';
 import { ABILITIES, SKILLS, SENSES, getModifier, formatModifier } from '@/lib/rules';
 import { ChevronLeft, ChevronRight, Check, X, Dna, Swords, BookOpen, Brain, ListChecks, ClipboardCheck, AlertTriangle } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { GENEFUNK_WEAPONS, WEAPON_CATEGORIES, type WeaponRef } from '@/lib/weaponData';
+import { GENEFUNK_WEAPONS, WEAPON_CATEGORIES, type WeaponRef } from '@/lib/rulebook';
 import { X, Search, Crosshair, Swords, Flame, Zap, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface WeaponPickerProps {

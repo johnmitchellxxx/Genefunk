@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CyberButton, CyberCard } from '@/components/CyberUI';
-import { CLASSES } from '@/lib/rulebookData';
-import type { AbilityKey } from '@/lib/rulebookData';
+import { CLASSES } from '@/lib/rulebook';
+import type { AbilityKey } from '@/lib/rulebook';
 import { ABILITIES, getModifier } from '@/lib/rules';
 import { X, ArrowUp, Check } from 'lucide-react';
 import type { Character, FeatureEntry } from '@workspace/api-client-react';
